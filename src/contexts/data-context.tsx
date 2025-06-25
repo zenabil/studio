@@ -77,6 +77,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         };
         setSalesHistory(prev => [newSale, ...prev]);
 
+        // Update product stock
+        setProducts(prevProducts => {
+            const newProducts = [...prevProducts];
+            cart.forEach(cartItem => {
+                const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
+                if (productIndex !== -1) {
+                    newProducts[productIndex].stock -= cartItem.quantity;
+                }
+            });
+            return newProducts;
+        });
+
         if (customerId) {
             setCustomers(prevCustomers => 
                 prevCustomers.map(c => {

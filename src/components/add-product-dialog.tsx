@@ -35,8 +35,10 @@ interface AddProductDialogProps {
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   category: z.string().min(2, { message: 'Category must be at least 2 characters.' }),
+  purchasePrice: z.coerce.number().min(0, { message: 'Purchase price must be a positive number.' }),
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
+  minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
   barcode: z.string().min(1, { message: 'Barcode cannot be empty.' }),
 });
 
@@ -48,8 +50,10 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
     defaultValues: {
       name: '',
       category: '',
+      purchasePrice: 0,
       price: 0,
       stock: 0,
+      minStock: 0,
       barcode: '',
     },
   });
@@ -60,16 +64,20 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
         form.reset({
           name: productToEdit.name,
           category: productToEdit.category,
+          purchasePrice: productToEdit.purchasePrice,
           price: productToEdit.price,
           stock: productToEdit.stock,
+          minStock: productToEdit.minStock,
           barcode: productToEdit.barcode,
         });
       } else {
         form.reset({
           name: '',
           category: '',
+          purchasePrice: 0,
           price: 0,
           stock: 0,
+          minStock: 0,
           barcode: '',
         });
       }
@@ -116,32 +124,62 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.products.price}</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" placeholder={t.products.pricePlaceholder} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="stock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.products.stock}</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="purchasePrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.products.purchasePrice}</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder={t.products.purchasePricePlaceholder} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.products.price}</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder={t.products.pricePlaceholder} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="stock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.products.stock}</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="minStock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.products.minStock}</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="1" placeholder={t.products.minStockPlaceholder} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="barcode"

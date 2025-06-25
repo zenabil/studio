@@ -17,19 +17,29 @@ import {
   UsersRound,
   BarChartBig,
   Package,
+  TriangleAlert,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
+import { useData } from '@/contexts/data-context';
+import { Badge } from '@/components/ui/badge';
+import { useMemo } from 'react';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, dir } = useLanguage();
+  const { products } = useData();
+
+  const lowStockCount = useMemo(() => {
+    return products.filter(p => p.stock <= p.minStock).length;
+  }, [products]);
 
   const navItems = [
     { href: '/', label: t.nav.pos, icon: CircleDollarSign },
     { href: '/products', label: t.nav.products, icon: Package },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
+    { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: lowStockCount },
   ];
 
   return (
@@ -59,9 +69,14 @@ export function SidebarNav() {
                 isActive={pathname === item.href}
                 tooltip={item.label}
               >
-                <Link href={item.href}>
+                <Link href={item.href} className="relative">
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
+                  {item.alertCount && item.alertCount > 0 ? (
+                    <Badge variant="destructive" className="absolute top-1 right-1 h-5 w-5 justify-center p-0 group-data-[collapsible=icon]:hidden">
+                      {item.alertCount}
+                    </Badge>
+                  ) : null}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

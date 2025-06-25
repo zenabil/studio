@@ -105,20 +105,22 @@ export default function ProductsPage() {
               <TableRow>
                 <TableHead>{t.products.name}</TableHead>
                 <TableHead>{t.products.category}</TableHead>
-                <TableHead>{t.products.barcode}</TableHead>
+                <TableHead className="text-right">{t.products.purchasePrice}</TableHead>
                 <TableHead className="text-right">{t.products.price}</TableHead>
                 <TableHead className="text-right">{t.products.stock}</TableHead>
+                <TableHead className="text-right">{t.products.minStock}</TableHead>
                 <TableHead className="text-right">{t.products.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
+                <TableRow key={product.id} className={product.stock <= product.minStock ? 'bg-destructive/10' : ''}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
-                  <TableCell>{product.barcode}</TableCell>
+                  <TableCell className="text-right">${product.purchasePrice.toFixed(2)}</TableCell>
                   <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
+                  <TableCell className="text-right">{product.minStock}</TableCell>
                    <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
                       <Pencil className="h-4 w-4" />
