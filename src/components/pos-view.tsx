@@ -33,14 +33,15 @@ import type { Product, Customer, CartItem, SaleRecord } from '@/lib/data';
 import {
   PlusCircle,
   MinusCircle,
-  Trash2,
   FileText,
   Printer,
   XCircle,
+  Barcode,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
+import { BarcodeScannerDialog } from './barcode-scanner-dialog';
 
 export function PosView() {
   const { t } = useLanguage();
@@ -52,6 +53,7 @@ export function PosView() {
   const [amountPaid, setAmountPaid] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
@@ -143,6 +145,24 @@ export function PosView() {
     resetSale();
   };
 
+  const handleScanSuccess = (barcode: string) => {
+    const product = products.find(p => p.barcode === barcode);
+    if (product) {
+        addToCart(product);
+        toast({
+            title: t.pos.productAdded,
+            description: `${product.name} ${t.pos.addedToCart}`,
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: t.errors.title,
+            description: t.errors.productNotFound,
+        });
+    }
+    setIsScannerOpen(false);
+  };
+
   const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
   
   const filteredProducts = products.filter(
@@ -159,15 +179,21 @@ export function PosView() {
       <div className="lg:col-span-2">
         <Card className="h-full">
           <CardHeader>
-            <div className="flex flex-col gap-4 md:flex-row">
-              <Input
-                placeholder={t.pos.searchProducts}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full md:w-1/2"
-              />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="flex-grow flex gap-2">
+                <Input
+                  placeholder={t.pos.searchProducts}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-grow"
+                />
+                 <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="shrink-0">
+                    <Barcode className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">{t.pos.scanBarcode}</span>
+                 </Button>
+              </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full md:w-1/2">
+                <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
                   <SelectValue placeholder={t.pos.allCategories} />
                 </SelectTrigger>
                 <SelectContent>
@@ -311,6 +337,11 @@ export function PosView() {
         customer={selectedCustomer}
         totals={{ subtotal, tax, discount, total, amountPaid, balance }}
       />}
+      <BarcodeScannerDialog
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </div>
   );
 }

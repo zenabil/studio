@@ -42,6 +42,10 @@ export const translations = {
       newSale: "Nouvelle vente",
       saleSuccessTitle: "Vente réussie!",
       saleSuccessMessage: "La vente a été finalisée avec succès.",
+      scanBarcode: "Scanner un code-barres",
+      requestingCamera: "Demande d'accès à la caméra...",
+      productAdded: "Produit ajouté",
+      addedToCart: "a été ajouté au panier.",
     },
     products: {
       title: "Gestion des Produits",
@@ -104,6 +108,10 @@ export const translations = {
     errors: {
       title: "Erreur",
       emptyCart: "Le panier est vide.",
+      cameraAccessRequired: "Accès à la caméra requis",
+      cameraAccessDenied: "Veuillez autoriser l'accès à la caméra pour utiliser cette fonctionnalité.",
+      productNotFound: "Produit non trouvé avec ce code-barres.",
+      scanError: "Une erreur est survenue lors du scan.",
     }
   },
   ar: {
@@ -145,6 +153,10 @@ export const translations = {
       newSale: "بيع جديد",
       saleSuccessTitle: "اكتمل البيع!",
       saleSuccessMessage: "تم إتمام عملية البيع بنجاح.",
+      scanBarcode: "مسح الباركود",
+      requestingCamera: "جاري طلب الوصول إلى الكاميرا...",
+      productAdded: "تمت إضافة المنتج",
+      addedToCart: "تمت إضافته إلى السلة.",
     },
     products: {
       title: "إدارة المنتجات",
@@ -207,6 +219,10 @@ export const translations = {
     errors: {
       title: "خطأ",
       emptyCart: "عربة التسوق فارغة.",
+      cameraAccessRequired: "الوصول إلى الكاميرا مطلوب",
+      cameraAccessDenied: "يرجى السماح بالوصول إلى الكاميرا لاستخدام هذه الميزة.",
+      productNotFound: "المنتج غير موجود بهذا الباركود.",
+      scanError: "حدث خطأ أثناء المسح.",
     }
   },
 };
