@@ -16,19 +16,12 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguage] = useState<Language>('fr');
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
-      const dir = language === 'ar' ? 'rtl' : 'ltr';
-      document.documentElement.dir = dir;
-      document.documentElement.lang = language;
-    }
-  }, [language, isMounted]);
+    const dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = language;
+  }, [language]);
 
   const contextValue = useMemo(() => {
     const t = translations[language];
@@ -36,10 +29,6 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     return { language, setLanguage, t, dir };
   }, [language]);
   
-  if (!isMounted) {
-    return null;
-  }
-
   return (
     <LanguageContext.Provider value={contextValue}>
       {children}
