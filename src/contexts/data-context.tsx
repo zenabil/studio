@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { 
     products as initialProducts, 
     customers as initialCustomers, 
@@ -10,6 +10,11 @@ import {
     type SaleRecord,
     type CartItem
 } from '@/lib/data';
+
+// Define keys for localStorage
+const PRODUCTS_KEY = 'mercurio-pos-products';
+const CUSTOMERS_KEY = 'mercurio-pos-customers';
+const SALES_HISTORY_KEY = 'mercurio-pos-sales-history';
 
 interface DataContextType {
     products: Product[];
@@ -23,14 +28,55 @@ interface DataContextType {
     deleteCustomer: (customerId: string) => void;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => void;
     makePayment: (customerId: string, amount: number) => void;
+    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Helper function to get data from localStorage
+const loadFromStorage = <T,>(key: string, fallback: T): T => {
+    if (typeof window === 'undefined') {
+        return fallback;
+    }
+    try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : fallback;
+    } catch (error) {
+        console.error(`Error reading from localStorage key “${key}”:`, error);
+        return fallback;
+    }
+};
+
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-    const [products, setProducts] = useState<Product[]>(initialProducts);
-    const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-    const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
+    const [products, setProducts] = useState<Product[]>(() => loadFromStorage(PRODUCTS_KEY, initialProducts));
+    const [customers, setCustomers] = useState<Customer[]>(() => loadFromStorage(CUSTOMERS_KEY, initialCustomers));
+    const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(() => loadFromStorage(SALES_HISTORY_KEY, initialSalesHistory));
+
+    // Persist to localStorage whenever data changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+        } catch (error) {
+            console.error("Failed to save products to localStorage", error);
+        }
+    }, [products]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+        } catch (error) {
+            console.error("Failed to save customers to localStorage", error);
+        }
+    }, [customers]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(SALES_HISTORY_KEY, JSON.stringify(salesHistory));
+        } catch (error) {
+            console.error("Failed to save sales history to localStorage", error);
+        }
+    }, [salesHistory]);
+
 
     const addProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
         const newProduct: Product = {
@@ -131,6 +177,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         );
     };
 
+    const restoreData = (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => {
+        if (data.products) setProducts(data.products);
+        if (data.customers) setCustomers(data.customers);
+        if (data.salesHistory) setSalesHistory(data.salesHistory);
+    };
 
     const value = {
         products,
@@ -144,6 +195,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteCustomer,
         addSaleRecord,
         makePayment,
+        restoreData,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

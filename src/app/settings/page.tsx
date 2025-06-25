@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useRef } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -16,8 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 export default function SettingsPage() {
   const { settings, setSettings, colorPresets } = useSettings();
   const { t } = useLanguage();
-  const { products, customers, salesHistory } = useData();
+  const { products, customers, salesHistory, restoreData } = useData();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { control, handleSubmit, setValue } = useForm({
     values: settings,
@@ -45,9 +46,57 @@ export default function SettingsPage() {
     toast({ title: t.settings.backupSuccess });
   };
   
-  const handleRestore = () => {
-      toast({ title: "Restore functionality is not yet implemented." });
+  const handleRestoreClick = () => {
+    fileInputRef.current?.click();
   };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== 'string') {
+          throw new Error('File could not be read');
+        }
+        const data = JSON.parse(text);
+
+        if (data.products && data.customers && data.salesHistory && data.settings) {
+          restoreData({
+            products: data.products,
+            customers: data.customers,
+            salesHistory: data.salesHistory,
+          });
+          setSettings(data.settings);
+          toast({ title: t.settings.restoreSuccess });
+        } else {
+          throw new Error(t.settings.restoreErrorInvalidFile);
+        }
+      } catch (error) {
+        console.error('Failed to restore data:', error);
+        toast({
+          variant: 'destructive',
+          title: t.settings.restoreErrorTitle,
+          description: error instanceof Error ? error.message : t.settings.restoreErrorGeneric,
+        });
+      } finally {
+        if (event.target) {
+          event.target.value = '';
+        }
+      }
+    };
+    reader.onerror = () => {
+      toast({
+        variant: 'destructive',
+        title: t.settings.restoreErrorTitle,
+        description: t.settings.restoreErrorGeneric,
+      });
+    };
+    reader.readAsText(file);
+  };
+
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -135,7 +184,16 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="flex gap-4">
                 <Button type="button" onClick={handleBackup}>{t.settings.backupData}</Button>
-                <Button type="button" variant="outline" onClick={handleRestore} disabled>{t.settings.restoreData}</Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".json"
+                  className="hidden"
+                />
+                <Button type="button" variant="outline" onClick={handleRestoreClick}>
+                  {t.settings.restoreData}
+                </Button>
             </CardContent>
           </Card>
            <Card className="mt-4">

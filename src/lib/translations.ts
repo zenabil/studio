@@ -166,6 +166,10 @@ export const translations = {
       licenseKey: "Clé de licence",
       activate: "Activer",
       save: "Enregistrer",
+      restoreSuccess: "Données restaurées avec succès.",
+      restoreErrorTitle: "Erreur de Restauration",
+      restoreErrorGeneric: "Impossible de lire le fichier.",
+      restoreErrorInvalidFile: "Le fichier de sauvegarde est corrompu ou son format est invalide.",
     },
     errors: {
       title: "Erreur",
@@ -339,6 +343,10 @@ export const translations = {
       licenseKey: "مفتاح الترخيص",
       activate: "تفعيل",
       save: "حفظ",
+      restoreSuccess: "تم استعادة البيانات بنجاح.",
+      restoreErrorTitle: "خطأ في الاستعادة",
+      restoreErrorGeneric: "لا يمكن قراءة الملف.",
+      restoreErrorInvalidFile: "ملف النسخ الاحتياطي تالف أو أن تنسيقه غير صالح.",
     },
     errors: {
       title: "خطأ",
