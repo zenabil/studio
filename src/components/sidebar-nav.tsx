@@ -25,11 +25,13 @@ import { LanguageSwitcher } from './language-switcher';
 import { useData } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { useMemo } from 'react';
+import { useSettings } from '@/contexts/settings-context';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, dir } = useLanguage();
   const { products } = useData();
+  const { settings } = useSettings();
 
   const lowStockCount = useMemo(() => {
     return products.filter(p => p.stock <= (p.minStock || 0)).length;
@@ -50,14 +52,20 @@ export function SidebarNav() {
         <SidebarTrigger />
         <div className="flex items-center gap-2">
             <Package className="h-8 w-8 text-primary" />
-            <span className="font-headline text-xl font-bold">{t.appName}</span>
+            <div>
+              <span className="font-headline text-xl font-bold">{t.appName}</span>
+              <p className="text-xs text-muted-foreground -mt-1">{settings.companyInfo.name}</p>
+            </div>
         </div>
     </div>
     <Sidebar side={dir === 'rtl' ? 'right' : 'left'}>
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Package className="h-8 w-8 text-primary" />
-          <span className="font-headline text-xl font-bold">{t.appName}</span>
+          <div>
+            <span className="font-headline text-xl font-bold">{t.appName}</span>
+            <p className="text-sm text-muted-foreground">{settings.companyInfo.name}</p>
+          </div>
           <div className="grow" />
           <SidebarTrigger className="hidden md:flex" />
         </div>
