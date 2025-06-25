@@ -20,7 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddCustomerDialog } from '@/components/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
@@ -29,6 +30,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer =>
@@ -69,6 +71,27 @@ export default function CustomersPage() {
       });
     }
   };
+  
+  const handleOpenDeleteDialog = (customer: Customer) => {
+    setCustomerToDelete(customer);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setCustomerToDelete(null);
+  };
+
+  const handleDeleteCustomer = () => {
+    if (!customerToDelete) return;
+
+    setCustomers(prev =>
+        prev.filter(c => c.id !== customerToDelete.id)
+    );
+    toast({
+        title: t.customers.customerDeleted,
+    });
+    handleCloseDeleteDialog();
+  };
+
 
   return (
     <>
@@ -110,6 +133,9 @@ export default function CustomersPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(customer)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(customer)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -122,6 +148,13 @@ export default function CustomersPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveCustomer}
         customerToEdit={editingCustomer}
+      />
+      <ConfirmDialog
+        isOpen={!!customerToDelete}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleDeleteCustomer}
+        title={t.customers.deleteConfirmationTitle}
+        description={t.customers.deleteConfirmationMessage}
       />
     </>
   );

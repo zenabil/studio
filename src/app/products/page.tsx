@@ -20,7 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 export default function ProductsPage() {
   const { t } = useLanguage();
@@ -29,6 +30,7 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const filteredProducts = useMemo(() => {
     return products.filter(product =>
@@ -68,6 +70,23 @@ export default function ProductsPage() {
         title: t.products.productAdded,
       });
     }
+  };
+
+  const handleOpenDeleteDialog = (product: Product) => {
+    setProductToDelete(product);
+  };
+
+  const handleCloseDeleteDialog = () => {
+      setProductToDelete(null);
+  };
+
+  const handleDeleteProduct = () => {
+      if (!productToDelete) return;
+      setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+      toast({
+          title: t.products.productDeleted,
+      });
+      handleCloseDeleteDialog();
   };
 
   return (
@@ -110,6 +129,9 @@ export default function ProductsPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(product)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -122,6 +144,13 @@ export default function ProductsPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveProduct}
         productToEdit={editingProduct}
+      />
+      <ConfirmDialog
+        isOpen={!!productToDelete}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleDeleteProduct}
+        title={t.products.deleteConfirmationTitle}
+        description={t.products.deleteConfirmationMessage}
       />
     </>
   );

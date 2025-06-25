@@ -60,6 +60,10 @@ export const translations = {
       stockPlaceholder: "Saisir le stock",
       productAdded: "Produit ajouté avec succès",
       productUpdated: "Produit mis à jour avec succès",
+      delete: "Supprimer",
+      deleteConfirmationTitle: "Confirmer la suppression",
+      deleteConfirmationMessage: "Voulez-vous vraiment supprimer ce produit ? Cette action est irréversible.",
+      productDeleted: "Produit supprimé avec succès",
     },
     customers: {
       title: "Gestion des Clients",
@@ -79,6 +83,10 @@ export const translations = {
       phonePlaceholder: "Saisir le téléphone",
       customerAdded: "Client ajouté avec succès",
       customerUpdated: "Client mis à jour avec succès",
+      delete: "Supprimer",
+      deleteConfirmationTitle: "Confirmer la suppression",
+      deleteConfirmationMessage: "Voulez-vous vraiment supprimer ce client ? Cette action est irréversible.",
+      customerDeleted: "Client supprimé avec succès",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -145,6 +153,10 @@ export const translations = {
       stockPlaceholder: "أدخل الكمية في المخزون",
       productAdded: "تمت إضافة المنتج بنجاح",
       productUpdated: "تم تحديث المنتج بنجاح",
+      delete: "حذف",
+      deleteConfirmationTitle: "تأكيد الحذف",
+      deleteConfirmationMessage: "هل أنت متأكد من رغبتك في حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.",
+      productDeleted: "تم حذف المنتج بنجاح",
     },
     customers: {
       title: "إدارة العملاء",
@@ -164,6 +176,10 @@ export const translations = {
       phonePlaceholder: "أدخل رقم الهاتف",
       customerAdded: "تمت إضافة العميل بنجاح",
       customerUpdated: "تم تحديث العميل بنجاح",
+      delete: "حذف",
+      deleteConfirmationTitle: "تأكيد الحذف",
+      deleteConfirmationMessage: "هل أنت متأكد من رغبتك في حذف هذا العميل؟ لا يمكن التراجع عن هذا الإجراء.",
+      customerDeleted: "تم حذف العميل بنجاح",
     },
     reports: {
       title: "التقارير والتحليلات",
