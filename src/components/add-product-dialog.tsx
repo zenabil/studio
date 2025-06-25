@@ -64,10 +64,10 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
         form.reset({
           name: productToEdit.name,
           category: productToEdit.category,
-          purchasePrice: productToEdit.purchasePrice,
+          purchasePrice: productToEdit.purchasePrice || 0,
           price: productToEdit.price,
           stock: productToEdit.stock,
-          minStock: productToEdit.minStock,
+          minStock: productToEdit.minStock || 0,
           barcode: productToEdit.barcode,
         });
       } else {

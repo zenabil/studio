@@ -25,7 +25,7 @@ export default function AlertsPage() {
 
   const lowStockProducts = useMemo(() => {
     return products
-      .filter((product) => product.stock <= product.minStock)
+      .filter((product) => product.stock <= (product.minStock || 0))
       .sort((a, b) => a.stock - b.stock);
   }, [products]);
 
@@ -54,7 +54,7 @@ export default function AlertsPage() {
                   <TableCell className="text-right font-bold text-destructive">
                     {product.stock}
                   </TableCell>
-                  <TableCell className="text-right">{product.minStock}</TableCell>
+                  <TableCell className="text-right">{product.minStock || 0}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -31,7 +31,7 @@ export function SidebarNav() {
   const { products } = useData();
 
   const lowStockCount = useMemo(() => {
-    return products.filter(p => p.stock <= p.minStock).length;
+    return products.filter(p => p.stock <= (p.minStock || 0)).length;
   }, [products]);
 
   const navItems = [
