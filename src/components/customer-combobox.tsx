@@ -34,22 +34,13 @@ export function CustomerCombobox({
 }: CustomerComboboxProps) {
   const { t } = useLanguage();
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState('');
 
   const selectedCustomer =
     customers.find((c) => c.id === selectedCustomerId) || null;
 
-  const filteredCustomers = React.useMemo(() => {
-    if (!search) return customers;
-    return customers.filter((customer) =>
-      customer.name.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [customers, search]);
-
   const handleSelect = (customerId: string | null) => {
     onSelectCustomer(customerId);
     setOpen(false);
-    setSearch('');
   };
 
   return (
@@ -66,12 +57,8 @@ export function CustomerCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={t.customers.searchCustomers}
-            value={search}
-            onValueChange={setSearch}
-          />
+        <Command>
+          <CommandInput placeholder={t.customers.searchCustomers} />
           <CommandList>
             <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
             <CommandGroup>
@@ -87,10 +74,10 @@ export function CustomerCombobox({
                 />
                 {t.pos.noCustomer}
               </CommandItem>
-              {filteredCustomers.map((customer) => (
+              {customers.map((customer) => (
                 <CommandItem
                   key={customer.id}
-                  value={customer.id}
+                  value={customer.name}
                   onSelect={() => handleSelect(customer.id)}
                 >
                   <Check
