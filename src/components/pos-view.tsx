@@ -36,12 +36,10 @@ import {
   FileText,
   Printer,
   XCircle,
-  Barcode,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
-import { BarcodeScannerDialog } from './barcode-scanner-dialog';
 
 export function PosView() {
   const { t } = useLanguage();
@@ -49,11 +47,11 @@ export function PosView() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [barcodeInput, setBarcodeInput] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [amountPaid, setAmountPaid] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
@@ -160,11 +158,15 @@ export function PosView() {
             description: t.errors.productNotFound,
         });
     }
-    setIsScannerOpen(false);
+    setBarcodeInput('');
   }, [addToCart, t, toast]);
   
-  const handleOpenScanner = useCallback(() => setIsScannerOpen(true), []);
-  const handleCloseScanner = useCallback(() => setIsScannerOpen(false), []);
+  const handleBarcodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && barcodeInput.trim()) {
+      event.preventDefault();
+      handleScanSuccess(barcodeInput.trim());
+    }
+  };
 
 
   const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
@@ -184,17 +186,18 @@ export function PosView() {
         <Card className="h-full">
           <CardHeader>
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="flex-grow flex gap-2">
+              <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2">
                 <Input
                   placeholder={t.pos.searchProducts}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-grow"
                 />
-                 <Button variant="outline" onClick={handleOpenScanner} className="shrink-0">
-                    <Barcode className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">{t.pos.scanBarcode}</span>
-                 </Button>
+                 <Input
+                  placeholder={t.pos.scanBarcode}
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyDown={handleBarcodeKeyDown}
+                />
               </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
@@ -341,13 +344,6 @@ export function PosView() {
         customer={selectedCustomer}
         totals={{ subtotal, tax, discount, total, amountPaid, balance }}
       />}
-      <BarcodeScannerDialog
-        isOpen={isScannerOpen}
-        onClose={handleCloseScanner}
-        onScanSuccess={handleScanSuccess}
-      />
     </div>
   );
 }
-
-    
