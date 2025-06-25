@@ -396,24 +396,18 @@ export function PosView() {
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
+                                    key={`${item.id}-${item.quantity}`}
                                     type="number"
-                                    value={item.quantity}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value === '') {
-                                            updateQuantity(item.id, 0);
-                                        } else {
-                                            const newQuantity = parseFloat(value);
-                                            if (!isNaN(newQuantity)) {
-                                                updateQuantity(item.id, newQuantity);
-                                            }
-                                        }
-                                    }}
+                                    defaultValue={item.quantity}
                                     onBlur={(e) => {
                                         const value = e.target.value;
-                                        if (value === '' || parseFloat(value) <= 0) {
+                                        const newQuantity = parseFloat(value);
+
+                                        if (!value || isNaN(newQuantity) || newQuantity <= 0) {
                                             const newCart = activeSession.cart.filter(i => i.id !== item.id);
                                             updateActiveSession({ cart: newCart });
+                                        } else {
+                                            updateQuantity(item.id, newQuantity);
                                         }
                                     }}
                                     className="h-8 text-center w-full px-1"
