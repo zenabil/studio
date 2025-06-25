@@ -1,10 +1,29 @@
 'use client';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { salesData } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
+import { useData } from '@/contexts/data-context';
+import { useMemo } from 'react';
 
 export function SalesChart() {
   const { t } = useLanguage();
+  const { salesHistory } = useData();
+
+  const salesData = useMemo(() => {
+    const productSales: { [key: string]: { productName: string, revenue: number } } = {};
+    
+    salesHistory.forEach(sale => {
+        sale.items.forEach(item => {
+            if (!productSales[item.id]) {
+                productSales[item.id] = { productName: item.name, revenue: 0 };
+            }
+            productSales[item.id].revenue += (item.price * item.quantity);
+        });
+    });
+
+    return Object.values(productSales);
+  }, [salesHistory]);
+
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={salesData}>

@@ -1,12 +1,11 @@
 'use client';
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend } from 'recharts';
-import { customers } from '@/lib/data';
-import { useLanguage } from '@/contexts/language-context';
+import { useData } from '@/contexts/data-context';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#8884d8', '#82ca9d'];
 
 export function CustomerPaymentsChart() {
-    const { t } = useLanguage();
+    const { customers } = useData();
   return (
     <ResponsiveContainer width="100%" height={350}>
       <PieChart>
@@ -19,7 +18,7 @@ export function CustomerPaymentsChart() {
         />
         <Legend />
         <Pie
-          data={customers}
+          data={customers.filter(c => c.spent > 0)}
           dataKey="spent"
           nameKey="name"
           cx="50%"
@@ -38,7 +37,7 @@ export function CustomerPaymentsChart() {
             );
           }}
         >
-          {customers.map((entry, index) => (
+          {customers.filter(c => c.spent > 0).map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>

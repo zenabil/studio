@@ -14,8 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { customers as initialCustomers, salesHistory as initialSalesHistory, type Customer, type SaleRecord } from '@/lib/data';
+import { type Customer, type SaleRecord } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
+import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddCustomerDialog } from '@/components/add-customer-dialog';
@@ -28,8 +29,7 @@ import { MakePaymentDialog } from '@/components/make-payment-dialog';
 export default function CustomersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
+  const { customers, salesHistory, addCustomer, updateCustomer, deleteCustomer, makePayment } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -56,22 +56,12 @@ export default function CustomersPage() {
 
   const handleSaveCustomer = (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>, customerId?: string) => {
     if (customerId) {
-      setCustomers(prev =>
-        prev.map(c =>
-          c.id === customerId ? { ...c, ...customerData } : c
-        )
-      );
+      updateCustomer(customerId, customerData);
       toast({
         title: t.customers.customerUpdated,
       });
     } else {
-      const newCustomer: Customer = {
-        id: `cust-${new Date().getTime()}`,
-        spent: 0,
-        balance: 0,
-        ...customerData,
-      };
-      setCustomers(prev => [newCustomer, ...prev]);
+      addCustomer(customerData);
       toast({
         title: t.customers.customerAdded,
       });
@@ -89,9 +79,7 @@ export default function CustomersPage() {
   const handleDeleteCustomer = () => {
     if (!customerToDelete) return;
 
-    setCustomers(prev =>
-        prev.filter(c => c.id !== customerToDelete.id)
-    );
+    deleteCustomer(customerToDelete.id);
     toast({
         title: t.customers.customerDeleted,
     });
@@ -101,29 +89,7 @@ export default function CustomersPage() {
   const handleMakePayment = (amount: number) => {
     if (!payingCustomer) return;
 
-    const paymentRecord: SaleRecord = {
-        id: `PAY-${new Date().getTime()}`,
-        customerId: payingCustomer.id,
-        items: [],
-        totals: {
-            subtotal: 0,
-            discount: 0,
-            total: 0,
-            amountPaid: amount,
-            balance: -amount,
-        },
-        date: new Date().toISOString(),
-    };
-
-    setSalesHistory(prev => [...prev, paymentRecord]);
-
-    setCustomers(prev => 
-        prev.map(c => 
-            c.id === payingCustomer.id 
-            ? { ...c, balance: c.balance - amount }
-            : c
-        )
-    );
+    makePayment(payingCustomer.id, amount);
     
     toast({
         title: t.customers.paymentSuccess,

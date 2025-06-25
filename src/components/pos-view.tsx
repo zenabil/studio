@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { products, customers as initialCustomers, salesHistory as initialSalesHistory } from '@/lib/data';
 import type { Product, Customer, CartItem, SaleRecord } from '@/lib/data';
 import {
   PlusCircle,
@@ -39,6 +38,7 @@ import {
   X,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
+import { useData } from '@/contexts/data-context';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,14 +56,12 @@ interface SaleSession {
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { products, customers, addSaleRecord } = useData();
   
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
-
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
 
   const createNewSession = useCallback((index: number): SaleSession => ({
     id: `session-${new Date().getTime()}-${index}`,
@@ -78,8 +76,6 @@ export function PosView() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
-  // This useEffect runs only once on the client, after hydration, to create the initial session.
-  // This avoids a server-client mismatch for the session ID which is based on Date.now().
   useEffect(() => {
     if (saleSessions.length === 0) {
       const initialSession = createNewSession(1);
@@ -173,6 +169,7 @@ export function PosView() {
   };
   
   const closeSession = (sessionId: string) => {
+      if (!activeSessionId) return;
       setSaleSessions(prev => {
           const newSessions = prev.filter(s => s.id !== sessionId);
           if (newSessions.length === 0) {
@@ -206,7 +203,7 @@ export function PosView() {
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
   const handleSaleCompletion = () => {
-    if (!activeSession || activeSession.cart.length === 0) {
+    if (!activeSession || activeSession.cart.length === 0 || !activeSessionId) {
       toast({
         variant: "destructive",
         title: t.errors.title,
@@ -215,30 +212,8 @@ export function PosView() {
       return;
     }
 
-    const newSale: SaleRecord = {
-        id: `SALE-${new Date().getTime()}`,
-        customerId: activeSession.selectedCustomerId,
-        items: activeSession.cart,
-        totals: { subtotal, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance },
-        date: new Date().toISOString(),
-    };
-
-    setSalesHistory(prev => [...prev, newSale]);
-
-    if (activeSession.selectedCustomerId) {
-        setCustomers(prevCustomers => 
-            prevCustomers.map(c => {
-                if (c.id === activeSession.selectedCustomerId) {
-                    return {
-                        ...c,
-                        spent: c.spent + total,
-                        balance: c.balance + balance,
-                    }
-                }
-                return c;
-            })
-        );
-    }
+    const totals = { subtotal, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance };
+    addSaleRecord(activeSession.cart, activeSession.selectedCustomerId, totals);
 
     toast({
       title: t.pos.saleSuccessTitle,
@@ -264,7 +239,7 @@ export function PosView() {
         });
     }
     setBarcodeInput('');
-  }, [addToCart, t, toast]);
+  }, [addToCart, t, toast, products]);
   
   const handleBarcodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && barcodeInput.trim()) {
@@ -285,12 +260,11 @@ export function PosView() {
   const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
 
   if (!activeSessionId || !activeSession) {
-    return null; // Or a loading state
+    return null;
   }
 
   return (
     <div className="grid h-[calc(100vh-5rem)] grid-cols-1 gap-4 lg:grid-cols-3">
-      {/* Products Section */}
       <div className="lg:col-span-2">
         <Card className="h-full">
           <CardHeader>
@@ -360,7 +334,6 @@ export function PosView() {
         </Card>
       </div>
 
-      {/* Cart and Payment Section */}
       <div className="lg:col-span-1">
         <Card className="flex h-full flex-col">
           <CardHeader>

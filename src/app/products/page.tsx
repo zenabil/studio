@@ -14,8 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { products as initialProducts, type Product } from '@/lib/data';
+import type { Product } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
+import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
@@ -26,7 +27,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 export default function ProductsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { products, addProduct, updateProduct, deleteProduct } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -51,21 +52,12 @@ export default function ProductsPage() {
 
   const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>, productId?: string) => {
     if (productId) {
-      setProducts(prev =>
-        prev.map(p =>
-          p.id === productId ? { ...p, ...productData } : p
-        )
-      );
+      updateProduct(productId, productData);
       toast({
         title: t.products.productUpdated,
       });
     } else {
-      const newProduct: Product = {
-        id: `prod-${new Date().getTime()}`,
-        imageUrl: 'https://placehold.co/300x200',
-        ...productData,
-      };
-      setProducts(prev => [newProduct, ...prev]);
+      addProduct(productData);
       toast({
         title: t.products.productAdded,
       });
@@ -82,7 +74,7 @@ export default function ProductsPage() {
 
   const handleDeleteProduct = () => {
       if (!productToDelete) return;
-      setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+      deleteProduct(productToDelete.id);
       toast({
           title: t.products.productDeleted,
       });
