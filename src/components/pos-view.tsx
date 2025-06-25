@@ -248,12 +248,23 @@ export function PosView() {
             </div>
             <Separator className="my-4" />
              <div className="space-y-4">
-                <Select onValueChange={setSelectedCustomerId} value={selectedCustomerId || ''}>
-                    <SelectTrigger><SelectValue placeholder={t.pos.selectCustomer} /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="">{t.pos.noCustomer}</SelectItem>
-                        {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
+                <Select
+                  onValueChange={(value) =>
+                    setSelectedCustomerId(value === 'none' ? null : value)
+                  }
+                  value={selectedCustomerId || ''}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.pos.selectCustomer} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t.pos.noCustomer}</SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
                 <Input type="number" placeholder={t.pos.amountPaid} value={amountPaid || ''} onChange={(e) => setAmountPaid(Number(e.target.value))} />
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>${balance.toFixed(2)}</span></div>
