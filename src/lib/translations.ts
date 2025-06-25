@@ -133,6 +133,8 @@ export const translations = {
       sales: "Ventes",
       customerPayments: "Paiements par Client",
       payments: "Paiements",
+      productProfits: "Bénéfices par Produit",
+      profits: "Bénéfices",
     },
     alerts: {
       title: "Alertes de Stock Faible",
@@ -279,6 +281,8 @@ export const translations = {
       sales: "المبيعات",
       customerPayments: "مدفوعات العملاء",
       payments: "المدفوعات",
+      productProfits: "أرباح المنتجات",
+      profits: "الأرباح",
     },
     alerts: {
       title: "تنبيهات انخفاض المخزون",
