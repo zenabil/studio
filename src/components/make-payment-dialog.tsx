@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useEffect } from 'react';
+import { useSettings } from '@/contexts/settings-context';
 
 interface MakePaymentDialogProps {
   isOpen: boolean;
@@ -35,12 +36,13 @@ interface MakePaymentDialogProps {
 
 export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePaymentDialogProps) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
 
   const formSchema = z.object({
     amount: z.coerce
       .number({ invalid_type_error: t.customers.invalidAmount })
       .min(0.01, { message: t.customers.invalidAmountZero })
-      .max(customer?.balance || 0, { message: `${t.customers.paymentExceedsBalance} $${customer?.balance.toFixed(2)}` }),
+      .max(customer?.balance || 0, { message: `${t.customers.paymentExceedsBalance} ${settings.currency}${customer?.balance.toFixed(2)}` }),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -69,7 +71,7 @@ export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePay
           <DialogTitle>{t.customers.makePayment}</DialogTitle>
           <DialogDescription>
             {t.customers.forCustomer}: {customer.name} <br />
-            {t.customers.currentBalance}: <span className="font-bold text-destructive">${customer.balance.toFixed(2)}</span>
+            {t.customers.currentBalance}: <span className="font-bold text-destructive">{settings.currency}{customer.balance.toFixed(2)}</span>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

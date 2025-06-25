@@ -25,11 +25,13 @@ import { PlusCircle, Pencil, Trash2, FileSearch, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
 import { MakePaymentDialog } from '@/components/make-payment-dialog';
+import { useSettings } from '@/contexts/settings-context';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { customers, salesHistory, addCustomer, updateCustomer, deleteCustomer, makePayment } = useData();
+  const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -137,9 +139,9 @@ export default function CustomersPage() {
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
-                  <TableCell className="text-right">${customer.spent.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{settings.currency}{customer.spent.toFixed(2)}</TableCell>
                   <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-green-500'}`}>
-                    ${customer.balance.toFixed(2)}
+                    {settings.currency}{customer.balance.toFixed(2)}
                   </TableCell>
                   <TableCell className="flex justify-end">
                     {customer.balance > 0 && (

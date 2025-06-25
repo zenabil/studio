@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table';
 import type { Customer, SaleRecord } from '@/lib/data';
 import { format } from 'date-fns';
+import { useSettings } from '@/contexts/settings-context';
 
 interface CustomerInvoicesDialogProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ interface CustomerInvoicesDialogProps {
 
 export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory }: CustomerInvoicesDialogProps) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
 
   if (!customer) return null;
 
@@ -85,26 +87,26 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
               <TableBody>
                 <TableRow>
                   <TableCell colSpan={4} className="font-medium">{t.customers.startingBalance}</TableCell>
-                  <TableCell className="text-right font-medium">${startingBalance.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">{settings.currency}{startingBalance.toFixed(2)}</TableCell>
                 </TableRow>
                 {transactions.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell>{format(new Date(tx.date), 'PP')}</TableCell>
                     <TableCell>{tx.description}</TableCell>
                     <TableCell className={`text-right ${tx.debit > 0 ? 'text-destructive' : ''}`}>
-                      {tx.debit > 0 ? `$${tx.debit.toFixed(2)}` : '-'}
+                      {tx.debit > 0 ? `${settings.currency}${tx.debit.toFixed(2)}` : '-'}
                     </TableCell>
                     <TableCell className={`text-right ${tx.credit > 0 ? 'text-green-500' : ''}`}>
-                      {tx.credit > 0 ? `$${tx.credit.toFixed(2)}` : '-'}
+                      {tx.credit > 0 ? `${settings.currency}${tx.credit.toFixed(2)}` : '-'}
                     </TableCell>
-                    <TableCell className="text-right font-semibold">${tx.balance.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold">{settings.currency}{tx.balance.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
               <TableFooter>
                 <TableRow>
                   <TableCell colSpan={4} className="text-right font-bold">{t.customers.endingBalance}</TableCell>
-                  <TableCell className="text-right font-bold">${customer.balance.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-bold">{settings.currency}{customer.balance.toFixed(2)}</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>

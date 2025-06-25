@@ -23,11 +23,13 @@ import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { useSettings } from '@/contexts/settings-context';
 
 export default function ProductsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { products, addProduct, updateProduct, deleteProduct } = useData();
+  const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -117,8 +119,8 @@ export default function ProductsPage() {
                 <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
-                  <TableCell className="text-right">${(product.purchasePrice || 0).toFixed(2)}</TableCell>
-                  <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{settings.currency}{(product.purchasePrice || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
                   <TableCell className="text-right">{product.minStock || 0}</TableCell>
                    <TableCell className="text-right">

@@ -15,6 +15,7 @@ import {
     Package
   } from 'lucide-react';
 import type { Product, Customer } from '@/lib/data';
+import { useSettings } from '@/contexts/settings-context';
 
 interface CartItem extends Product {
     quantity: number;
@@ -36,6 +37,7 @@ interface InvoiceDialogProps {
 
 export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: InvoiceDialogProps) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
   const invoiceId = `INV-${new Date().getTime().toString().slice(-6)}`;
   const today = new Date().toLocaleDateString();
 
@@ -52,8 +54,8 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
         <div className="max-h-[60vh] overflow-y-auto p-2">
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
-              <h3 className="font-bold">{t.appName}</h3>
-              <p className="text-sm text-muted-foreground">123 Market St, Commerce City</p>
+              <h3 className="font-bold">{settings.companyInfo.name}</h3>
+              <p className="text-sm text-muted-foreground">{settings.companyInfo.address}</p>
             </div>
             <div className="text-right">
               <h2 className="text-2xl font-bold">{t.pos.invoice}</h2>
@@ -82,30 +84,30 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
                 <TableRow key={item.id}>
                   <TableCell>{item.name}</TableCell>
                   <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{settings.currency}{item.price.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{settings.currency}{(item.price * item.quantity).toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
             <TableFooter>
                 <TableRow>
                     <TableCell colSpan={3} className="text-right">{t.pos.subtotal}</TableCell>
-                    <TableCell className="text-right">${totals.subtotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{totals.subtotal.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow>
                     <TableCell colSpan={3} className="text-right">{t.pos.discount}</TableCell>
-                    <TableCell className="text-right">-${totals.discount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">-{settings.currency}{totals.discount.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow className="font-bold text-lg">
                     <TableCell colSpan={3} className="text-right">{t.pos.grandTotal}</TableCell>
-                    <TableCell className="text-right">${totals.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{totals.total.toFixed(2)}</TableCell>
                 </TableRow>
             </TableFooter>
           </Table>
           
           <div className="mt-6 text-right">
-            <p className="text-sm">{t.pos.paymentReceived}: <span className="font-semibold">${totals.amountPaid.toFixed(2)}</span></p>
-            <p className="text-sm">{t.pos.balance}: <span className="font-semibold">${totals.balance.toFixed(2)}</span></p>
+            <p className="text-sm">{t.pos.paymentReceived}: <span className="font-semibold">{settings.currency}{totals.amountPaid.toFixed(2)}</span></p>
+            <p className="text-sm">{t.pos.balance}: <span className="font-semibold">{settings.currency}{totals.balance.toFixed(2)}</span></p>
           </div>
           
           <div className="mt-8 text-center text-sm text-muted-foreground">

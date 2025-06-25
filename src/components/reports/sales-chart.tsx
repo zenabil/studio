@@ -3,9 +3,11 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recha
 import { useLanguage } from '@/contexts/language-context';
 import { useMemo } from 'react';
 import type { SaleRecord } from '@/lib/data';
+import { useSettings } from '@/contexts/settings-context';
 
 export function SalesChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
 
   const salesData = useMemo(() => {
     const productSales: { [key: string]: { productName: string, revenue: number } } = {};
@@ -38,7 +40,7 @@ export function SalesChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value}`}
+          tickFormatter={(value) => `${settings.currency}${value}`}
         />
         <Tooltip
           contentStyle={{
@@ -46,6 +48,7 @@ export function SalesChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
             border: '1px solid hsl(var(--border))',
             borderRadius: 'var(--radius)',
           }}
+          formatter={(value: number) => [`${settings.currency}${value.toFixed(2)}`, t.reports.sales]}
         />
         <Bar dataKey="revenue" fill="hsl(var(--primary))" name={t.reports.sales} radius={[4, 4, 0, 0]} />
       </BarChart>

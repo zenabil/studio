@@ -44,6 +44,7 @@ import { InvoiceDialog } from '@/components/invoice-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerCombobox } from '@/components/customer-combobox';
+import { useSettings } from '@/contexts/settings-context';
 
 interface SaleSession {
   id: string;
@@ -58,12 +59,16 @@ export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { products, customers, addSaleRecord } = useData();
+  const { settings } = useSettings();
   
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
-
+  const [sessions, setSessions] = useState<SaleSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  
   const createNewSession = useCallback((index: number): SaleSession => ({
     id: `session-${new Date().getTime()}-${index}`,
     name: `${t.pos.sale} ${index}`,
@@ -73,32 +78,27 @@ export function PosView() {
     discount: 0,
   }), [t.pos.sale]);
 
-  const [saleSessions, setSaleSessions] = useState<SaleSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
-
   useEffect(() => {
-    if (saleSessions.length === 0 && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && sessions.length === 0) {
       const initialSession = createNewSession(1);
-      setSaleSessions([initialSession]);
+      setSessions([initialSession]);
       setActiveSessionId(initialSession.id);
     }
-  }, [createNewSession, saleSessions.length]);
-
+  }, [createNewSession, sessions.length]);
 
   const activeSession = useMemo(() => {
     if (!activeSessionId) return undefined;
-    return saleSessions.find(s => s.id === activeSessionId);
-  }, [saleSessions, activeSessionId]);
+    return sessions.find(s => s.id === activeSessionId);
+  }, [sessions, activeSessionId]);
   
   useEffect(() => {
-    if (saleSessions.length > 0 && !saleSessions.find(s => s.id === activeSessionId)) {
-      setActiveSessionId(saleSessions[0].id);
+    if (sessions.length > 0 && !sessions.find(s => s.id === activeSessionId)) {
+      setActiveSessionId(sessions[0].id);
     }
-  }, [saleSessions, activeSessionId]);
+  }, [sessions, activeSessionId]);
 
   const updateActiveSession = (data: Partial<Omit<SaleSession, 'id'>>) => {
-    setSaleSessions(prevSessions =>
+    setSessions(prevSessions =>
       prevSessions.map(session =>
         session.id === activeSessionId ? { ...session, ...data } : session
       )
@@ -113,7 +113,7 @@ export function PosView() {
                   updateActiveSession({ name: customer.name.split(' ')[0] });
               }
           } else {
-              const sessionIndex = saleSessions.findIndex(s => s.id === activeSessionId);
+              const sessionIndex = sessions.findIndex(s => s.id === activeSessionId);
               if (sessionIndex !== -1) {
                 const defaultName = `${t.pos.sale} ${sessionIndex + 1}`;
                 if (activeSession.name !== defaultName) {
@@ -164,14 +164,14 @@ export function PosView() {
   }
   
   const addNewSession = () => {
-    const newSession = createNewSession(saleSessions.length + 1);
-    setSaleSessions(prev => [...prev, newSession]);
+    const newSession = createNewSession(sessions.length + 1);
+    setSessions(prev => [...prev, newSession]);
     setActiveSessionId(newSession.id);
   };
   
   const closeSession = (sessionId: string) => {
       if (!activeSessionId) return;
-      setSaleSessions(prev => {
+      setSessions(prev => {
           const newSessions = prev.filter(s => s.id !== sessionId);
           if (newSessions.length === 0) {
               const newInitialSession = createNewSession(1);
@@ -184,7 +184,7 @@ export function PosView() {
   };
 
   const handleCloseSession = (sessionId: string) => {
-      const session = saleSessions.find(s => s.id === sessionId);
+      const session = sessions.find(s => s.id === sessionId);
       if (session && session.cart.length > 0) {
           setSessionToDelete(sessionId);
       } else {
@@ -314,7 +314,7 @@ export function PosView() {
                       <div className="p-3">
                         <h3 className="font-semibold">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          ${product.price.toFixed(2)}
+                          {settings.currency}{product.price.toFixed(2)}
                         </p>
                       </div>
                     </CardContent>
@@ -341,10 +341,10 @@ export function PosView() {
             <Tabs value={activeSessionId} onValueChange={setActiveSessionId} className="w-full">
                 <div className="flex items-center gap-2">
                     <TabsList className="flex-grow justify-start h-auto p-1 overflow-x-auto">
-                        {saleSessions.map(session => (
+                        {sessions.map(session => (
                             <TabsTrigger key={session.id} value={session.id} className="relative pr-8">
                                 {session.name}
-                                {saleSessions.length > 1 && (
+                                {sessions.length > 1 && (
                                     <button onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20">
                                         <X className="h-3 w-3" />
                                     </button>
@@ -383,7 +383,7 @@ export function PosView() {
                             </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {settings.currency}{(item.price * item.quantity).toFixed(2)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -395,13 +395,13 @@ export function PosView() {
           <div className="mt-auto p-6 pt-0">
             <Separator className="mb-4" />
             <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>${subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
                     <span>{t.pos.discount}</span>
                     <Input type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
-                <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>${total.toFixed(2)}</span></div>
+                <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>{settings.currency}{total.toFixed(2)}</span></div>
             </div>
             <Separator className="my-4" />
              <div className="space-y-4">
@@ -413,7 +413,7 @@ export function PosView() {
                   }
                 />
                 <Input type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} />
-                <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>${balance.toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
              </div>
              <div className="mt-4 grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}><FileText className="mr-2 h-4 w-4" />{t.pos.invoice}</Button>

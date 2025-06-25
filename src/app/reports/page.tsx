@@ -15,10 +15,12 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import type { DateRange } from 'react-day-picker';
 import { DollarSign, ShoppingCart } from 'lucide-react';
 import type { Customer } from '@/lib/data';
+import { useSettings } from '@/contexts/settings-context';
 
 export default function ReportsPage() {
   const { t } = useLanguage();
   const { salesHistory, customers: allCustomers } = useData();
+  const { settings } = useSettings();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const filteredSales = useMemo(() => {
@@ -82,7 +84,7 @@ export default function ReportsPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{settings.currency}{totalSales.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -91,7 +93,7 @@ export default function ReportsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${totalProfits.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{settings.currency}{totalProfits.toFixed(2)}</div>
             </CardContent>
           </Card>
       </div>

@@ -18,6 +18,7 @@ import {
   BarChartBig,
   Package,
   TriangleAlert,
+  Settings,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -40,6 +41,7 @@ export function SidebarNav() {
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
     { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: lowStockCount },
+    { href: '/settings', label: t.nav.settings, icon: Settings },
   ];
 
   return (
