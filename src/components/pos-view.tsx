@@ -143,11 +143,18 @@ export function PosView() {
   const updateQuantity = (productId: string, quantity: number) => {
     if (!activeSession) return;
     let newCart: CartItem[];
-    if (quantity <= 0) {
+    const maxQuantity = 999999999999;
+    
+    let newQuantity = quantity;
+    if (newQuantity > maxQuantity) {
+        newQuantity = maxQuantity;
+    }
+
+    if (newQuantity <= 0) {
       newCart = activeSession.cart.filter((item) => item.id !== productId);
     } else {
       newCart = activeSession.cart.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
+        item.id === productId ? { ...item, quantity: newQuantity } : item
       );
     }
     updateActiveSession({ cart: newCart });
@@ -394,6 +401,7 @@ export function PosView() {
                                     className="h-8 text-center w-full px-1"
                                     step="0.01"
                                     min="0"
+                                    max="999999999999"
                                 />
                                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                                     <PlusCircle className="h-4 w-4"/>
