@@ -27,6 +27,7 @@ export function SidebarNav() {
 
   const navItems = [
     { href: '/', label: t.nav.pos, icon: CircleDollarSign },
+    { href: '/products', label: t.nav.products, icon: Package },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
   ];
