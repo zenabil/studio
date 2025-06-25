@@ -28,7 +28,7 @@ import { useEffect } from 'react';
 interface AddCustomerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (customer: Omit<Customer, 'id' | 'spent'>, id?: string) => void;
+  onSave: (customer: Omit<Customer, 'id' | 'spent' | 'balance'>, id?: string) => void;
   customerToEdit?: Customer | null;
 }
 

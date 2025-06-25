@@ -28,8 +28,8 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { products, customers } from '@/lib/data';
-import type { Product, Customer } from '@/lib/data';
+import { products, customers as initialCustomers, salesHistory as initialSalesHistory } from '@/lib/data';
+import type { Product, Customer, CartItem, SaleRecord } from '@/lib/data';
 import {
   PlusCircle,
   MinusCircle,
@@ -42,10 +42,6 @@ import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
 
-interface CartItem extends Product {
-  quantity: number;
-}
-
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -56,6 +52,9 @@ export function PosView() {
   const [amountPaid, setAmountPaid] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
 
   const taxRate = 0.1;
 
@@ -92,24 +91,6 @@ export function PosView() {
     setDiscount(0);
   }
 
-  const handleSaleCompletion = () => {
-    if (cart.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Le panier est vide.",
-      });
-      return;
-    }
-    toast({
-      title: "Vente réussie!",
-      description: "La vente a été finalisée avec succès.",
-    });
-    // In a real app, you'd save this sale to a database.
-    // For now, we just reset.
-    resetSale();
-  };
-  
   const { subtotal, tax, total } = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const tax = subtotal * taxRate;
@@ -117,7 +98,50 @@ export function PosView() {
     return { subtotal, tax, total };
   }, [cart, discount, taxRate]);
 
-  const balance = total - amountPaid;
+  const balance = total > 0 ? total - amountPaid : 0;
+
+  const handleSaleCompletion = () => {
+    if (cart.length === 0) {
+      toast({
+        variant: "destructive",
+        title: t.errors.title,
+        description: t.errors.emptyCart,
+      });
+      return;
+    }
+
+    const newSale: SaleRecord = {
+        id: `SALE-${new Date().getTime()}`,
+        customerId: selectedCustomerId,
+        items: cart,
+        totals: { subtotal, tax, discount, total, amountPaid, balance },
+        date: new Date().toISOString(),
+    };
+
+    setSalesHistory(prev => [...prev, newSale]);
+
+    if (selectedCustomerId) {
+        setCustomers(prevCustomers => 
+            prevCustomers.map(c => {
+                if (c.id === selectedCustomerId) {
+                    return {
+                        ...c,
+                        spent: c.spent + total,
+                        balance: c.balance + balance,
+                    }
+                }
+                return c;
+            })
+        );
+    }
+
+    toast({
+      title: t.pos.saleSuccessTitle,
+      description: t.pos.saleSuccessMessage,
+    });
+    
+    resetSale();
+  };
 
   const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
   
@@ -252,7 +276,7 @@ export function PosView() {
                   onValueChange={(value) =>
                     setSelectedCustomerId(value === 'none' ? null : value)
                   }
-                  value={selectedCustomerId || ''}
+                  value={selectedCustomerId || 'none'}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t.pos.selectCustomer} />

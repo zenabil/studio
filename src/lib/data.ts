@@ -13,6 +13,7 @@ export type Customer = {
   email: string;
   phone: string;
   spent: number;
+  balance: number;
 };
 
 export type Sale = {
@@ -21,6 +22,25 @@ export type Sale = {
   unitsSold: number;
   revenue: number;
 };
+
+export interface CartItem extends Product {
+    quantity: number;
+}
+
+export type SaleRecord = {
+    id: string;
+    customerId: string | null;
+    items: CartItem[];
+    totals: {
+        subtotal: number;
+        tax: number;
+        discount: number;
+        total: number;
+        amountPaid: number;
+        balance: number;
+    };
+    date: string;
+}
 
 export const products: Product[] = [
   { id: 'prod-01', name: 'Café Espresso', category: 'Boissons', price: 2.50, stock: 100, imageUrl: 'https://placehold.co/300x200', },
@@ -34,10 +54,10 @@ export const products: Product[] = [
 ];
 
 export const customers: Customer[] = [
-  { id: 'cust-01', name: 'Jean Dupont', email: 'jean.dupont@example.com', phone: '0612345678', spent: 150.75 },
-  { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 275.50 },
-  { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 89.20 },
-  { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00 },
+  { id: 'cust-01', name: 'Jean Dupont', email: 'jean.dupont@example.com', phone: '0612345678', spent: 150.75, balance: 0 },
+  { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 275.50, balance: 25.50 },
+  { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 89.20, balance: 0 },
+  { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00, balance: -10.00 },
 ];
 
 export const salesData: Sale[] = [
@@ -46,4 +66,40 @@ export const salesData: Sale[] = [
   { productId: 'prod-04', productName: 'Sandwich Poulet', unitsSold: 60, revenue: 330.00 },
   { productId: 'prod-05', productName: 'Salade César', unitsSold: 40, revenue: 288.00 },
   { productId: 'prod-06', productName: 'Tarte Citron', unitsSold: 55, revenue: 192.50 },
+];
+
+export const salesHistory: SaleRecord[] = [
+    {
+        id: 'SALE-001',
+        customerId: 'cust-02',
+        items: [
+            { ...products[0], quantity: 2 },
+            { ...products[1], quantity: 1 }
+        ],
+        totals: {
+            subtotal: 6.80,
+            tax: 0.68,
+            discount: 0,
+            total: 7.48,
+            amountPaid: 5.00,
+            balance: 2.48
+        },
+        date: new Date('2023-10-26T10:00:00Z').toISOString()
+    },
+    {
+        id: 'SALE-002',
+        customerId: 'cust-02',
+        items: [
+            { ...products[4], quantity: 1 }
+        ],
+        totals: {
+            subtotal: 7.20,
+            tax: 0.72,
+            discount: 1,
+            total: 6.92,
+            amountPaid: 0,
+            balance: 6.92
+        },
+        date: new Date('2023-10-27T12:30:00Z').toISOString()
+    }
 ];

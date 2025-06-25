@@ -14,23 +14,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { customers as initialCustomers, type Customer } from '@/lib/data';
+import { customers as initialCustomers, salesHistory as initialSalesHistory, type Customer, type SaleRecord } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddCustomerDialog } from '@/components/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, FileSearch } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [viewingInvoicesFor, setViewingInvoicesFor] = useState<Customer | null>(null);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer =>
@@ -49,7 +52,7 @@ export default function CustomersPage() {
     setEditingCustomer(null);
   }
 
-  const handleSaveCustomer = (customerData: Omit<Customer, 'id' | 'spent'>, customerId?: string) => {
+  const handleSaveCustomer = (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>, customerId?: string) => {
     if (customerId) {
       setCustomers(prev =>
         prev.map(c =>
@@ -63,6 +66,7 @@ export default function CustomersPage() {
       const newCustomer: Customer = {
         id: `cust-${new Date().getTime()}`,
         spent: 0,
+        balance: 0,
         ...customerData,
       };
       setCustomers(prev => [newCustomer, ...prev]);
@@ -119,6 +123,7 @@ export default function CustomersPage() {
                 <TableHead>{t.customers.email}</TableHead>
                 <TableHead>{t.customers.phone}</TableHead>
                 <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
+                <TableHead className="text-right">{t.customers.balance}</TableHead>
                 <TableHead className="text-right">{t.customers.actions}</TableHead>
               </TableRow>
             </TableHeader>
@@ -129,11 +134,17 @@ export default function CustomersPage() {
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
                   <TableCell className="text-right">${customer.spent.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(customer)}>
+                  <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-green-500'}`}>
+                    ${customer.balance.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="flex justify-end">
+                    <Button variant="ghost" size="icon" title={t.customers.viewInvoices} onClick={() => setViewingInvoicesFor(customer)}>
+                        <FileSearch className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" title={t.customers.editCustomer} onClick={() => handleOpenDialog(customer)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(customer)}>
+                    <Button variant="ghost" size="icon" title={t.customers.delete} onClick={() => handleOpenDeleteDialog(customer)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -143,6 +154,12 @@ export default function CustomersPage() {
           </Table>
         </CardContent>
       </Card>
+      <CustomerInvoicesDialog
+        isOpen={!!viewingInvoicesFor}
+        onClose={() => setViewingInvoicesFor(null)}
+        customer={viewingInvoicesFor}
+        salesHistory={salesHistory}
+      />
       <AddCustomerDialog
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}

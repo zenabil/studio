@@ -40,6 +40,8 @@ export const translations = {
       thankYou: "Merci pour votre achat!",
       paymentReceived: "Paiement reçu",
       newSale: "Nouvelle vente",
+      saleSuccessTitle: "Vente réussie!",
+      saleSuccessMessage: "La vente a été finalisée avec succès.",
     },
     products: {
       title: "Gestion des Produits",
@@ -71,6 +73,7 @@ export const translations = {
       email: "Email",
       phone: "Téléphone",
       totalSpent: "Total Dépensé",
+      balance: "Solde Dû",
       actions: "Actions",
       addCustomer: "Ajouter un client",
       searchCustomers: "Rechercher des clients...",
@@ -87,6 +90,9 @@ export const translations = {
       deleteConfirmationTitle: "Confirmer la suppression",
       deleteConfirmationMessage: "Voulez-vous vraiment supprimer ce client ? Cette action est irréversible.",
       customerDeleted: "Client supprimé avec succès",
+      viewInvoices: "Voir les factures",
+      invoiceHistory: "Historique des factures",
+      noInvoices: "Aucune facture trouvée pour ce client.",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -95,6 +101,10 @@ export const translations = {
       customerPayments: "Paiements par Client",
       payments: "Paiements",
     },
+    errors: {
+      title: "Erreur",
+      emptyCart: "Le panier est vide.",
+    }
   },
   ar: {
     appName: "ميركوريو لنقاط البيع",
@@ -133,6 +143,8 @@ export const translations = {
       thankYou: "شكرا لتسوقكم!",
       paymentReceived: "تم استلام الدفعة",
       newSale: "بيع جديد",
+      saleSuccessTitle: "اكتمل البيع!",
+      saleSuccessMessage: "تم إتمام عملية البيع بنجاح.",
     },
     products: {
       title: "إدارة المنتجات",
@@ -164,6 +176,7 @@ export const translations = {
       email: "البريد الإلكتروني",
       phone: "الهاتف",
       totalSpent: "إجمالي الإنفاق",
+      balance: "الرصيد المستحق",
       actions: "الإجراءات",
       addCustomer: "إضافة عميل",
       searchCustomers: "البحث عن عملاء...",
@@ -180,6 +193,9 @@ export const translations = {
       deleteConfirmationTitle: "تأكيد الحذف",
       deleteConfirmationMessage: "هل أنت متأكد من رغبتك في حذف هذا العميل؟ لا يمكن التراجع عن هذا الإجراء.",
       customerDeleted: "تم حذف العميل بنجاح",
+      viewInvoices: "عرض الفواتير",
+      invoiceHistory: "سجل الفواتير",
+      noInvoices: "لا توجد فواتير لهذا العميل.",
     },
     reports: {
       title: "التقارير والتحليلات",
@@ -188,5 +204,9 @@ export const translations = {
       customerPayments: "مدفوعات العملاء",
       payments: "المدفوعات",
     },
+    errors: {
+      title: "خطأ",
+      emptyCart: "عربة التسوق فارغة.",
+    }
   },
 };
