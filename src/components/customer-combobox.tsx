@@ -34,9 +34,23 @@ export function CustomerCombobox({
 }: CustomerComboboxProps) {
   const { t } = useLanguage();
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
 
   const selectedCustomer =
     customers.find((c) => c.id === selectedCustomerId) || null;
+
+  const filteredCustomers = React.useMemo(() => {
+    if (!search) return customers;
+    return customers.filter((customer) =>
+      customer.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [customers, search]);
+
+  const handleSelect = (customerId: string | null) => {
+    onSelectCustomer(customerId);
+    setOpen(false);
+    setSearch('');
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,16 +66,18 @@ export function CustomerCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={t.customers.searchCustomers} />
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={t.customers.searchCustomers}
+            value={search}
+            onValueChange={setSearch}
+          />
           <CommandList>
             <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
             <CommandGroup>
               <CommandItem
-                onSelect={() => {
-                  onSelectCustomer(null);
-                  setOpen(false);
-                }}
+                value="no-customer"
+                onSelect={() => handleSelect(null)}
               >
                 <Check
                   className={cn(
@@ -71,19 +87,18 @@ export function CustomerCombobox({
                 />
                 {t.pos.noCustomer}
               </CommandItem>
-              {customers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <CommandItem
                   key={customer.id}
-                  value={customer.name}
-                  onSelect={() => {
-                    onSelectCustomer(customer.id);
-                    setOpen(false);
-                  }}
+                  value={customer.id}
+                  onSelect={() => handleSelect(customer.id)}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      selectedCustomerId === customer.id ? 'opacity-100' : 'opacity-0'
+                      selectedCustomerId === customer.id
+                        ? 'opacity-100'
+                        : 'opacity-0'
                     )}
                   />
                   {customer.name}
