@@ -38,10 +38,12 @@ export default function CustomersPage() {
   const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter(customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return customers
+      .filter(customer =>
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => b.spent - a.spent);
   }, [customers, searchTerm]);
   
   const handleOpenAddDialog = (customer: Customer | null = null) => {
