@@ -1,4 +1,5 @@
 'use client';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -13,38 +14,86 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { customers } from '@/lib/data';
+import { customers as initialCustomers, type Customer } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { AddCustomerDialog } from '@/components/add-customer-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { PlusCircle } from 'lucide-react';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(customer =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [customers, searchTerm]);
+
+  const handleAddCustomer = (newCustomerData: Omit<Customer, 'id' | 'spent'>) => {
+    const newCustomer: Customer = {
+      id: `cust-${new Date().getTime()}`,
+      spent: 0,
+      ...newCustomerData,
+    };
+    setCustomers(prev => [newCustomer, ...prev]);
+    toast({
+      title: t.customers.customerAdded,
+    });
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t.customers.title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t.customers.name}</TableHead>
-              <TableHead>{t.customers.email}</TableHead>
-              <TableHead>{t.customers.phone}</TableHead>
-              <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {customers.map((customer) => (
-              <TableRow key={customer.id}>
-                <TableCell className="font-medium">{customer.name}</TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.phone}</TableCell>
-                <TableCell className="text-right">${customer.spent.toFixed(2)}</TableCell>
+    <>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>{t.customers.title}</CardTitle>
+          <div className="flex gap-2">
+            <Input
+              placeholder={t.customers.searchCustomers}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:w-64"
+            />
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              {t.customers.addCustomer}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t.customers.name}</TableHead>
+                <TableHead>{t.customers.email}</TableHead>
+                <TableHead>{t.customers.phone}</TableHead>
+                <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.map((customer) => (
+                <TableRow key={customer.id}>
+                  <TableCell className="font-medium">{customer.name}</TableCell>
+                  <TableCell>{customer.email}</TableCell>
+                  <TableCell>{customer.phone}</TableCell>
+                  <TableCell className="text-right">{customer.spent.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <AddCustomerDialog
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onAddCustomer={handleAddCustomer}
+      />
+    </>
   );
 }
