@@ -20,9 +20,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddCustomerDialog } from '@/components/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, FileSearch } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, FileSearch, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
+import { MakePaymentDialog } from '@/components/make-payment-dialog';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
@@ -30,10 +31,11 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [viewingInvoicesFor, setViewingInvoicesFor] = useState<Customer | null>(null);
+  const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer =>
@@ -42,13 +44,13 @@ export default function CustomersPage() {
     );
   }, [customers, searchTerm]);
   
-  const handleOpenDialog = (customer: Customer | null = null) => {
+  const handleOpenAddDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
-    setIsDialogOpen(true);
+    setIsAddDialogOpen(true);
   };
   
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
+  const handleCloseAddDialog = () => {
+    setIsAddDialogOpen(false);
     setEditingCustomer(null);
   }
 
@@ -95,6 +97,40 @@ export default function CustomersPage() {
     });
     handleCloseDeleteDialog();
   };
+  
+  const handleMakePayment = (amount: number) => {
+    if (!payingCustomer) return;
+
+    const paymentRecord: SaleRecord = {
+        id: `PAY-${new Date().getTime()}`,
+        customerId: payingCustomer.id,
+        items: [],
+        totals: {
+            subtotal: 0,
+            discount: 0,
+            total: 0,
+            amountPaid: amount,
+            balance: -amount,
+        },
+        date: new Date().toISOString(),
+    };
+
+    setSalesHistory(prev => [...prev, paymentRecord]);
+
+    setCustomers(prev => 
+        prev.map(c => 
+            c.id === payingCustomer.id 
+            ? { ...c, balance: c.balance - amount }
+            : c
+        )
+    );
+    
+    toast({
+        title: t.customers.paymentSuccess,
+    });
+
+    setPayingCustomer(null);
+  };
 
 
   return (
@@ -109,7 +145,7 @@ export default function CustomersPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-64"
             />
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenAddDialog()}>
               <PlusCircle className="mr-2 h-4 w-4" />
               {t.customers.addCustomer}
             </Button>
@@ -138,10 +174,15 @@ export default function CustomersPage() {
                     ${customer.balance.toFixed(2)}
                   </TableCell>
                   <TableCell className="flex justify-end">
+                    {customer.balance > 0 && (
+                      <Button variant="ghost" size="icon" title={t.customers.makePayment} onClick={() => setPayingCustomer(customer)}>
+                          <Wallet className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" title={t.customers.viewInvoices} onClick={() => setViewingInvoicesFor(customer)}>
                         <FileSearch className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title={t.customers.editCustomer} onClick={() => handleOpenDialog(customer)}>
+                    <Button variant="ghost" size="icon" title={t.customers.editCustomer} onClick={() => handleOpenAddDialog(customer)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" title={t.customers.delete} onClick={() => handleOpenDeleteDialog(customer)}>
@@ -161,10 +202,16 @@ export default function CustomersPage() {
         salesHistory={salesHistory}
       />
       <AddCustomerDialog
-        isOpen={isDialogOpen}
-        onClose={handleCloseDialog}
+        isOpen={isAddDialogOpen}
+        onClose={handleCloseAddDialog}
         onSave={handleSaveCustomer}
         customerToEdit={editingCustomer}
+      />
+       <MakePaymentDialog
+        isOpen={!!payingCustomer}
+        onClose={() => setPayingCustomer(null)}
+        onSave={handleMakePayment}
+        customer={payingCustomer}
       />
       <ConfirmDialog
         isOpen={!!customerToDelete}
