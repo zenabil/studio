@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -60,7 +60,7 @@ export function PosView() {
 
   const taxRate = 0.1;
 
-  const addToCart = (product: Product) => {
+  const addToCart = useCallback((product: Product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
@@ -72,7 +72,7 @@ export function PosView() {
       }
       return [...prevCart, { ...product, quantity: 1 }];
     });
-  };
+  }, []);
 
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -145,7 +145,7 @@ export function PosView() {
     resetSale();
   };
 
-  const handleScanSuccess = (barcode: string) => {
+  const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p.barcode === barcode);
     if (product) {
         addToCart(product);
@@ -161,7 +161,11 @@ export function PosView() {
         });
     }
     setIsScannerOpen(false);
-  };
+  }, [addToCart, t, toast]);
+  
+  const handleOpenScanner = useCallback(() => setIsScannerOpen(true), []);
+  const handleCloseScanner = useCallback(() => setIsScannerOpen(false), []);
+
 
   const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
   
@@ -187,7 +191,7 @@ export function PosView() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-grow"
                 />
-                 <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="shrink-0">
+                 <Button variant="outline" onClick={handleOpenScanner} className="shrink-0">
                     <Barcode className="h-4 w-4 md:mr-2" />
                     <span className="hidden md:inline">{t.pos.scanBarcode}</span>
                  </Button>
@@ -339,9 +343,11 @@ export function PosView() {
       />}
       <BarcodeScannerDialog
         isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
+        onClose={handleCloseScanner}
         onScanSuccess={handleScanSuccess}
       />
     </div>
   );
 }
+
+    
