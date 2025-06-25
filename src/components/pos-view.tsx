@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,72 +35,162 @@ import {
   FileText,
   Printer,
   XCircle,
+  Plus,
+  X,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+
+interface SaleSession {
+  id: string;
+  name: string;
+  cart: CartItem[];
+  selectedCustomerId: string | null;
+  amountPaid: number;
+  discount: number;
+}
 
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [amountPaid, setAmountPaid] = useState(0);
-  const [discount, setDiscount] = useState(0);
-  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
+
+  const createNewSession = useCallback((index: number): SaleSession => ({
+    id: `session-${new Date().getTime()}-${index}`,
+    name: `${t.pos.sale} ${index}`,
+    cart: [],
+    selectedCustomerId: null,
+    amountPaid: 0,
+    discount: 0,
+  }), [t.pos.sale]);
+
+  const [saleSessions, setSaleSessions] = useState<SaleSession[]>([createNewSession(1)]);
+  const [activeSessionId, setActiveSessionId] = useState<string>(saleSessions[0].id);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+
+  const activeSession = useMemo(() => {
+    return saleSessions.find(s => s.id === activeSessionId) || saleSessions[0];
+  }, [saleSessions, activeSessionId]);
+  
+  useEffect(() => {
+    if (!saleSessions.find(s => s.id === activeSessionId) && saleSessions.length > 0) {
+      setActiveSessionId(saleSessions[0].id);
+    }
+  }, [saleSessions, activeSessionId]);
+
+  const updateActiveSession = (data: Partial<Omit<SaleSession, 'id'>>) => {
+    setSaleSessions(prevSessions =>
+      prevSessions.map(session =>
+        session.id === activeSessionId ? { ...session, ...data } : session
+      )
+    );
+  };
+  
+  useEffect(() => {
+      if (activeSession?.selectedCustomerId) {
+          const customer = customers.find(c => c.id === activeSession.selectedCustomerId);
+          if (customer && activeSession.name !== customer.name.split(' ')[0]) {
+              updateActiveSession({ name: customer.name.split(' ')[0] });
+          }
+      } else {
+          const sessionIndex = saleSessions.findIndex(s => s.id === activeSessionId);
+          const defaultName = `${t.pos.sale} ${sessionIndex + 1}`;
+          if (activeSession?.name !== defaultName) {
+            updateActiveSession({ name: defaultName });
+          }
+      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSession?.selectedCustomerId, activeSession?.name, activeSessionId, t.pos.sale, customers]);
+
 
   const taxRate = 0.1;
 
   const addToCart = useCallback((product: Product) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
-    });
-  }, []);
+    if (!activeSession) return;
+    
+    const newCart = [...activeSession.cart];
+    const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
+
+    if (existingItemIndex > -1) {
+      newCart[existingItemIndex].quantity += 1;
+    } else {
+      newCart.push({ ...product, quantity: 1 });
+    }
+    updateActiveSession({ cart: newCart });
+  }, [activeSession]);
 
   const updateQuantity = (productId: string, quantity: number) => {
+    if (!activeSession) return;
+    let newCart: CartItem[];
     if (quantity <= 0) {
-      setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+      newCart = activeSession.cart.filter((item) => item.id !== productId);
     } else {
-      setCart((prevCart) =>
-        prevCart.map((item) =>
-          item.id === productId ? { ...item, quantity } : item
-        )
+      newCart = activeSession.cart.map((item) =>
+        item.id === productId ? { ...item, quantity } : item
       );
     }
+    updateActiveSession({ cart: newCart });
   };
   
   const resetSale = () => {
-    setCart([]);
-    setSelectedCustomerId(null);
-    setAmountPaid(0);
-    setDiscount(0);
+      updateActiveSession({
+          cart: [],
+          selectedCustomerId: null,
+          amountPaid: 0,
+          discount: 0,
+      });
   }
+  
+  const addNewSession = () => {
+    const newSession = createNewSession(saleSessions.length + 1);
+    setSaleSessions(prev => [...prev, newSession]);
+    setActiveSessionId(newSession.id);
+  };
+  
+  const closeSession = (sessionId: string) => {
+      setSaleSessions(prev => {
+          let newSessions = prev.filter(s => s.id !== sessionId);
+          if (newSessions.length === 0) {
+              newSessions = [createNewSession(1)];
+          }
+          return newSessions;
+      });
+      setSessionToDelete(null);
+  };
+
+  const handleCloseSession = (sessionId: string) => {
+      const session = saleSessions.find(s => s.id === sessionId);
+      if (session && session.cart.length > 0) {
+          setSessionToDelete(sessionId);
+      } else {
+          closeSession(sessionId);
+      }
+  };
+
 
   const { subtotal, tax, total } = useMemo(() => {
+    const cart = activeSession?.cart || [];
+    const discount = activeSession?.discount || 0;
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const tax = subtotal * taxRate;
     const total = subtotal + tax - discount;
     return { subtotal, tax, total };
-  }, [cart, discount, taxRate]);
+  }, [activeSession, taxRate]);
 
-  const balance = total > 0 ? total - amountPaid : 0;
+  const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
   const handleSaleCompletion = () => {
-    if (cart.length === 0) {
+    if (!activeSession || activeSession.cart.length === 0) {
       toast({
         variant: "destructive",
         title: t.errors.title,
@@ -112,18 +201,18 @@ export function PosView() {
 
     const newSale: SaleRecord = {
         id: `SALE-${new Date().getTime()}`,
-        customerId: selectedCustomerId,
-        items: cart,
-        totals: { subtotal, tax, discount, total, amountPaid, balance },
+        customerId: activeSession.selectedCustomerId,
+        items: activeSession.cart,
+        totals: { subtotal, tax, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance },
         date: new Date().toISOString(),
     };
 
     setSalesHistory(prev => [...prev, newSale]);
 
-    if (selectedCustomerId) {
+    if (activeSession.selectedCustomerId) {
         setCustomers(prevCustomers => 
             prevCustomers.map(c => {
-                if (c.id === selectedCustomerId) {
+                if (c.id === activeSession.selectedCustomerId) {
                     return {
                         ...c,
                         spent: c.spent + total,
@@ -140,7 +229,7 @@ export function PosView() {
       description: t.pos.saleSuccessMessage,
     });
     
-    resetSale();
+    closeSession(activeSessionId);
   };
 
   const handleScanSuccess = useCallback((barcode: string) => {
@@ -177,7 +266,11 @@ export function PosView() {
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+  const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
+
+  if (!activeSession) {
+    return null; // Or a loading state
+  }
 
   return (
     <div className="grid h-[calc(100vh-5rem)] grid-cols-1 gap-4 lg:grid-cols-3">
@@ -255,11 +348,29 @@ export function PosView() {
       <div className="lg:col-span-1">
         <Card className="flex h-full flex-col">
           <CardHeader>
-            <CardTitle>{t.pos.currentSale}</CardTitle>
+            <Tabs value={activeSessionId} onValueChange={setActiveSessionId} className="w-full">
+                <div className="flex items-center gap-2">
+                    <TabsList className="flex-grow justify-start h-auto p-1 overflow-x-auto">
+                        {saleSessions.map(session => (
+                            <TabsTrigger key={session.id} value={session.id} className="relative pr-8">
+                                {session.name}
+                                {saleSessions.length > 1 && (
+                                    <button onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20">
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                )}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <Button size="icon" variant="outline" onClick={addNewSession} className="h-9 w-9 flex-shrink-0">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+            </Tabs>
           </CardHeader>
           <CardContent className="flex-grow">
             <ScrollArea className="h-48">
-              {cart.length === 0 ? (
+              {activeSession.cart.length === 0 ? (
                 <p className="text-center text-muted-foreground">{t.pos.addToCart}...</p>
               ) : (
                 <Table>
@@ -271,7 +382,7 @@ export function PosView() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cart.map((item) => (
+                    {activeSession.cart.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
@@ -298,7 +409,7 @@ export function PosView() {
                 <div className="flex justify-between"><span>{t.pos.tax}</span><span>${tax.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
                     <span>{t.pos.discount}</span>
-                    <Input type="number" value={discount} onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))} className="h-8 w-24 text-right" />
+                    <Input type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
                 <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>${total.toFixed(2)}</span></div>
@@ -307,9 +418,9 @@ export function PosView() {
              <div className="space-y-4">
                 <Select
                   onValueChange={(value) =>
-                    setSelectedCustomerId(value === 'none' ? null : value)
+                    updateActiveSession({ selectedCustomerId: value === 'none' ? null : value })
                   }
-                  value={selectedCustomerId || 'none'}
+                  value={activeSession.selectedCustomerId || 'none'}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t.pos.selectCustomer} />
@@ -323,12 +434,12 @@ export function PosView() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input type="number" placeholder={t.pos.amountPaid} value={amountPaid || ''} onChange={(e) => setAmountPaid(Number(e.target.value))} />
+                <Input type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} />
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>${balance.toFixed(2)}</span></div>
              </div>
              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={cart.length === 0}><FileText className="mr-2 h-4 w-4" />{t.pos.invoice}</Button>
-                <Button variant="outline" onClick={() => window.print()} disabled={cart.length === 0}><Printer className="mr-2 h-4 w-4" />{t.pos.printInvoice}</Button>
+                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}><FileText className="mr-2 h-4 w-4" />{t.pos.invoice}</Button>
+                <Button variant="outline" onClick={() => window.print()} disabled={activeSession.cart.length === 0}><Printer className="mr-2 h-4 w-4" />{t.pos.printInvoice}</Button>
              </div>
              <div className="mt-2 grid grid-cols-2 gap-2">
                 <Button variant="destructive" className="w-full" onClick={resetSale}><XCircle className="mr-2 h-4 w-4"/>{t.pos.newSale}</Button>
@@ -340,10 +451,17 @@ export function PosView() {
       {isInvoiceOpen && <InvoiceDialog 
         isOpen={isInvoiceOpen}
         onClose={() => setIsInvoiceOpen(false)}
-        cart={cart}
+        cart={activeSession.cart}
         customer={selectedCustomer}
-        totals={{ subtotal, tax, discount, total, amountPaid, balance }}
+        totals={{ subtotal, tax, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance }}
       />}
+      <ConfirmDialog
+        isOpen={!!sessionToDelete}
+        onClose={() => setSessionToDelete(null)}
+        onConfirm={() => closeSession(sessionToDelete!)}
+        title={t.pos.confirmCloseSaleTitle}
+        description={t.pos.confirmCloseSaleMessage}
+      />
     </div>
   );
 }
