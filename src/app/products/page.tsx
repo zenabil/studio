@@ -114,13 +114,13 @@ export default function ProductsPage() {
             </TableHeader>
             <TableBody>
               {filteredProducts.map((product) => (
-                <TableRow key={product.id} className={product.stock <= product.minStock ? 'bg-destructive/10' : ''}>
+                <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
-                  <TableCell className="text-right">${product.purchasePrice.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">${(product.purchasePrice || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
-                  <TableCell className="text-right">{product.minStock}</TableCell>
+                  <TableCell className="text-right">{product.minStock || 0}</TableCell>
                    <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
                       <Pencil className="h-4 w-4" />
