@@ -74,16 +74,28 @@ export function PosView() {
     discount: 0,
   }), [t.pos.sale]);
 
-  const [saleSessions, setSaleSessions] = useState<SaleSession[]>([createNewSession(1)]);
-  const [activeSessionId, setActiveSessionId] = useState<string>(saleSessions[0].id);
+  const [saleSessions, setSaleSessions] = useState<SaleSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
+  // This useEffect runs only once on the client, after hydration, to create the initial session.
+  // This avoids a server-client mismatch for the session ID which is based on Date.now().
+  useEffect(() => {
+    if (saleSessions.length === 0) {
+      const initialSession = createNewSession(1);
+      setSaleSessions([initialSession]);
+      setActiveSessionId(initialSession.id);
+    }
+  }, [createNewSession, saleSessions.length]);
+
+
   const activeSession = useMemo(() => {
-    return saleSessions.find(s => s.id === activeSessionId) || saleSessions[0];
+    if (!activeSessionId) return undefined;
+    return saleSessions.find(s => s.id === activeSessionId);
   }, [saleSessions, activeSessionId]);
   
   useEffect(() => {
-    if (!saleSessions.find(s => s.id === activeSessionId) && saleSessions.length > 0) {
+    if (saleSessions.length > 0 && !saleSessions.find(s => s.id === activeSessionId)) {
       setActiveSessionId(saleSessions[0].id);
     }
   }, [saleSessions, activeSessionId]);
@@ -97,20 +109,24 @@ export function PosView() {
   };
   
   useEffect(() => {
-      if (activeSession?.selectedCustomerId) {
-          const customer = customers.find(c => c.id === activeSession.selectedCustomerId);
-          if (customer && activeSession.name !== customer.name.split(' ')[0]) {
-              updateActiveSession({ name: customer.name.split(' ')[0] });
-          }
-      } else {
-          const sessionIndex = saleSessions.findIndex(s => s.id === activeSessionId);
-          const defaultName = `${t.pos.sale} ${sessionIndex + 1}`;
-          if (activeSession?.name !== defaultName) {
-            updateActiveSession({ name: defaultName });
+      if (activeSession) {
+          if (activeSession.selectedCustomerId) {
+              const customer = customers.find(c => c.id === activeSession.selectedCustomerId);
+              if (customer && activeSession.name !== customer.name.split(' ')[0]) {
+                  updateActiveSession({ name: customer.name.split(' ')[0] });
+              }
+          } else {
+              const sessionIndex = saleSessions.findIndex(s => s.id === activeSessionId);
+              if (sessionIndex !== -1) {
+                const defaultName = `${t.pos.sale} ${sessionIndex + 1}`;
+                if (activeSession.name !== defaultName) {
+                  updateActiveSession({ name: defaultName });
+                }
+              }
           }
       }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession?.selectedCustomerId, activeSession?.name, activeSessionId, t.pos.sale, customers]);
+  }, [activeSession, t.pos.sale, customers]);
 
 
   const taxRate = 0.1;
@@ -143,6 +159,7 @@ export function PosView() {
   };
   
   const resetSale = () => {
+    if (!activeSessionId) return;
       updateActiveSession({
           cart: [],
           selectedCustomerId: null,
@@ -159,9 +176,11 @@ export function PosView() {
   
   const closeSession = (sessionId: string) => {
       setSaleSessions(prev => {
-          let newSessions = prev.filter(s => s.id !== sessionId);
+          const newSessions = prev.filter(s => s.id !== sessionId);
           if (newSessions.length === 0) {
-              newSessions = [createNewSession(1)];
+              const newInitialSession = createNewSession(1);
+              setActiveSessionId(newInitialSession.id)
+              return [newInitialSession];
           }
           return newSessions;
       });
@@ -268,7 +287,7 @@ export function PosView() {
   
   const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
 
-  if (!activeSession) {
+  if (!activeSessionId || !activeSession) {
     return null; // Or a loading state
   }
 
