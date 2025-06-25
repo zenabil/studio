@@ -1,12 +1,11 @@
 'use client';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { useLanguage } from '@/contexts/language-context';
-import { useData } from '@/contexts/data-context';
 import { useMemo } from 'react';
+import type { SaleRecord } from '@/lib/data';
 
-export function ProfitsChart() {
+export function ProfitsChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
   const { t } = useLanguage();
-  const { salesHistory } = useData();
 
   const profitsData = useMemo(() => {
     const productProfits: { [key: string]: { productName: string, profit: number } } = {};

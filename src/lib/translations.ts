@@ -135,6 +135,9 @@ export const translations = {
       payments: "Paiements",
       productProfits: "Bénéfices par Produit",
       profits: "Bénéfices",
+      totalSales: "Ventes Totales",
+      totalProfits: "Bénéfices Totaux",
+      pickDate: "Choisir une plage de dates",
     },
     alerts: {
       title: "Alertes de Stock Faible",
@@ -283,6 +286,9 @@ export const translations = {
       payments: "المدفوعات",
       productProfits: "أرباح المنتجات",
       profits: "الأرباح",
+      totalSales: "إجمالي المبيعات",
+      totalProfits: "إجمالي الأرباح",
+      pickDate: "اختر نطاقًا زمنيًا",
     },
     alerts: {
       title: "تنبيهات انخفاض المخزون",
