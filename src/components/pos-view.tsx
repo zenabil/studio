@@ -376,10 +376,28 @@ export function PosView() {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
-                           <div className="flex items-center justify-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id, item.quantity - 1)}><MinusCircle className="h-4 w-4" /></Button>
-                                <span>{item.quantity}</span>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id, item.quantity + 1)}><PlusCircle className="h-4 w-4"/></Button>
+                           <div className="flex items-center justify-center gap-1 w-28 mx-auto">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                                    <MinusCircle className="h-4 w-4" />
+                                </Button>
+                                <Input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => {
+                                        const newQuantity = parseFloat(e.target.value);
+                                        if (!isNaN(newQuantity)) {
+                                            updateQuantity(item.id, newQuantity);
+                                        } else if (e.target.value === '') {
+                                            updateQuantity(item.id, 0);
+                                        }
+                                    }}
+                                    className="h-8 text-center w-full px-1"
+                                    step="0.01"
+                                    min="0"
+                                />
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                                    <PlusCircle className="h-4 w-4"/>
+                                </Button>
                             </div>
                         </TableCell>
                         <TableCell className="text-right">
