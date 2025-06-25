@@ -70,6 +70,8 @@ export const translations = {
       deleteConfirmationTitle: "Confirmer la suppression",
       deleteConfirmationMessage: "Voulez-vous vraiment supprimer ce produit ? Cette action est irréversible.",
       productDeleted: "Produit supprimé avec succès",
+      barcode: "Code-barres",
+      barcodePlaceholder: "Saisir le code-barres",
     },
     customers: {
       title: "Gestion des Clients",
@@ -181,6 +183,8 @@ export const translations = {
       deleteConfirmationTitle: "تأكيد الحذف",
       deleteConfirmationMessage: "هل أنت متأكد من رغبتك في حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.",
       productDeleted: "تم حذف المنتج بنجاح",
+      barcode: "الباركود",
+      barcodePlaceholder: "أدخل الباركود",
     },
     customers: {
       title: "إدارة العملاء",

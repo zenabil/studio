@@ -113,6 +113,7 @@ export default function ProductsPage() {
               <TableRow>
                 <TableHead>{t.products.name}</TableHead>
                 <TableHead>{t.products.category}</TableHead>
+                <TableHead>{t.products.barcode}</TableHead>
                 <TableHead className="text-right">{t.products.price}</TableHead>
                 <TableHead className="text-right">{t.products.stock}</TableHead>
                 <TableHead className="text-right">{t.products.actions}</TableHead>
@@ -123,6 +124,7 @@ export default function ProductsPage() {
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
+                  <TableCell>{product.barcode}</TableCell>
                   <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
                    <TableCell className="text-right">

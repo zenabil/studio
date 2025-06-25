@@ -37,6 +37,7 @@ const formSchema = z.object({
   category: z.string().min(2, { message: 'Category must be at least 2 characters.' }),
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
+  barcode: z.string().min(1, { message: 'Barcode cannot be empty.' }),
 });
 
 export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: AddProductDialogProps) {
@@ -49,6 +50,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
       category: '',
       price: 0,
       stock: 0,
+      barcode: '',
     },
   });
   
@@ -60,6 +62,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
           category: productToEdit.category,
           price: productToEdit.price,
           stock: productToEdit.stock,
+          barcode: productToEdit.barcode,
         });
       } else {
         form.reset({
@@ -67,6 +70,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
           category: '',
           price: 0,
           stock: 0,
+          barcode: '',
         });
       }
     }
@@ -133,6 +137,19 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
                   <FormLabel>{t.products.stock}</FormLabel>
                   <FormControl>
                     <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="barcode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.products.barcode}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t.products.barcodePlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
