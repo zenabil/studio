@@ -9,8 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table';
 import type { Customer, SaleRecord } from '@/lib/data';
 import { format } from 'date-fns';
 
@@ -30,6 +29,41 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
     .filter(sale => sale.customerId === customer.id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  // Calculate running balance history by working backwards from the current balance
+  const transactions = [];
+  let balanceBeforeTransaction = customer.balance;
+
+  for (const invoice of customerInvoices) {
+    const balanceAfterTransaction = balanceBeforeTransaction;
+    let debit = 0;
+    let credit = 0;
+    let description = '';
+
+    if (invoice.items.length > 0) { // It's a Sale
+      description = `${t.customers.saleInvoice} #${invoice.id.split('-')[1]}`;
+      debit = invoice.totals.total;
+      credit = invoice.totals.amountPaid;
+      // Calculate balance before this transaction by reversing the operation
+      balanceBeforeTransaction -= invoice.totals.balance;
+    } else { // It's a Payment
+      description = t.customers.paymentReceived;
+      credit = invoice.totals.amountPaid;
+      // Calculate balance before this transaction by reversing the operation
+      balanceBeforeTransaction += credit;
+    }
+
+    transactions.push({
+      id: invoice.id,
+      date: invoice.date,
+      description,
+      debit,
+      credit,
+      balance: balanceAfterTransaction,
+    });
+  }
+  transactions.reverse(); // Reverse to show oldest first
+  const startingBalance = balanceBeforeTransaction;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl">
@@ -37,74 +71,43 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
           <DialogTitle>{t.customers.invoiceHistory} - {customer.name}</DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto p-1">
-          {customerInvoices.length > 0 ? (
-            <Accordion type="single" collapsible className="w-full">
-              {customerInvoices.map((invoice) => {
-                if (invoice.items.length > 0) {
-                  // This is a sales invoice
-                  return (
-                    <AccordionItem value={invoice.id} key={invoice.id}>
-                      <AccordionTrigger>
-                        <div className="flex justify-between w-full pr-4 text-sm">
-                          <span>{`${t.pos.invoice} ${invoice.id}`}</span>
-                          <span>{format(new Date(invoice.date), 'PPpp')}</span>
-                          <span className="font-bold">${invoice.totals.total.toFixed(2)}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t.pos.description}</TableHead>
-                              <TableHead className="text-center">{t.pos.quantity}</TableHead>
-                              <TableHead className="text-right">{t.pos.unitPrice}</TableHead>
-                              <TableHead className="text-right">{t.pos.lineTotal}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {invoice.items.map(item => (
-                              <TableRow key={item.id}>
-                                <TableCell>{item.name}</TableCell>
-                                <TableCell className="text-center">{item.quantity}</TableCell>
-                                <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                                <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <div className="mt-4 text-right space-y-1 text-sm pr-4">
-                            <p>{t.pos.subtotal}: <span className="font-medium">${invoice.totals.subtotal.toFixed(2)}</span></p>
-                            <p>{t.pos.discount}: <span className="font-medium">-${invoice.totals.discount.toFixed(2)}</span></p>
-                            <p className="font-bold text-base">{t.pos.grandTotal}: <span className="font-bold">${invoice.totals.total.toFixed(2)}</span></p>
-                            <p>{t.pos.paymentReceived}: <span className="font-semibold">${invoice.totals.amountPaid.toFixed(2)}</span></p>
-                            <p>{t.pos.balance}: <span className="font-semibold">${invoice.totals.balance.toFixed(2)}</span></p>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                } else {
-                  // This is a payment record
-                  return (
-                     <AccordionItem value={invoice.id} key={invoice.id}>
-                        <AccordionTrigger>
-                          <div className="flex justify-between w-full pr-4 text-sm text-green-500">
-                              <span>{t.customers.paymentReceived}</span>
-                              <span>{format(new Date(invoice.date), 'PPpp')}</span>
-                              <span className="font-bold">${invoice.totals.amountPaid.toFixed(2)}</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                           <p className="px-4 py-2">
-                            {t.customers.paymentOf}
-                            <span className="font-semibold"> ${invoice.totals.amountPaid.toFixed(2)} </span>
-                            {t.customers.wasRecordedOn} {format(new Date(invoice.date), 'PPpp')}.
-                           </p>
-                        </AccordionContent>
-                    </AccordionItem>
-                  );
-                }
-              })}
-            </Accordion>
+          {transactions.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.pos.date}</TableHead>
+                  <TableHead>{t.customers.transaction}</TableHead>
+                  <TableHead className="text-right">{t.customers.debit}</TableHead>
+                  <TableHead className="text-right">{t.customers.credit}</TableHead>
+                  <TableHead className="text-right">{t.customers.balance}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell colSpan={4} className="font-medium">{t.customers.startingBalance}</TableCell>
+                  <TableCell className="text-right font-medium">${startingBalance.toFixed(2)}</TableCell>
+                </TableRow>
+                {transactions.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>{format(new Date(tx.date), 'PP')}</TableCell>
+                    <TableCell>{tx.description}</TableCell>
+                    <TableCell className={`text-right ${tx.debit > 0 ? 'text-destructive' : ''}`}>
+                      {tx.debit > 0 ? `$${tx.debit.toFixed(2)}` : '-'}
+                    </TableCell>
+                    <TableCell className={`text-right ${tx.credit > 0 ? 'text-green-500' : ''}`}>
+                      {tx.credit > 0 ? `$${tx.credit.toFixed(2)}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">${tx.balance.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={4} className="text-right font-bold">{t.customers.endingBalance}</TableCell>
+                  <TableCell className="text-right font-bold">${customer.balance.toFixed(2)}</TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
           ) : (
             <p className="text-center text-muted-foreground py-8">{t.customers.noInvoices}</p>
           )}
