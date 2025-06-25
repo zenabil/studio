@@ -142,21 +142,21 @@ export function PosView() {
 
   const updateQuantity = (productId: string, quantity: number) => {
     if (!activeSession) return;
-    let newCart: CartItem[];
-    const maxQuantity = 999999999999;
     
+    const maxQuantity = 999999999999;
     let newQuantity = quantity;
+
     if (newQuantity > maxQuantity) {
-        newQuantity = maxQuantity;
+      newQuantity = maxQuantity;
+    }
+    if (newQuantity < 0) {
+      newQuantity = 0;
     }
 
-    if (newQuantity <= 0) {
-      newCart = activeSession.cart.filter((item) => item.id !== productId);
-    } else {
-      newCart = activeSession.cart.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      );
-    }
+    const newCart = activeSession.cart.map((item) =>
+      item.id === productId ? { ...item, quantity: newQuantity } : item
+    );
+    
     updateActiveSession({ cart: newCart });
   };
   
@@ -384,22 +384,40 @@ export function PosView() {
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
                            <div className="flex items-center justify-center gap-1 w-28 mx-auto">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => {
+                                    const newQuantity = item.quantity - 1;
+                                    if (newQuantity > 0) {
+                                        updateQuantity(item.id, newQuantity);
+                                    } else {
+                                        const newCart = activeSession.cart.filter(i => i.id !== item.id);
+                                        updateActiveSession({ cart: newCart });
+                                    }
+                                }}>
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
                                     type="number"
                                     value={item.quantity}
                                     onChange={(e) => {
-                                        const newQuantity = parseFloat(e.target.value);
-                                        if (!isNaN(newQuantity)) {
-                                            updateQuantity(item.id, newQuantity);
-                                        } else if (e.target.value === '') {
+                                        const value = e.target.value;
+                                        if (value === '') {
                                             updateQuantity(item.id, 0);
+                                        } else {
+                                            const newQuantity = parseFloat(value);
+                                            if (!isNaN(newQuantity)) {
+                                                updateQuantity(item.id, newQuantity);
+                                            }
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        const value = e.target.value;
+                                        if (value === '' || parseFloat(value) <= 0) {
+                                            const newCart = activeSession.cart.filter(i => i.id !== item.id);
+                                            updateActiveSession({ cart: newCart });
                                         }
                                     }}
                                     className="h-8 text-center w-full px-1"
-                                    step="0.01"
+                                    step="any"
                                     min="0"
                                     max="999999999999"
                                 />
