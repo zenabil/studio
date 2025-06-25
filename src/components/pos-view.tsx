@@ -43,6 +43,7 @@ import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { CustomerCombobox } from '@/components/customer-combobox';
 
 interface SaleSession {
   id: string;
@@ -77,7 +78,7 @@ export function PosView() {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (saleSessions.length === 0) {
+    if (saleSessions.length === 0 && typeof window !== 'undefined') {
       const initialSession = createNewSession(1);
       setSaleSessions([initialSession]);
       setActiveSessionId(initialSession.id);
@@ -404,24 +405,13 @@ export function PosView() {
             </div>
             <Separator className="my-4" />
              <div className="space-y-4">
-                <Select
-                  onValueChange={(value) =>
-                    updateActiveSession({ selectedCustomerId: value === 'none' ? null : value })
+                <CustomerCombobox
+                  customers={customers}
+                  selectedCustomerId={activeSession.selectedCustomerId}
+                  onSelectCustomer={(customerId) =>
+                    updateActiveSession({ selectedCustomerId: customerId })
                   }
-                  value={activeSession.selectedCustomerId || 'none'}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t.pos.selectCustomer} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t.pos.noCustomer}</SelectItem>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
                 <Input type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} />
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>${balance.toFixed(2)}</span></div>
              </div>

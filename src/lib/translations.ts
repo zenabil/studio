@@ -120,6 +120,7 @@ export const translations = {
       saleInvoice: "Facture de vente",
       startingBalance: "Solde initial",
       endingBalance: "Solde final",
+      noCustomerFound: "Aucun client trouvé."
     },
     reports: {
       title: "Rapports et Analyses",
@@ -254,6 +255,7 @@ export const translations = {
       saleInvoice: "فاتورة بيع",
       startingBalance: "الرصيد الافتتاحي",
       endingBalance: "الرصيد الختامي",
+      noCustomerFound: "لم يتم العثور على عملاء."
     },
     reports: {
       title: "التقارير والتحليلات",
