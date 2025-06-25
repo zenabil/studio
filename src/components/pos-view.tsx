@@ -140,24 +140,20 @@ export function PosView() {
     updateActiveSession({ cart: newCart });
   }, [activeSession]);
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number | string) => {
     if (!activeSession) return;
-    
-    const maxQuantity = 999999999999;
-    let newQuantity = quantity;
-
-    if (newQuantity > maxQuantity) {
-      newQuantity = maxQuantity;
+  
+    const newQuantity = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
+  
+    if (isNaN(newQuantity) || newQuantity <= 0) {
+      const newCart = activeSession.cart.filter(item => item.id !== productId);
+      updateActiveSession({ cart: newCart });
+    } else {
+      const newCart = activeSession.cart.map(item =>
+        item.id === productId ? { ...item, quantity: Math.min(newQuantity, 999999999999) } : item
+      );
+      updateActiveSession({ cart: newCart });
     }
-    if (newQuantity < 0) {
-      newQuantity = 0;
-    }
-
-    const newCart = activeSession.cart.map((item) =>
-      item.id === productId ? { ...item, quantity: newQuantity } : item
-    );
-    
-    updateActiveSession({ cart: newCart });
   };
   
   const resetSale = () => {
@@ -384,36 +380,23 @@ export function PosView() {
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
                            <div className="flex items-center justify-center gap-1 w-28 mx-auto">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => {
-                                    const newQuantity = item.quantity - 1;
-                                    if (newQuantity > 0) {
-                                        updateQuantity(item.id, newQuantity);
-                                    } else {
-                                        const newCart = activeSession.cart.filter(i => i.id !== item.id);
-                                        updateActiveSession({ cart: newCart });
-                                    }
-                                }}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
-                                    key={`${item.id}-${item.quantity}`}
+                                    key={item.id}
                                     type="number"
-                                    defaultValue={item.quantity}
+                                    value={item.quantity}
+                                    onChange={(e) => updateQuantity(item.id, e.target.value)}
                                     onBlur={(e) => {
-                                        const value = e.target.value;
-                                        const newQuantity = parseFloat(value);
-
-                                        if (!value || isNaN(newQuantity) || newQuantity <= 0) {
-                                            const newCart = activeSession.cart.filter(i => i.id !== item.id);
-                                            updateActiveSession({ cart: newCart });
-                                        } else {
-                                            updateQuantity(item.id, newQuantity);
-                                        }
+                                      const value = parseFloat(e.target.value);
+                                      if (!value || isNaN(value) || value <= 0) {
+                                        updateQuantity(item.id, 0);
+                                      }
                                     }}
                                     className="h-8 text-center w-full px-1"
                                     step="any"
                                     min="0"
-                                    max="999999999999"
                                 />
                                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                                     <PlusCircle className="h-4 w-4"/>

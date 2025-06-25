@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -20,9 +20,13 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { control, handleSubmit, setValue } = useForm({
-    values: settings,
+  const { control, handleSubmit, reset } = useForm({
+    defaultValues: settings,
   });
+
+  useEffect(() => {
+    reset(settings);
+  }, [settings, reset]);
 
   const onSubmit = (data: any) => {
     setSettings(data);
