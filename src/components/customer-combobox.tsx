@@ -38,8 +38,13 @@ export function CustomerCombobox({
   const selectedCustomer =
     customers.find((c) => c.id === selectedCustomerId) || null;
 
-  const handleSelect = (customerId: string | null) => {
-    onSelectCustomer(customerId);
+  const handleSelect = (value: string) => {
+    if (value === 'no-customer') {
+      onSelectCustomer(null);
+    } else {
+      const customerId = value.split('---')[1];
+      onSelectCustomer(customerId);
+    }
     setOpen(false);
   };
 
@@ -64,7 +69,7 @@ export function CustomerCombobox({
             <CommandGroup>
               <CommandItem
                 value="no-customer"
-                onSelect={() => handleSelect(null)}
+                onSelect={handleSelect}
               >
                 <Check
                   className={cn(
@@ -77,8 +82,8 @@ export function CustomerCombobox({
               {customers.map((customer) => (
                 <CommandItem
                   key={customer.id}
-                  value={customer.name}
-                  onSelect={() => handleSelect(customer.id)}
+                  value={`${customer.name}---${customer.id}`}
+                  onSelect={handleSelect}
                 >
                   <Check
                     className={cn(
