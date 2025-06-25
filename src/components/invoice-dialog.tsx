@@ -27,7 +27,6 @@ interface InvoiceDialogProps {
   customer: Customer | undefined;
   totals: {
     subtotal: number;
-    tax: number;
     discount: number;
     total: number;
     amountPaid: number;
@@ -92,10 +91,6 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
                 <TableRow>
                     <TableCell colSpan={3} className="text-right">{t.pos.subtotal}</TableCell>
                     <TableCell className="text-right">${totals.subtotal.toFixed(2)}</TableCell>
-                </TableRow>
-                <TableRow>
-                    <TableCell colSpan={3} className="text-right">{t.pos.tax}</TableCell>
-                    <TableCell className="text-right">${totals.tax.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow>
                     <TableCell colSpan={3} className="text-right">{t.pos.discount}</TableCell>

@@ -129,8 +129,6 @@ export function PosView() {
   }, [activeSession, t.pos.sale, customers]);
 
 
-  const taxRate = 0.1;
-
   const addToCart = useCallback((product: Product) => {
     if (!activeSession) return;
     
@@ -197,14 +195,13 @@ export function PosView() {
   };
 
 
-  const { subtotal, tax, total } = useMemo(() => {
+  const { subtotal, total } = useMemo(() => {
     const cart = activeSession?.cart || [];
     const discount = activeSession?.discount || 0;
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const tax = subtotal * taxRate;
-    const total = subtotal + tax - discount;
-    return { subtotal, tax, total };
-  }, [activeSession, taxRate]);
+    const total = subtotal - discount;
+    return { subtotal, total };
+  }, [activeSession]);
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
@@ -222,7 +219,7 @@ export function PosView() {
         id: `SALE-${new Date().getTime()}`,
         customerId: activeSession.selectedCustomerId,
         items: activeSession.cart,
-        totals: { subtotal, tax, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance },
+        totals: { subtotal, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance },
         date: new Date().toISOString(),
     };
 
@@ -425,7 +422,6 @@ export function PosView() {
             <Separator className="mb-4" />
             <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>${subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>{t.pos.tax}</span><span>${tax.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
                     <span>{t.pos.discount}</span>
                     <Input type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
@@ -472,7 +468,7 @@ export function PosView() {
         onClose={() => setIsInvoiceOpen(false)}
         cart={activeSession.cart}
         customer={selectedCustomer}
-        totals={{ subtotal, tax, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance }}
+        totals={{ subtotal, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance }}
       />}
       <ConfirmDialog
         isOpen={!!sessionToDelete}

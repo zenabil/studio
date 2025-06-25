@@ -69,7 +69,6 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
                     </Table>
                     <div className="mt-4 text-right space-y-1 text-sm pr-4">
                         <p>{t.pos.subtotal}: <span className="font-medium">${invoice.totals.subtotal.toFixed(2)}</span></p>
-                        <p>{t.pos.tax}: <span className="font-medium">${invoice.totals.tax.toFixed(2)}</span></p>
                         <p>{t.pos.discount}: <span className="font-medium">-${invoice.totals.discount.toFixed(2)}</span></p>
                         <p className="font-bold text-base">{t.pos.grandTotal}: <span className="font-bold">${invoice.totals.total.toFixed(2)}</span></p>
                         <p>{t.pos.paymentReceived}: <span className="font-semibold">${invoice.totals.amountPaid.toFixed(2)}</span></p>

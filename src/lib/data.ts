@@ -34,7 +34,6 @@ export type SaleRecord = {
     items: CartItem[];
     totals: {
         subtotal: number;
-        tax: number;
         discount: number;
         total: number;
         amountPaid: number;
@@ -79,11 +78,10 @@ export const salesHistory: SaleRecord[] = [
         ],
         totals: {
             subtotal: 6.80,
-            tax: 0.68,
             discount: 0,
-            total: 7.48,
+            total: 6.80,
             amountPaid: 5.00,
-            balance: 2.48
+            balance: 1.80
         },
         date: new Date('2023-10-26T10:00:00Z').toISOString()
     },
@@ -95,11 +93,10 @@ export const salesHistory: SaleRecord[] = [
         ],
         totals: {
             subtotal: 7.20,
-            tax: 0.72,
             discount: 1,
-            total: 6.92,
+            total: 6.20,
             amountPaid: 0,
-            balance: 6.92
+            balance: 6.20
         },
         date: new Date('2023-10-27T12:30:00Z').toISOString()
     }
