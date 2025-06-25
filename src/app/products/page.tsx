@@ -20,14 +20,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Pencil } from 'lucide-react';
 
 export default function ProductsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const filteredProducts = useMemo(() => {
     return products.filter(product =>
@@ -35,17 +36,38 @@ export default function ProductsPage() {
       product.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [products, searchTerm]);
+  
+  const handleOpenDialog = (product: Product | null = null) => {
+    setEditingProduct(product);
+    setIsDialogOpen(true);
+  };
+  
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingProduct(null);
+  }
 
-  const handleAddProduct = (newProductData: Omit<Product, 'id' | 'imageUrl'>) => {
-    const newProduct: Product = {
-      id: `prod-${new Date().getTime()}`,
-      imageUrl: 'https://placehold.co/300x200',
-      ...newProductData,
-    };
-    setProducts(prev => [newProduct, ...prev]);
-    toast({
-      title: t.products.productAdded,
-    });
+  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>, productId?: string) => {
+    if (productId) {
+      setProducts(prev =>
+        prev.map(p =>
+          p.id === productId ? { ...p, ...productData } : p
+        )
+      );
+      toast({
+        title: t.products.productUpdated,
+      });
+    } else {
+      const newProduct: Product = {
+        id: `prod-${new Date().getTime()}`,
+        imageUrl: 'https://placehold.co/300x200',
+        ...productData,
+      };
+      setProducts(prev => [newProduct, ...prev]);
+      toast({
+        title: t.products.productAdded,
+      });
+    }
   };
 
   return (
@@ -60,7 +82,7 @@ export default function ProductsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-64"
             />
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={() => handleOpenDialog()}>
               <PlusCircle className="mr-2 h-4 w-4" />
               {t.products.addProduct}
             </Button>
@@ -74,6 +96,7 @@ export default function ProductsPage() {
                 <TableHead>{t.products.category}</TableHead>
                 <TableHead className="text-right">{t.products.price}</TableHead>
                 <TableHead className="text-right">{t.products.stock}</TableHead>
+                <TableHead className="text-right">{t.products.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -83,6 +106,11 @@ export default function ProductsPage() {
                   <TableCell>{product.category}</TableCell>
                   <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
+                   <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -90,9 +118,10 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
       <AddProductDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onAddProduct={handleAddProduct}
+        isOpen={isDialogOpen}
+        onClose={handleCloseDialog}
+        onSave={handleSaveProduct}
+        productToEdit={editingProduct}
       />
     </>
   );

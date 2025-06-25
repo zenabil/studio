@@ -20,14 +20,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddCustomerDialog } from '@/components/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Pencil } from 'lucide-react';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer =>
@@ -35,17 +36,38 @@ export default function CustomersPage() {
       customer.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [customers, searchTerm]);
+  
+  const handleOpenDialog = (customer: Customer | null = null) => {
+    setEditingCustomer(customer);
+    setIsDialogOpen(true);
+  };
+  
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingCustomer(null);
+  }
 
-  const handleAddCustomer = (newCustomerData: Omit<Customer, 'id' | 'spent'>) => {
-    const newCustomer: Customer = {
-      id: `cust-${new Date().getTime()}`,
-      spent: 0,
-      ...newCustomerData,
-    };
-    setCustomers(prev => [newCustomer, ...prev]);
-    toast({
-      title: t.customers.customerAdded,
-    });
+  const handleSaveCustomer = (customerData: Omit<Customer, 'id' | 'spent'>, customerId?: string) => {
+    if (customerId) {
+      setCustomers(prev =>
+        prev.map(c =>
+          c.id === customerId ? { ...c, ...customerData } : c
+        )
+      );
+      toast({
+        title: t.customers.customerUpdated,
+      });
+    } else {
+      const newCustomer: Customer = {
+        id: `cust-${new Date().getTime()}`,
+        spent: 0,
+        ...customerData,
+      };
+      setCustomers(prev => [newCustomer, ...prev]);
+      toast({
+        title: t.customers.customerAdded,
+      });
+    }
   };
 
   return (
@@ -60,7 +82,7 @@ export default function CustomersPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-64"
             />
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={() => handleOpenDialog()}>
               <PlusCircle className="mr-2 h-4 w-4" />
               {t.customers.addCustomer}
             </Button>
@@ -74,6 +96,7 @@ export default function CustomersPage() {
                 <TableHead>{t.customers.email}</TableHead>
                 <TableHead>{t.customers.phone}</TableHead>
                 <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
+                <TableHead className="text-right">{t.customers.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,7 +105,12 @@ export default function CustomersPage() {
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
-                  <TableCell className="text-right">{customer.spent.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">${customer.spent.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(customer)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -90,9 +118,10 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
       <AddCustomerDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onAddCustomer={handleAddCustomer}
+        isOpen={isDialogOpen}
+        onClose={handleCloseDialog}
+        onSave={handleSaveCustomer}
+        customerToEdit={editingCustomer}
       />
     </>
   );

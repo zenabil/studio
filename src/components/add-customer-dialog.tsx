@@ -23,11 +23,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { useEffect } from 'react';
 
 interface AddCustomerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddCustomer: (customer: Omit<Customer, 'id' | 'spent'>) => void;
+  onSave: (customer: Omit<Customer, 'id' | 'spent'>, id?: string) => void;
+  customerToEdit?: Customer | null;
 }
 
 const formSchema = z.object({
@@ -36,7 +38,7 @@ const formSchema = z.object({
   phone: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
 });
 
-export function AddCustomerDialog({ isOpen, onClose, onAddCustomer }: AddCustomerDialogProps) {
+export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: AddCustomerDialogProps) {
   const { t } = useLanguage();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -48,8 +50,26 @@ export function AddCustomerDialog({ isOpen, onClose, onAddCustomer }: AddCustome
     },
   });
 
+  useEffect(() => {
+    if (isOpen) {
+      if (customerToEdit) {
+        form.reset({
+          name: customerToEdit.name,
+          email: customerToEdit.email,
+          phone: customerToEdit.phone,
+        });
+      } else {
+        form.reset({
+          name: '',
+          email: '',
+          phone: '',
+        });
+      }
+    }
+  }, [customerToEdit, form, isOpen]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onAddCustomer(values);
+    onSave(values, customerToEdit?.id);
     form.reset();
     onClose();
   }
@@ -58,7 +78,7 @@ export function AddCustomerDialog({ isOpen, onClose, onAddCustomer }: AddCustome
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t.customers.newCustomer}</DialogTitle>
+          <DialogTitle>{customerToEdit ? t.customers.editCustomer : t.customers.newCustomer}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

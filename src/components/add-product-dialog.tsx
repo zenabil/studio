@@ -23,11 +23,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { useEffect } from 'react';
 
 interface AddProductDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (product: Omit<Product, 'id' | 'imageUrl'>) => void;
+  onSave: (product: Omit<Product, 'id' | 'imageUrl'>, id?:string) => void;
+  productToEdit?: Product | null;
 }
 
 const formSchema = z.object({
@@ -37,7 +39,7 @@ const formSchema = z.object({
   stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
 });
 
-export function AddProductDialog({ isOpen, onClose, onAddProduct }: AddProductDialogProps) {
+export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: AddProductDialogProps) {
   const { t } = useLanguage();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,9 +51,29 @@ export function AddProductDialog({ isOpen, onClose, onAddProduct }: AddProductDi
       stock: 0,
     },
   });
+  
+  useEffect(() => {
+    if(isOpen) {
+      if (productToEdit) {
+        form.reset({
+          name: productToEdit.name,
+          category: productToEdit.category,
+          price: productToEdit.price,
+          stock: productToEdit.stock,
+        });
+      } else {
+        form.reset({
+          name: '',
+          category: '',
+          price: 0,
+          stock: 0,
+        });
+      }
+    }
+  }, [productToEdit, form, isOpen]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onAddProduct(values);
+    onSave(values, productToEdit?.id);
     form.reset();
     onClose();
   }
@@ -60,7 +82,7 @@ export function AddProductDialog({ isOpen, onClose, onAddProduct }: AddProductDi
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t.products.newProduct}</DialogTitle>
+          <DialogTitle>{productToEdit ? t.products.editProduct : t.products.newProduct}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
