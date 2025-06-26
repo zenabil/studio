@@ -150,7 +150,9 @@ export const translations = {
       pickDate: "Choisir une plage de dates",
     },
     alerts: {
-      title: "Alertes de Stock Faible",
+      title: "Alertes",
+      lowStockAlertsTitle: "Alertes de Stock Faible",
+      lowStockAlertsDescription: "Produits dont le stock est faible ou négatif.",
       description: "Produits dont le stock est faible.",
       currentStock: "Stock Actuel",
       noAlerts: "Tous les produits sont suffisamment approvisionnés.",
@@ -349,7 +351,9 @@ export const translations = {
       pickDate: "اختر نطاقًا زمنيًا",
     },
     alerts: {
-      title: "تنبيهات انخفاض المخزون",
+      title: "التنبيهات",
+      lowStockAlertsTitle: "تنبيهات انخفاض المخزون",
+      lowStockAlertsDescription: "المنتجات التي أوشك مخزونها على النفاد أو أصبح سالبًا.",
       description: "المنتجات التي أوشك مخزونها على النفاد.",
       currentStock: "المخزون الحالي",
       noAlerts: "جميع المنتجات متوفرة بكميات كافية.",

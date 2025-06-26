@@ -3,8 +3,6 @@ import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -109,23 +107,23 @@ export default function CustomersPage() {
 
   return (
     <>
+      <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
+        <h1 className="text-3xl font-bold font-headline">{t.customers.title}</h1>
+        <div className="flex w-full gap-2 md:w-auto">
+          <Input
+            placeholder={t.customers.searchCustomers}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full md:w-64"
+          />
+          <Button onClick={() => handleOpenAddDialog()}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {t.customers.addCustomer}
+          </Button>
+        </div>
+      </div>
       <Card>
-        <CardHeader className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
-          <CardTitle>{t.customers.title}</CardTitle>
-          <div className="flex w-full gap-2 md:w-auto">
-            <Input
-              placeholder={t.customers.searchCustomers}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-64"
-            />
-            <Button onClick={() => handleOpenAddDialog()}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              {t.customers.addCustomer}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>

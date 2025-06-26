@@ -440,19 +440,25 @@ export function PosView() {
             <ScrollArea className="h-[50vh] lg:h-[calc(100vh-14rem)]">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {filteredProducts.map((product) => (
-                  <Card key={product.id} className="overflow-hidden transition-all hover:scale-105 hover:shadow-lg flex flex-col">
+                  <Card 
+                    key={product.id} 
+                    className="overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex flex-col group cursor-pointer"
+                    onClick={() => addToCart(product)}
+                  >
                     <CardContent className="p-3 flex-grow flex flex-col justify-center items-center text-center">
-                      <h3 className="font-semibold">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{product.name}</h3>
+                      <p className="text-base font-bold text-muted-foreground mt-1">
                         {settings.currency}{product.price.toFixed(2)}
                       </p>
                     </CardContent>
-                    <CardFooter className="p-2 mt-auto">
+                    <CardFooter className="p-1 mt-auto bg-muted/50">
                       <Button
                         size="sm"
-                        className="w-full"
-                        onClick={() => addToCart(product)}
+                        variant="ghost"
+                        className="w-full h-8 text-primary hover:bg-primary/10"
+                        onClick={(e) => { e.stopPropagation(); addToCart(product); }}
                       >
+                        <PlusCircle className="mr-2 h-4 w-4" />
                         {t.pos.addToCart}
                       </Button>
                     </CardFooter>

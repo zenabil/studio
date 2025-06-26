@@ -91,23 +91,26 @@ export function SidebarNav() {
     <>
     <div className="absolute top-4 z-20 flex items-center gap-2 ltr:left-4 rtl:right-4 md:hidden">
         <SidebarTrigger />
-        <div className="flex items-center gap-2">
-            <Package className="h-8 w-8 text-primary" />
-            <div>
-              <span className="font-headline text-xl font-bold">{t.appName}</span>
-              <p className="text-xs text-muted-foreground -mt-1">{settings.companyInfo.name}</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 p-2 rounded-lg">
+            <Package className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <span className="font-headline text-lg font-bold">{t.appName}</span>
+            <p className="text-xs text-muted-foreground -mt-1">{settings.companyInfo.name}</p>
+          </div>
         </div>
     </div>
     <Sidebar side={dir === 'rtl' ? 'right' : 'left'}>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <Package className="h-8 w-8 text-primary" />
-          <div>
-            <span className="font-headline text-xl font-bold">{t.appName}</span>
-            <p className="text-sm text-muted-foreground">{settings.companyInfo.name}</p>
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 p-2 rounded-lg">
+            <Package className="h-7 w-7 text-primary" />
           </div>
-          <div className="grow" />
+          <div>
+            <span className="font-headline text-lg font-bold">{t.appName}</span>
+            <p className="text-xs text-muted-foreground">{settings.companyInfo.name}</p>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>

@@ -84,20 +84,24 @@ export default function ReportsPage() {
        <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t.reports.totalSales}</CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-semibold">{t.reports.totalSales}</CardTitle>
+                 <div className="p-2 bg-primary/10 rounded-md">
+                    <ShoppingCart className="h-6 w-6 text-primary" />
+                </div>
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{settings.currency}{totalSales.toFixed(2)}</div>
+                <div className="text-3xl font-bold">{settings.currency}{totalSales.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t.reports.totalProfits}</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-semibold">{t.reports.totalProfits}</CardTitle>
+                <div className="p-2 bg-primary/10 rounded-md">
+                    <DollarSign className="h-6 w-6 text-primary" />
+                </div>
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{settings.currency}{totalProfits.toFixed(2)}</div>
+                <div className="text-3xl font-bold">{settings.currency}{totalProfits.toFixed(2)}</div>
             </CardContent>
           </Card>
       </div>

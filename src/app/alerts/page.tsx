@@ -112,10 +112,12 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-6">
+       <h1 className="text-3xl font-bold font-headline">{t.alerts.title}</h1>
+
       <Card>
         <CardHeader>
-          <CardTitle>{t.alerts.title}</CardTitle>
-          <CardDescription>{t.alerts.description}</CardDescription>
+          <CardTitle>{t.alerts.lowStockAlertsTitle}</CardTitle>
+          <CardDescription>{t.alerts.lowStockAlertsDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           {lowStockProducts.length > 0 ? (
