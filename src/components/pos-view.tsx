@@ -85,6 +85,7 @@ export function PosView() {
   const customerComboboxRef = useRef<HTMLButtonElement>(null);
   const discountInputRef = useRef<HTMLInputElement>(null);
   const amountPaidInputRef = useRef<HTMLInputElement>(null);
+  const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   const createNewSession = useCallback((index: number): SaleSession => ({
     id: `session-${new Date().getTime()}-${index}`,
@@ -177,6 +178,8 @@ export function PosView() {
             newQuantities[item.id] = String(item.quantity);
         });
         setCartQuantities(newQuantities);
+        // Resize refs array to match cart size
+        quantityInputRefs.current = quantityInputRefs.current.slice(0, activeSession.cart.length);
     }
   }, [activeSession]);
   
@@ -340,6 +343,14 @@ export function PosView() {
       if (event.key === 'F1') { event.preventDefault(); searchInputRef.current?.select(); }
       if (event.key === 'F2') { event.preventDefault(); barcodeInputRef.current?.select(); }
       if (event.key === 'F4') { event.preventDefault(); customerComboboxRef.current?.focus(); }
+      if (event.key === 'F7') {
+        event.preventDefault();
+        if (quantityInputRefs.current.length > 0) {
+          const firstInput = quantityInputRefs.current[0];
+          firstInput?.focus();
+          firstInput?.select();
+        }
+      }
       if (event.key === 'F8') { event.preventDefault(); discountInputRef.current?.select(); }
       if (event.key === 'F9') { event.preventDefault(); amountPaidInputRef.current?.select(); }
       if (event.key === 'F10') { event.preventDefault(); handleSaleCompletion(); }
@@ -383,7 +394,7 @@ export function PosView() {
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     ref={searchInputRef}
-                    placeholder={t.pos.searchProducts}
+                    placeholder={`${t.pos.searchProducts} (F1)`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -394,7 +405,7 @@ export function PosView() {
                     <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       ref={barcodeInputRef}
-                      placeholder={t.pos.scanBarcode}
+                      placeholder={`${t.pos.scanBarcode} (F2)`}
                       value={barcodeInput}
                       onChange={(e) => setBarcodeInput(e.target.value)}
                       onKeyDown={handleBarcodeKeyDown}
@@ -469,12 +480,17 @@ export function PosView() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t.pos.description}</TableHead>
-                      <TableHead className="text-center w-28">{t.pos.quantity}</TableHead>
+                      <TableHead className="text-center w-32">
+                        <div className="flex items-center justify-center gap-2">
+                          {t.pos.quantity}
+                          <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F7</kbd>
+                        </div>
+                      </TableHead>
                       <TableHead className="text-right">{t.pos.total}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeSession.cart.map((item) => (
+                    {activeSession.cart.map((item, index) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
@@ -483,6 +499,7 @@ export function PosView() {
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
+                                    ref={(el) => (quantityInputRefs.current[index] = el)}
                                     type="text"
                                     value={cartQuantities[item.id] || ''}
                                     onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
