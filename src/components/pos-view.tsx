@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -64,10 +64,12 @@ export function PosView() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [sessions, setSessions] = useState<SaleSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [cartQuantities, setCartQuantities] = useState<{ [key: string]: string }>({});
   
   const createNewSession = useCallback((index: number): SaleSession => ({
     id: `session-${new Date().getTime()}-${index}`,
@@ -104,6 +106,16 @@ export function PosView() {
       )
     );
   };
+
+  useEffect(() => {
+    if (activeSession) {
+        const newQuantities: { [key: string]: string } = {};
+        activeSession.cart.forEach(item => {
+            newQuantities[item.id] = String(item.quantity);
+        });
+        setCartQuantities(newQuantities);
+    }
+  }, [activeSession]);
   
   useEffect(() => {
       if (activeSession) {
@@ -123,7 +135,7 @@ export function PosView() {
           }
       }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession, t.pos.sale, customers]);
+  }, [activeSession?.selectedCustomerId, t.pos.sale, customers]);
 
 
   const addToCart = useCallback((product: Product) => {
@@ -140,10 +152,8 @@ export function PosView() {
     updateActiveSession({ cart: newCart });
   }, [activeSession]);
 
-  const updateQuantity = (productId: string, quantity: number | string) => {
+  const updateQuantity = (productId: string, newQuantity: number) => {
     if (!activeSession) return;
-  
-    const newQuantity = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
   
     if (isNaN(newQuantity) || newQuantity <= 0) {
       const newCart = activeSession.cart.filter(item => item.id !== productId);
@@ -243,6 +253,7 @@ export function PosView() {
         });
     }
     setBarcodeInput('');
+    barcodeInputRef.current?.focus();
   }, [addToCart, t, toast, products]);
   
   const handleBarcodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -280,6 +291,7 @@ export function PosView() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                  <Input
+                  ref={barcodeInputRef}
                   placeholder={t.pos.scanBarcode}
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
@@ -384,17 +396,20 @@ export function PosView() {
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
-                                    key={item.id}
                                     type="number"
-                                    value={item.quantity}
-                                    onChange={(e) => updateQuantity(item.id, e.target.value)}
+                                    value={cartQuantities[item.id] || ''}
+                                    onChange={(e) => {
+                                        setCartQuantities(prev => ({...prev, [item.id]: e.target.value}))
+                                    }}
                                     onBlur={(e) => {
                                       const value = parseFloat(e.target.value);
                                       if (!value || isNaN(value) || value <= 0) {
                                         updateQuantity(item.id, 0);
+                                      } else {
+                                        updateQuantity(item.id, value);
                                       }
                                     }}
-                                    className="h-8 text-center w-full px-1"
+                                    className="h-8 text-center w-full px-1 text-sm"
                                     step="any"
                                     min="0"
                                 />
