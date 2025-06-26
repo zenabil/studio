@@ -148,6 +148,13 @@ export const translations = {
       totalSales: "Ventes Totales",
       totalProfits: "Bénéfices Totaux",
       pickDate: "Choisir une plage de dates",
+      productsSold: "Produits Vendus",
+      salesOverTime: "Ventes au fil du temps",
+      categorySales: "Ventes par Catégorie",
+      bestSellers: "Meilleures Ventes",
+      top5byUnits: "Top 5 des produits par unités vendues.",
+      unitsSold: "Unités Vendues",
+      noSalesData: "Aucune donnée de vente à afficher."
     },
     alerts: {
       title: "Alertes",
@@ -349,6 +356,13 @@ export const translations = {
       totalSales: "إجمالي المبيعات",
       totalProfits: "إجمالي الأرباح",
       pickDate: "اختر نطاقًا زمنيًا",
+      productsSold: "المنتجات المباعة",
+      salesOverTime: "المبيعات مع مرور الوقت",
+      categorySales: "المبيعات حسب الفئة",
+      bestSellers: "الأكثر مبيعاً",
+      top5byUnits: "أفضل 5 منتجات حسب الوحدات المباعة.",
+      unitsSold: "الوحدات المباعة",
+      noSalesData: "لا توجد بيانات مبيعات لعرضها."
     },
     alerts: {
       title: "التنبيهات",
