@@ -81,7 +81,9 @@ export const translations = {
       barcode: "Code-barres",
       barcodePlaceholder: "Saisir le code-barres",
       quantityPerBox: "Qté par Carton",
-      quantityPerBoxPlaceholder: "Saisir la quantité par carton",
+      quantityPerBoxPlaceholder: "Saisir la quantité",
+      boxPrice: "Prix Carton",
+      boxPricePlaceholder: "Saisir le prix du carton",
     },
     customers: {
       title: "Gestion des Clients",
@@ -260,7 +262,9 @@ export const translations = {
       barcode: "الباركود",
       barcodePlaceholder: "أدخل الباركود",
       quantityPerBox: "الكمية في الكرتون",
-      quantityPerBoxPlaceholder: "أدخل الكمية في الكرتون",
+      quantityPerBoxPlaceholder: "أدخل الكمية",
+      boxPrice: "سعر الكرتون",
+      boxPricePlaceholder: "أدخل سعر الكرتون",
     },
     customers: {
       title: "إدارة العملاء",

@@ -112,6 +112,7 @@ export default function ProductsPage() {
                 <TableHead className="text-right">{t.products.stock}</TableHead>
                 <TableHead className="text-right">{t.products.minStock}</TableHead>
                 <TableHead className="text-right">{t.products.quantityPerBox}</TableHead>
+                <TableHead className="text-right">{t.products.boxPrice}</TableHead>
                 <TableHead className="text-right">{t.products.actions}</TableHead>
               </TableRow>
             </TableHeader>
@@ -125,6 +126,7 @@ export default function ProductsPage() {
                   <TableCell className="text-right">{product.stock}</TableCell>
                   <TableCell className="text-right">{product.minStock || 0}</TableCell>
                   <TableCell className="text-right">{product.quantityPerBox || 0}</TableCell>
+                  <TableCell className="text-right">{settings.currency}{(product.boxPrice || 0).toFixed(2)}</TableCell>
                    <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
                       <Pencil className="h-4 w-4" />
