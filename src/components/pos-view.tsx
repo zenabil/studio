@@ -118,6 +118,22 @@ export function PosView() {
     );
   };
 
+  const handleCartQuantityChange = (productId: string, value: string) => {
+      setCartQuantities(prev => ({ ...prev, [productId]: value }));
+  };
+
+  const handleCartQuantityBlur = (productId: string) => {
+      if (!activeSession) return;
+      const value = cartQuantities[productId];
+      const newQuantity = parseFloat(value);
+      
+      if (isNaN(newQuantity) || newQuantity <= 0) {
+          updateQuantity(productId, 0); // This will remove the item
+      } else {
+          updateQuantity(productId, newQuantity);
+      }
+  };
+
   useEffect(() => {
     if (activeSession) {
         const newQuantities: { [key: string]: string } = {};
@@ -163,29 +179,6 @@ export function PosView() {
     updateActiveSession({ cart: newCart });
   }, [activeSession]);
 
-  const handleCartQuantityChange = (productId: string, value: string) => {
-    const newQuantities = { ...cartQuantities, [productId]: value };
-    setCartQuantities(newQuantities);
-
-    if (value === '' || value === '.') return;
-
-    const newQuantity = parseFloat(value);
-    if (!isNaN(newQuantity) && newQuantity >= 0) {
-        updateQuantity(productId, newQuantity);
-    }
-  };
-
-  const handleCartQuantityBlur = (productId: string) => {
-      const value = cartQuantities[productId];
-      const newQuantity = parseFloat(value);
-      
-      if (isNaN(newQuantity) || newQuantity <= 0) {
-          updateQuantity(productId, 0); // This will remove the item
-      } else {
-          updateQuantity(productId, newQuantity);
-      }
-  };
-
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (!activeSession) return;
   
@@ -216,8 +209,7 @@ export function PosView() {
     setActiveSessionId(newSession.id);
   };
   
-  const closeSession = (sessionId: string) => {
-      if (!activeSessionId) return;
+  const closeSession = useCallback((sessionId: string) => {
       setSessions(prev => {
           const newSessions = prev.filter(s => s.id !== sessionId);
           if (newSessions.length === 0) {
@@ -228,7 +220,7 @@ export function PosView() {
           return newSessions;
       });
       setSessionToDelete(null);
-  };
+  }, [createNewSession]);
 
   const handleCloseSession = (sessionId: string) => {
       const session = sessions.find(s => s.id === sessionId);
@@ -269,7 +261,7 @@ export function PosView() {
     });
     
     closeSession(activeSessionId);
-  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t.errors.emptyCart, t.errors.title, t.pos.saleSuccessMessage, t.pos.saleSuccessTitle, toast]);
+  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t.errors.emptyCart, t.errors.title, t.pos.saleSuccessMessage, t.pos.saleSuccessTitle, toast, closeSession]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p.barcode === barcode);
@@ -379,19 +371,27 @@ export function PosView() {
           <CardHeader>
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2">
-                <Input
-                  ref={searchInputRef}
-                  placeholder={t.pos.searchProducts}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                 <Input
-                  ref={barcodeInputRef}
-                  placeholder={t.pos.scanBarcode}
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  onKeyDown={handleBarcodeKeyDown}
-                />
+                <div className="relative">
+                  <Input
+                    ref={searchInputRef}
+                    placeholder={t.pos.searchProducts}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-9"
+                  />
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F1</kbd>
+                </div>
+                 <div className="relative">
+                  <Input
+                    ref={barcodeInputRef}
+                    placeholder={t.pos.scanBarcode}
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    onKeyDown={handleBarcodeKeyDown}
+                    className="pr-9"
+                  />
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F2</kbd>
+                </div>
               </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
@@ -523,7 +523,10 @@ export function PosView() {
             <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
-                    <span>{t.pos.discount}</span>
+                    <div className="flex items-center gap-2">
+                        <span>{t.pos.discount}</span>
+                        <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
+                    </div>
                     <Input ref={discountInputRef} type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
@@ -531,24 +534,45 @@ export function PosView() {
             </div>
             <Separator className="my-4" />
              <div className="space-y-4">
-                <CustomerCombobox
-                  ref={customerComboboxRef}
-                  customers={customers}
-                  selectedCustomerId={activeSession.selectedCustomerId}
-                  onSelectCustomer={(customerId) =>
-                    updateActiveSession({ selectedCustomerId: customerId })
-                  }
-                />
-                <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} />
+                <div className="relative">
+                    <CustomerCombobox
+                    ref={customerComboboxRef}
+                    customers={customers}
+                    selectedCustomerId={activeSession.selectedCustomerId}
+                    onSelectCustomer={(customerId) =>
+                        updateActiveSession({ selectedCustomerId: customerId })
+                    }
+                    />
+                    <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
+                </div>
+                <div className="relative">
+                    <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} className="pr-9" />
+                    <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F9</kbd>
+                </div>
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
              </div>
              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}><FileText className="mr-2 h-4 w-4" />{t.pos.invoice}</Button>
+                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0} className="justify-between w-full">
+                    <span className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {t.pos.invoice}
+                    </span>
+                    <kbd className="hidden rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-block">Ctrl+P</kbd>
+                </Button>
                 <Button variant="outline" onClick={() => window.print()} disabled={activeSession.cart.length === 0}><Printer className="mr-2 h-4 w-4" />{t.pos.printInvoice}</Button>
              </div>
              <div className="mt-2 grid grid-cols-2 gap-2">
-                <Button variant="destructive" className="w-full" onClick={resetSale}><XCircle className="mr-2 h-4 w-4"/>{t.pos.newSale}</Button>
-                <Button className="w-full col-span-1 bg-accent hover:bg-accent/90" onClick={handleSaleCompletion}>{t.pos.completeSale}</Button>
+                <Button variant="destructive" className="w-full justify-between" onClick={resetSale}>
+                    <span className="flex items-center gap-2">
+                        <XCircle className="h-4 w-4"/>
+                        {t.pos.newSale}
+                    </span>
+                    <kbd className="hidden rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-block">Esc</kbd>
+                </Button>
+                <Button className="w-full col-span-1 bg-accent hover:bg-accent/90 justify-between" onClick={handleSaleCompletion}>
+                    <span>{t.pos.completeSale}</span>
+                    <kbd className="hidden rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-block">F10</kbd>
+                </Button>
              </div>
           </div>
         </Card>
@@ -563,7 +587,7 @@ export function PosView() {
       <ConfirmDialog
         isOpen={!!sessionToDelete}
         onClose={() => setSessionToDelete(null)}
-        onConfirm={() => closeSession(sessionToDelete!)}
+        onConfirm={() => sessionToDelete && closeSession(sessionToDelete)}
         title={t.pos.confirmCloseSaleTitle}
         description={t.pos.confirmCloseSaleMessage}
       />
