@@ -18,14 +18,15 @@ import {
     processSale as processSaleAction
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
+import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
 
 interface DataContextType {
     products: Product[];
     customers: Customer[];
     salesHistory: SaleRecord[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id'>) => void;
-    updateProduct: (productId: string, productData: Omit<Product, 'id'>) => void;
+    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => void;
+    updateProduct: (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => void;
     deleteProduct: (productId: string) => void;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => void;
     updateCustomer: (customerId: string, customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => void;
@@ -90,19 +91,64 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         // Optionally, implement a rollback mechanism here
       }
     }, [toast]);
+    
+    const generateAndSaveProductImage = useCallback(async (productId: string, productName: string, productCategory: string) => {
+        try {
+            const imageUrl = await generateProductImage({ name: productName, category: productCategory });
+            
+            setProducts(prevProducts => {
+                const newProducts = prevProducts.map(p => 
+                    p.id === productId ? { ...p, imageUrl } : p
+                );
 
-    const addProduct = (productData: Omit<Product, 'id'>) => {
+                saveProducts(newProducts).catch(error => {
+                    console.error("Failed to save product image URL to server:", error);
+                    toast({
+                        variant: 'destructive',
+                        title: "Image Save Failed",
+                        description: "Could not save the generated image URL."
+                    });
+                });
+                
+                return newProducts;
+            });
+
+        } catch (error) {
+            console.error("Failed to generate product image:", error);
+            toast({
+                variant: 'destructive',
+                title: "Image Generation Failed",
+                description: "Could not generate an image for the product."
+            });
+        }
+    }, [toast]);
+
+    const addProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
             ...productData,
+            imageUrl: '',
         };
         const updatedProducts = [newProduct, ...products];
         handleDataUpdate(setProducts, saveProducts, updatedProducts);
+        generateAndSaveProductImage(newProduct.id, newProduct.name, newProduct.category);
     };
 
-    const updateProduct = (productId: string, productData: Omit<Product, 'id'>) => {
-        const updatedProducts = products.map(p => p.id === productId ? { ...p, ...productData } : p);
+    const updateProduct = (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => {
+        let oldProduct: Product | undefined;
+        const updatedProducts = products.map(p => {
+            if (p.id === productId) {
+                oldProduct = { ...p }; // Create a copy of the old product state
+                return { ...p, ...productData };
+            }
+            return p;
+        });
+
         handleDataUpdate(setProducts, saveProducts, updatedProducts);
+        
+        if (oldProduct && (oldProduct.name !== productData.name || oldProduct.category !== productData.category)) {
+            generateAndSaveProductImage(productId, productData.name, productData.category);
+        }
     };
 
     const deleteProduct = (productId: string) => {

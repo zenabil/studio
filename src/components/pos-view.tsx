@@ -51,6 +51,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
 import { calculateItemTotal } from '@/lib/utils';
 import Loading from '@/app/loading';
+import { Skeleton } from './ui/skeleton';
 
 interface SaleSession {
   id: string;
@@ -318,7 +319,7 @@ export function PosView() {
     }
   };
 
-  const handleSaveProduct = (productData: Omit<Product, 'id'>) => {
+  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
     addProduct(productData);
     toast({
         title: t.products.productAdded,
@@ -430,18 +431,23 @@ export function PosView() {
                     className="overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col group cursor-pointer"
                     onClick={() => addToCart(product)}
                   >
-                    <div className="aspect-video w-full overflow-hidden relative">
+                    <div className="aspect-video w-full overflow-hidden relative bg-muted">
                         <Image 
-                            src={`https://placehold.co/400x300.png`} 
+                            src={product.imageUrl || `https://placehold.co/400x300.png`} 
                             alt={product.name}
                             width={400}
                             height={300}
-                            data-ai-hint={product.category}
+                            unoptimized={!!product.imageUrl}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                          <div className="absolute top-2 right-2 bg-background/80 text-foreground text-xs font-bold px-2 py-1 rounded-full backdrop-blur-sm">
                            {settings.currency}{product.price.toFixed(2)}
                          </div>
+                         {!product.imageUrl && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Skeleton className="w-full h-full" />
+                          </div>
+                         )}
                     </div>
                     <div className="p-3 flex-grow flex flex-col">
                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors flex-grow">{product.name}</h3>
