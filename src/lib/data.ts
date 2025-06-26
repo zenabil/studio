@@ -6,6 +6,7 @@ export type Product = {
   purchasePrice: number;
   stock: number;
   minStock: number;
+  quantityPerBox?: number;
   imageUrl: string;
   barcode: string;
 };
@@ -45,14 +46,14 @@ export type SaleRecord = {
 }
 
 export const products: Product[] = [
-  { id: 'prod-01', name: 'Café Espresso', category: 'Boissons', price: 2.50, purchasePrice: 0.80, stock: 100, minStock: 20, imageUrl: 'https://placehold.co/300x200', barcode: '1234567890123'},
-  { id: 'prod-02', name: 'Croissant au Beurre', category: 'Pâtisseries', price: 1.80, purchasePrice: 0.60, stock: 50, minStock: 15, imageUrl: 'https://placehold.co/300x200', barcode: '2345678901234'},
-  { id: 'prod-03', name: 'Jus d\'Orange Frais', category: 'Boissons', price: 3.00, purchasePrice: 1.20, stock: 30, minStock: 10, imageUrl: 'https://placehold.co/300x200', barcode: '3456789012345'},
+  { id: 'prod-01', name: 'Café Espresso', category: 'Boissons', price: 2.50, purchasePrice: 0.80, stock: 100, minStock: 20, quantityPerBox: 50, imageUrl: 'https://placehold.co/300x200', barcode: '1234567890123'},
+  { id: 'prod-02', name: 'Croissant au Beurre', category: 'Pâtisseries', price: 1.80, purchasePrice: 0.60, stock: 50, minStock: 15, quantityPerBox: 24, imageUrl: 'https://placehold.co/300x200', barcode: '2345678901234'},
+  { id: 'prod-03', name: 'Jus d\'Orange Frais', category: 'Boissons', price: 3.00, purchasePrice: 1.20, stock: 30, minStock: 10, quantityPerBox: 12, imageUrl: 'https://placehold.co/300x200', barcode: '3456789012345'},
   { id: 'prod-04', name: 'Sandwich Poulet Crudités', category: 'Sandwichs', price: 5.50, purchasePrice: 2.50, stock: 25, minStock: 10, imageUrl: 'https://placehold.co/300x200', barcode: '4567890123456'},
   { id: 'prod-05', name: 'Salade César', category: 'Salades', price: 7.20, purchasePrice: 3.50, stock: 15, minStock: 5, imageUrl: 'https://placehold.co/300x200', barcode: '5678901234567'},
-  { id: 'prod-06', name: 'Tarte au Citron', category: 'Pâtisseries', price: 3.50, purchasePrice: 1.50, stock: 8, minStock: 10, imageUrl: 'https://placehold.co/300x200', barcode: '6789012345678'},
-  { id: 'prod-07', name: 'Eau Minérale', category: 'Boissons', price: 1.20, purchasePrice: 0.40, stock: 200, minStock: 50, imageUrl: 'https://placehold.co/300x200', barcode: '7890123456789'},
-  { id: 'prod-08', name: 'Pain au Chocolat', category: 'Pâtisseries', price: 1.90, purchasePrice: 0.70, stock: 12, minStock: 15, imageUrl: 'https://placehold.co/300x200', barcode: '8901234567890'},
+  { id: 'prod-06', name: 'Tarte au Citron', category: 'Pâtisseries', price: 3.50, purchasePrice: 1.50, stock: 8, minStock: 10, quantityPerBox: 6, imageUrl: 'https://placehold.co/300x200', barcode: '6789012345678'},
+  { id: 'prod-07', name: 'Eau Minérale', category: 'Boissons', price: 1.20, purchasePrice: 0.40, stock: 200, minStock: 50, quantityPerBox: 24, imageUrl: 'https://placehold.co/300x200', barcode: '7890123456789'},
+  { id: 'prod-08', name: 'Pain au Chocolat', category: 'Pâtisseries', price: 1.90, purchasePrice: 0.70, stock: 12, minStock: 15, quantityPerBox: 24, imageUrl: 'https://placehold.co/300x200', barcode: '8901234567890'},
 ];
 
 export const customers: Customer[] = [

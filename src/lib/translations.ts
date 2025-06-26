@@ -80,6 +80,8 @@ export const translations = {
       productDeleted: "Produit supprimé avec succès",
       barcode: "Code-barres",
       barcodePlaceholder: "Saisir le code-barres",
+      quantityPerBox: "Qté par Carton",
+      quantityPerBoxPlaceholder: "Saisir la quantité par carton",
     },
     customers: {
       title: "Gestion des Clients",
@@ -257,6 +259,8 @@ export const translations = {
       productDeleted: "تم حذف المنتج بنجاح",
       barcode: "الباركود",
       barcodePlaceholder: "أدخل الباركود",
+      quantityPerBox: "الكمية في الكرتون",
+      quantityPerBoxPlaceholder: "أدخل الكمية في الكرتون",
     },
     customers: {
       title: "إدارة العملاء",

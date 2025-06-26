@@ -40,6 +40,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
   stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
   minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
+  quantityPerBox: z.coerce.number().int().min(0, { message: 'Quantity per box must be a positive integer.' }),
   barcode: z.string().min(1, { message: 'Barcode cannot be empty.' }),
 });
 
@@ -55,6 +56,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       price: 0,
       stock: 0,
       minStock: 0,
+      quantityPerBox: 0,
       barcode: '',
     },
   });
@@ -69,6 +71,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           price: productToEdit.price,
           stock: productToEdit.stock,
           minStock: productToEdit.minStock || 0,
+          quantityPerBox: productToEdit.quantityPerBox || 0,
           barcode: productToEdit.barcode,
         });
       } else {
@@ -79,6 +82,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           price: 0,
           stock: 0,
           minStock: 0,
+          quantityPerBox: 0,
           barcode: initialBarcode || '',
         });
       }
@@ -153,7 +157,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="stock"
@@ -175,6 +179,19 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                     <FormLabel>{t.products.minStock}</FormLabel>
                     <FormControl>
                       <Input type="number" step="1" placeholder={t.products.minStockPlaceholder} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="quantityPerBox"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.products.quantityPerBox}</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
