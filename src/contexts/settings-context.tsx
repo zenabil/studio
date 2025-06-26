@@ -35,7 +35,7 @@ interface SettingsContextType {
 const SETTINGS_KEY = 'mercurio-pos-settings';
 
 const colorPresets: ColorPreset[] = [
-  { name: 'Default', primary: { light: '180 100% 25.1%', dark: '180 100% 30%' }, accent: { light: '39 100% 50%', dark: '39 100% 50%' } },
+  { name: 'Teal', primary: { light: '180 100% 25.1%', dark: '180 100% 30%' }, accent: { light: '39 100% 50%', dark: '39 100% 50%' } },
   { name: 'Green', primary: { light: '142.1 76.2% 36.3%', dark: '142.1 76.2% 46.3%' }, accent: { light: '142.1 70.2% 46.3%', dark: '142.1 70.2% 56.3%' } },
   { name: 'Blue', primary: { light: '217.2 91.2% 52.8%', dark: '217.2 91.2% 59.8%' }, accent: { light: '217.2 81.2% 62.8%', dark: '217.2 81.2% 69.8%' } },
   { name: 'Rose', primary: { light: '346.8 77.2% 49.8%', dark: '346.8 77.2% 59.8%' }, accent: { light: '346.8 67.2% 59.8%', dark: '346.8 67.2% 69.8%' } },
@@ -57,7 +57,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     },
     currency: '$',
     theme: 'dark',
-    colorPreset: 'Default',
+    colorPreset: 'Teal',
     paymentTermsDays: 30,
   });
   

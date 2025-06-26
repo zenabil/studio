@@ -144,7 +144,7 @@ export default function CustomersPage() {
                   <TableCell>{customer.phone}</TableCell>
                   <TableCell className="text-center">{customer.settlementDay || '-'}</TableCell>
                   <TableCell className="text-right">{settings.currency}{customer.spent.toFixed(2)}</TableCell>
-                  <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-green-500'}`}>
+                  <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-success'}`}>
                     {settings.currency}{customer.balance.toFixed(2)}
                   </TableCell>
                   <TableCell className="flex justify-end">

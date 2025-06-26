@@ -11,7 +11,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   CircleDollarSign,
@@ -91,25 +90,15 @@ export function SidebarNav() {
     <>
     <div className="absolute top-4 z-20 flex items-center gap-2 ltr:left-4 rtl:right-4 md:hidden">
         <SidebarTrigger />
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-lg">
-            <Package className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <span className="font-headline text-lg font-bold">{t.appName}</span>
-            <p className="text-xs text-muted-foreground -mt-1">{settings.companyInfo.name}</p>
-          </div>
-        </div>
     </div>
-    <Sidebar side={dir === 'rtl' ? 'right' : 'left'}>
+    <Sidebar side={dir === 'rtl' ? 'right' : 'left'} collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 p-2 rounded-lg">
             <Package className="h-7 w-7 text-primary" />
           </div>
-          <div>
+          <div className="group-data-[collapsible=icon]:hidden">
             <span className="font-headline text-lg font-bold">{t.appName}</span>
-            <p className="text-xs text-muted-foreground">{settings.companyInfo.name}</p>
           </div>
         </div>
       </SidebarHeader>
@@ -126,7 +115,7 @@ export function SidebarNav() {
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
                   {item.alertCount && item.alertCount > 0 ? (
-                    <Badge variant="destructive" className="absolute top-1 right-1 h-5 w-5 justify-center p-0 group-data-[collapsible=icon]:hidden">
+                    <Badge variant="destructive" className="absolute top-1 right-1 h-5 w-5 justify-center p-0 group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0">
                       {item.alertCount}
                     </Badge>
                   ) : null}
@@ -136,7 +125,7 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="group-data-[collapsible=icon]:items-center">
         <LanguageSwitcher />
       </SidebarFooter>
     </Sidebar>

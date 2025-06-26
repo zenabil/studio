@@ -46,28 +46,31 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl printable-area">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-4">
-            <Package className="w-8 h-8 text-primary" />
-            <span>{t.pos.invoice}</span>
-          </DialogTitle>
+           <div className="flex items-center gap-4 text-primary">
+              <Package className="w-10 h-10" />
+              <DialogTitle className="text-3xl font-bold">{t.pos.invoice}</DialogTitle>
+           </div>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto p-2">
-          <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="max-h-[60vh] overflow-y-auto p-1">
+          <div className="grid grid-cols-2 gap-4 my-6">
             <div>
-              <h3 className="font-bold">{settings.companyInfo.name}</h3>
+              <h3 className="font-bold text-lg">{settings.companyInfo.name}</h3>
               <p className="text-sm text-muted-foreground">{settings.companyInfo.address}</p>
+              <p className="text-sm text-muted-foreground">{settings.companyInfo.phone}</p>
+              <p className="text-sm text-muted-foreground">{settings.companyInfo.email}</p>
             </div>
             <div className="text-right">
-              <h2 className="text-2xl font-bold">{t.pos.invoice}</h2>
-              <p className="text-sm">{t.pos.invoiceNumber}: {invoiceId}</p>
-              <p className="text-sm">{t.pos.date}: {today}</p>
+              <p className="text-sm text-muted-foreground">{t.pos.invoiceNumber}</p>
+              <p className="font-semibold">{invoiceId}</p>
+              <p className="text-sm text-muted-foreground mt-2">{t.pos.date}</p>
+              <p className="font-semibold">{today}</p>
             </div>
           </div>
           <Separator />
           <div className="my-6">
-            <h4 className="font-semibold mb-1">{t.pos.billedTo}:</h4>
-            <p className="text-sm">{customer?.name || t.pos.noCustomer}</p>
+            <h4 className="font-semibold mb-1 text-muted-foreground">{t.pos.billedTo}:</h4>
+            <p className="font-bold">{customer?.name || t.pos.noCustomer}</p>
             <p className="text-sm text-muted-foreground">{customer?.email}</p>
           </div>
 
@@ -86,7 +89,7 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
                 const effectiveUnitPrice = item.quantity > 0 ? lineTotal / item.quantity : 0;
                 return (
                   <TableRow key={item.id}>
-                    <TableCell>{item.name}</TableCell>
+                    <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">{settings.currency}{effectiveUnitPrice.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{settings.currency}{lineTotal.toFixed(2)}</TableCell>
@@ -97,22 +100,29 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
             <TableFooter>
                 <TableRow>
                     <TableCell colSpan={3} className="text-right">{t.pos.subtotal}</TableCell>
-                    <TableCell className="text-right">{settings.currency}{totals.subtotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">{settings.currency}{totals.subtotal.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow>
                     <TableCell colSpan={3} className="text-right">{t.pos.discount}</TableCell>
-                    <TableCell className="text-right">-{settings.currency}{totals.discount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">-{settings.currency}{totals.discount.toFixed(2)}</TableCell>
                 </TableRow>
-                <TableRow className="font-bold text-lg">
+                <TableRow className="font-bold text-lg text-primary">
                     <TableCell colSpan={3} className="text-right">{t.pos.grandTotal}</TableCell>
                     <TableCell className="text-right">{settings.currency}{totals.total.toFixed(2)}</TableCell>
                 </TableRow>
             </TableFooter>
           </Table>
           
-          <div className="mt-6 text-right">
-            <p className="text-sm">{t.pos.paymentReceived}: <span className="font-semibold">{settings.currency}{totals.amountPaid.toFixed(2)}</span></p>
-            <p className="text-sm">{t.pos.balance}: <span className="font-semibold">{settings.currency}{totals.balance.toFixed(2)}</span></p>
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">{t.pos.paymentReceived}</span>
+              <span className="font-semibold">{settings.currency}{totals.amountPaid.toFixed(2)}</span>
+            </div>
+             <Separator className="my-2"/>
+            <div className="flex justify-between items-center font-bold">
+              <span>{t.pos.balance}</span>
+              <span>{settings.currency}{totals.balance.toFixed(2)}</span>
+            </div>
           </div>
           
           <div className="mt-8 text-center text-sm text-muted-foreground">

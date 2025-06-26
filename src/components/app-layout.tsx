@@ -6,16 +6,19 @@ import { cn } from '@/lib/utils';
 import React from 'react';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isPinned } = useSidebar();
-
+  const { isPinned, state } = useSidebar();
+  
   return (
-    <div className={cn("flex h-screen w-full bg-background", isPinned ? 'overflow-hidden' : '')}>
+    <div className="flex min-h-screen w-full bg-background text-foreground">
       <SidebarNav />
-      <div className={cn("flex flex-1 flex-col", !isPinned && "overflow-y-auto")}>
-        <main className={cn("flex-1 p-4 pt-20 md:p-6", isPinned && "overflow-y-auto")}>
+       <main className={cn(
+        "flex-1 flex-col transition-[margin-left] duration-300 ease-in-out",
+        state === 'expanded' ? 'md:ml-64' : 'md:ml-16'
+      )}>
+        <div className="p-4 md:p-8 mt-14 md:mt-0">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

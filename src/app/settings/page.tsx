@@ -13,6 +13,7 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getBackupData } from '@/lib/data-actions';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SettingsPage() {
   const { settings, setSettings, colorPresets } = useSettings();
@@ -169,6 +170,26 @@ export default function SettingsPage() {
                     <Label>{t.settings.currency}</Label>
                     <Controller name="currency" control={control} render={({ field }) => <Input className="w-24" {...field} />} />
                 </div>
+                 <div className="space-y-2">
+                  <Label>{t.settings.theme}</Label>
+                  <Controller
+                    name="theme"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-4">
+                        <Label className="flex items-center gap-2 cursor-pointer">
+                          <RadioGroupItem value="light" /> Light
+                        </Label>
+                        <Label className="flex items-center gap-2 cursor-pointer">
+                          <RadioGroupItem value="dark" /> Dark
+                        </Label>
+                         <Label className="flex items-center gap-2 cursor-pointer">
+                          <RadioGroupItem value="system" /> System
+                        </Label>
+                      </RadioGroup>
+                    )}
+                  />
+                </div>
                 <div className="space-y-2">
                     <Label>{t.settings.colors}</Label>
                      <Controller
@@ -182,12 +203,13 @@ export default function SettingsPage() {
                                 key={preset.name}
                                 onClick={() => field.onChange(preset.name)}
                                 className={cn(
-                                    'flex h-12 w-20 items-center justify-center rounded-md border-2',
+                                    'flex h-12 w-20 items-center justify-center rounded-lg border-2',
                                     field.value === preset.name ? 'border-primary' : 'border-transparent'
                                 )}
+                                style={{ backgroundColor: `hsl(${preset.primary.dark})`}}
                                 >
                                 <div className="flex gap-2">
-                                    <span className="h-6 w-6 rounded-full" style={{ background: `linear-gradient(to right, hsl(${preset.primary.light}) 50%, hsl(${preset.accent.light}) 50%)` }} />
+                                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: `hsl(${preset.accent.dark})` }} />
                                 </div>
                                 </button>
                             ))}
