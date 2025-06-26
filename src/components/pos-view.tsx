@@ -117,23 +117,63 @@ export function PosView() {
       )
     );
   };
+  
+  const updateQuantity = (productId: string, newQuantity: number) => {
+    if (!activeSession) return;
+  
+    const finalQuantity = Math.min(newQuantity, 999999999999);
+  
+    if (isNaN(finalQuantity) || finalQuantity <= 0) {
+      const newCart = activeSession.cart.filter(item => item.id !== productId);
+      updateActiveSession({ cart: newCart });
+      setCartQuantities(prev => {
+          const next = {...prev};
+          delete next[productId];
+          return next;
+      });
+    } else {
+      const newCart = activeSession.cart.map(item =>
+        item.id === productId ? { ...item, quantity: finalQuantity } : item
+      );
+      updateActiveSession({ cart: newCart });
+      setCartQuantities(prev => ({ ...prev, [productId]: String(finalQuantity) }));
+    }
+  };
 
   const handleCartQuantityChange = (productId: string, value: string) => {
-      setCartQuantities(prev => ({ ...prev, [productId]: value }));
+    // Always update the visual input value
+    setCartQuantities(prev => ({ ...prev, [productId]: value }));
+  
+    if (!activeSession) return;
+    
+    const newQuantity = parseFloat(value);
+    
+    // Update the actual cart only if the number is valid and positive.
+    if (!isNaN(newQuantity) && newQuantity > 0) {
+        const finalQuantity = Math.min(newQuantity, 999999999999);
+        const newCart = activeSession.cart.map(item =>
+            item.id === productId ? { ...item, quantity: finalQuantity } : item
+        );
+        updateActiveSession({ cart: newCart });
+    }
+    // If the input is empty, "0", or invalid, we don't update the cart immediately.
+    // The total price will not change. It will be cleaned up on blur.
   };
 
   const handleCartQuantityBlur = (productId: string) => {
       if (!activeSession) return;
-      const value = cartQuantities[productId];
+      const value = cartQuantities[productId] ?? '';
       const newQuantity = parseFloat(value);
       
+      // If the final value is not a valid positive number, remove the item.
       if (isNaN(newQuantity) || newQuantity <= 0) {
-          updateQuantity(productId, 0); // This will remove the item
+          updateQuantity(productId, 0); // Re-use updateQuantity to remove and sync state.
       } else {
+          // Otherwise, make sure the state is consistent and formatted correctly.
           updateQuantity(productId, newQuantity);
       }
   };
-
+  
   useEffect(() => {
     if (activeSession) {
         const newQuantities: { [key: string]: string } = {};
@@ -170,28 +210,19 @@ export function PosView() {
     
     const newCart = [...activeSession.cart];
     const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
-
+  
+    let finalQuantity;
     if (existingItemIndex > -1) {
-      newCart[existingItemIndex].quantity += 1;
+      finalQuantity = newCart[existingItemIndex].quantity + 1;
+      newCart[existingItemIndex].quantity = finalQuantity;
     } else {
-      newCart.push({ ...product, quantity: 1 });
+      finalQuantity = 1;
+      newCart.push({ ...product, quantity: finalQuantity });
     }
     updateActiveSession({ cart: newCart });
+    // Sync the visual input state
+    setCartQuantities(prev => ({...prev, [product.id]: String(finalQuantity)}))
   }, [activeSession]);
-
-  const updateQuantity = (productId: string, newQuantity: number) => {
-    if (!activeSession) return;
-  
-    if (isNaN(newQuantity) || newQuantity <= 0) {
-      const newCart = activeSession.cart.filter(item => item.id !== productId);
-      updateActiveSession({ cart: newCart });
-    } else {
-      const newCart = activeSession.cart.map(item =>
-        item.id === productId ? { ...item, quantity: Math.min(newQuantity, 999999999999) } : item
-      );
-      updateActiveSession({ cart: newCart });
-    }
-  };
   
   const resetSale = useCallback(() => {
     if (!activeSessionId) return;
