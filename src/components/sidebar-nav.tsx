@@ -26,7 +26,7 @@ import { useData } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { useMemo } from 'react';
 import { useSettings } from '@/contexts/settings-context';
-import { addDays, differenceInCalendarDays } from 'date-fns';
+import { addDays, differenceInCalendarDays, getDate, getMonth, getYear, set } from 'date-fns';
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -45,17 +45,27 @@ export function SidebarNav() {
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
     for (const customer of indebtedCustomers) {
-        const debtCreatingSales = salesHistory
-            .filter(s => s.customerId === customer.id && s.totals.balance > 0)
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        let dueDate: Date | null = null;
 
-        if (debtCreatingSales.length > 0) {
-            const oldestDebtSale = debtCreatingSales[0];
-            const dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
-            
-            if (differenceInCalendarDays(dueDate, today) === 1) {
-                count++;
+        if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
+            if (getDate(today) >= customer.settlementDay) {
+                dueDate = new Date(getYear(today), getMonth(today) + 1, customer.settlementDay);
+            } else {
+                dueDate = set(today, { date: customer.settlementDay });
             }
+        } else {
+            const debtCreatingSales = salesHistory
+                .filter(s => s.customerId === customer.id && s.totals.balance > 0)
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            if (debtCreatingSales.length > 0) {
+                const oldestDebtSale = debtCreatingSales[0];
+                dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+            }
+        }
+
+        if (dueDate && differenceInCalendarDays(dueDate, today) === 1) {
+            count++;
         }
     }
     return count;

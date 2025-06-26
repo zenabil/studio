@@ -38,7 +38,15 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
   const formSchema = z.object({
     name: z.string().min(2, { message: t.customers.nameMinLength }),
     email: z.string().email({ message: t.customers.emailInvalid }).or(z.literal('')),
-    phone: z.string(),
+    phone: z.string().optional(),
+    settlementDay: z.coerce
+        .number()
+        .int()
+        .min(1, { message: t.customers.settlementDayInvalid })
+        .max(31, { message: t.customers.settlementDayInvalid })
+        .optional()
+        .or(z.literal(''))
+        .transform(val => val === '' ? undefined : val),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -47,6 +55,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
       name: '',
       email: '',
       phone: '',
+      settlementDay: undefined,
     },
   });
 
@@ -57,12 +66,14 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
           name: customerToEdit.name,
           email: customerToEdit.email,
           phone: customerToEdit.phone,
+          settlementDay: customerToEdit.settlementDay || undefined,
         });
       } else {
         form.reset({
           name: '',
           email: '',
           phone: '',
+          settlementDay: undefined,
         });
       }
     }
@@ -116,6 +127,19 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                   <FormLabel>{t.customers.phone}</FormLabel>
                   <FormControl>
                     <Input type="tel" placeholder={t.customers.phonePlaceholder} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="settlementDay"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.customers.settlementDay}</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="1" max="31" placeholder={t.customers.settlementDayPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

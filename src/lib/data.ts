@@ -18,6 +18,7 @@ export type Customer = {
   phone: string;
   spent: number;
   balance: number;
+  settlementDay?: number;
 };
 
 export type Sale = {
@@ -58,7 +59,7 @@ export const products: Product[] = [
 
 export const customers: Customer[] = [
   { id: 'cust-01', name: 'Jean Dupont', email: 'jean.dupont@example.com', phone: '0612345678', spent: 150.75, balance: 0 },
-  { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 275.50, balance: 25.50 },
+  { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 275.50, balance: 25.50, settlementDay: 15 },
   { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 89.20, balance: 0 },
   { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00, balance: -10.00 },
 ];

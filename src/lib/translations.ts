@@ -133,6 +133,9 @@ export const translations = {
       noCustomerFound: "Aucun client trouvé.",
       nameMinLength: "Le nom doit comporter au moins 2 caractères.",
       emailInvalid: "Veuillez saisir une adresse e-mail valide.",
+      settlementDay: "Jour de règlement",
+      settlementDayPlaceholder: "ex: 15 (laisser vide pour utiliser les termes globaux)",
+      settlementDayInvalid: "Le jour doit être entre 1 et 31.",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -324,6 +327,9 @@ export const translations = {
       noCustomerFound: "لم يتم العثور على عملاء.",
       nameMinLength: "يجب أن يتكون الاسم من حرفين على الأقل.",
       emailInvalid: "الرجاء إدخال بريد إلكتروني صحيح.",
+      settlementDay: "يوم التسوية",
+      settlementDayPlaceholder: "مثال: 15 (اتركه فارغًا لاستخدام الشروط العامة)",
+      settlementDayInvalid: "يجب أن يكون اليوم بين 1 و 31.",
     },
     reports: {
       title: "التقارير والتحليلات",

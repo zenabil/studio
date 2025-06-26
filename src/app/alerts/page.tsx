@@ -19,7 +19,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { TriangleAlert, CalendarClock } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
-import { addDays, differenceInCalendarDays, format } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, set, getDate, getMonth, getYear } from 'date-fns';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
@@ -40,21 +40,34 @@ export default function AlertsPage() {
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
     for (const customer of indebtedCustomers) {
-        const debtCreatingSales = salesHistory
-            .filter(s => s.customerId === customer.id && s.totals.balance > 0)
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        let dueDate: Date | null = null;
 
-        if (debtCreatingSales.length > 0) {
-            const oldestDebtSale = debtCreatingSales[0];
-            const dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
-            
-            if (differenceInCalendarDays(dueDate, today) === 1) {
-                alerts.push({
-                    customerName: customer.name,
-                    balance: customer.balance,
-                    dueDate: dueDate,
-                });
+        if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
+            // Logic for fixed settlement day of the month
+            if (getDate(today) >= customer.settlementDay) {
+                // If settlement day for this month has passed or is today, check next month's
+                dueDate = new Date(getYear(today), getMonth(today) + 1, customer.settlementDay);
+            } else {
+                dueDate = set(today, { date: customer.settlementDay });
             }
+        } else {
+            // Fallback to original logic based on payment terms
+            const debtCreatingSales = salesHistory
+                .filter(s => s.customerId === customer.id && s.totals.balance > 0)
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            if (debtCreatingSales.length > 0) {
+                const oldestDebtSale = debtCreatingSales[0];
+                dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+            }
+        }
+        
+        if (dueDate && differenceInCalendarDays(dueDate, today) === 1) {
+            alerts.push({
+                customerName: customer.name,
+                balance: customer.balance,
+                dueDate: dueDate,
+            });
         }
     }
     return alerts;
