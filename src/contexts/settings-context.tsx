@@ -72,7 +72,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
-          setSettingsState(s => ({...s, ...parsed}));
+          // Deep merge to ensure no fields are undefined from older versions of settings
+          setSettingsState(prevSettings => {
+            const newSettings = { ...prevSettings, ...parsed };
+            if (parsed.companyInfo) {
+              newSettings.companyInfo = { ...prevSettings.companyInfo, ...parsed.companyInfo };
+            }
+            return newSettings;
+          });
         }
       } catch (error) {
         console.error("Failed to load settings from localStorage", error);
@@ -113,7 +120,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   
   const setSettings = (newSettings: Partial<Settings>) => {
     setSettingsState(prevSettings => {
-        const updatedSettings = { ...prevSettings, ...newSettings };
+        // Deep merge for companyInfo to avoid overwriting nested fields
+        const updatedSettings = {
+            ...prevSettings,
+            ...newSettings,
+            companyInfo: {
+                ...prevSettings.companyInfo,
+                ...(newSettings.companyInfo || {}),
+            }
+        };
+
         if (isClient) {
             try {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
