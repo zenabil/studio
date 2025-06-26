@@ -26,23 +26,49 @@ import { useData } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { useMemo } from 'react';
 import { useSettings } from '@/contexts/settings-context';
+import { addDays, differenceInCalendarDays } from 'date-fns';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, dir } = useLanguage();
-  const { products } = useData();
+  const { products, customers, salesHistory } = useData();
   const { settings } = useSettings();
 
   const lowStockCount = useMemo(() => {
     return products.filter(p => p.stock <= (p.minStock || 0)).length;
   }, [products]);
 
+  const debtAlertCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let count = 0;
+    const indebtedCustomers = customers.filter(c => c.balance > 0);
+
+    for (const customer of indebtedCustomers) {
+        const debtCreatingSales = salesHistory
+            .filter(s => s.customerId === customer.id && s.totals.balance > 0)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        if (debtCreatingSales.length > 0) {
+            const oldestDebtSale = debtCreatingSales[0];
+            const dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+            
+            if (differenceInCalendarDays(dueDate, today) === 1) {
+                count++;
+            }
+        }
+    }
+    return count;
+  }, [customers, salesHistory, settings.paymentTermsDays]);
+
+  const totalAlertCount = lowStockCount + debtAlertCount;
+
   const navItems = [
     { href: '/', label: t.nav.pos, icon: CircleDollarSign },
     { href: '/products', label: t.nav.products, icon: Package },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
-    { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: lowStockCount },
+    { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ];
 

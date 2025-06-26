@@ -151,6 +151,12 @@ export const translations = {
       description: "Produits dont le stock est faible.",
       currentStock: "Stock Actuel",
       noAlerts: "Tous les produits sont suffisamment approvisionnés.",
+      debtAlertsTitle: "Alertes de Paiement",
+      debtAlertsDescription: "Clients avec des paiements dus prochainement.",
+      customer: "Client",
+      balanceDue: "Solde Dû",
+      dueDate: "Date d'Échéance",
+      noDebtAlerts: "Aucun paiement dû prochainement.",
     },
     settings: {
       title: "Paramètres",
@@ -176,6 +182,8 @@ export const translations = {
       restoreErrorTitle: "Erreur de Restauration",
       restoreErrorGeneric: "Impossible de lire le fichier.",
       restoreErrorInvalidFile: "Le fichier de sauvegarde est corrompu ou son format est invalide.",
+      paymentTerms: "Conditions de paiement (jours)",
+      paymentTermsDescription: "Le nombre de jours avant qu'une facture ne soit considérée comme due.",
     },
     errors: {
       title: "Erreur",
@@ -334,6 +342,12 @@ export const translations = {
       description: "المنتجات التي أوشك مخزونها على النفاد.",
       currentStock: "المخزون الحالي",
       noAlerts: "جميع المنتجات متوفرة بكميات كافية.",
+      debtAlertsTitle: "تنبيهات الدفع",
+      debtAlertsDescription: "عملاء لديهم مدفوعات مستحقة قريباً.",
+      customer: "العميل",
+      balanceDue: "الرصيد المستحق",
+      dueDate: "تاريخ الاستحقاق",
+      noDebtAlerts: "لا توجد مدفوعات مستحقة قريباً.",
     },
     settings: {
       title: "الإعدادات",
@@ -359,6 +373,8 @@ export const translations = {
       restoreErrorTitle: "خطأ في الاستعادة",
       restoreErrorGeneric: "لا يمكن قراءة الملف.",
       restoreErrorInvalidFile: "ملف النسخ الاحتياطي تالف أو أن تنسيقه غير صالح.",
+      paymentTerms: "شروط الدفع (أيام)",
+      paymentTermsDescription: "عدد الأيام قبل اعتبار الفاتورة مستحقة.",
     },
     errors: {
       title: "خطأ",

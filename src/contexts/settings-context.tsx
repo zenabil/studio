@@ -22,6 +22,7 @@ export interface Settings {
   currency: string;
   theme: Theme;
   colorPreset: string; // name of the preset
+  paymentTermsDays: number;
 }
 
 // Define the context type
@@ -57,6 +58,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     currency: '$',
     theme: 'dark',
     colorPreset: 'Default',
+    paymentTermsDays: 30,
   });
   
   useEffect(() => {

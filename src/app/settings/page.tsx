@@ -20,9 +20,11 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { control, handleSubmit, reset } = useForm({
+  const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: settings,
   });
+  
+  const watchedSettings = watch();
 
   useEffect(() => {
     reset(settings);
@@ -38,7 +40,7 @@ export default function SettingsPage() {
       products,
       customers,
       salesHistory,
-      settings,
+      settings: watchedSettings,
     };
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
       JSON.stringify(dataToBackup, null, 2)
@@ -74,6 +76,7 @@ export default function SettingsPage() {
             salesHistory: data.salesHistory,
           });
           setSettings(data.settings);
+          reset(data.settings);
           toast({ title: t.settings.restoreSuccess });
         } else {
           throw new Error(t.settings.restoreErrorInvalidFile);
@@ -138,6 +141,11 @@ export default function SettingsPage() {
                <div className="space-y-2">
                 <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
                 <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="paymentTerms">{t.settings.paymentTerms}</Label>
+                <Controller name="paymentTermsDays" control={control} render={({ field }) => <Input id="paymentTerms" type="number" min="0" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />} />
+                <p className="text-sm text-muted-foreground">{t.settings.paymentTermsDescription}</p>
               </div>
             </CardContent>
           </Card>
