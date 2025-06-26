@@ -30,6 +30,7 @@ interface AddProductDialogProps {
   onClose: () => void;
   onSave: (product: Omit<Product, 'id' | 'imageUrl'>, id?:string) => void;
   productToEdit?: Product | null;
+  initialBarcode?: string;
 }
 
 const formSchema = z.object({
@@ -42,7 +43,7 @@ const formSchema = z.object({
   barcode: z.string().min(1, { message: 'Barcode cannot be empty.' }),
 });
 
-export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: AddProductDialogProps) {
+export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode }: AddProductDialogProps) {
   const { t } = useLanguage();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -78,11 +79,11 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit }: Add
           price: 0,
           stock: 0,
           minStock: 0,
-          barcode: '',
+          barcode: initialBarcode || '',
         });
       }
     }
-  }, [productToEdit, form, isOpen]);
+  }, [productToEdit, form, isOpen, initialBarcode]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onSave(values, productToEdit?.id);

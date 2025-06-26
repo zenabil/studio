@@ -45,6 +45,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerCombobox } from '@/components/customer-combobox';
 import { useSettings } from '@/contexts/settings-context';
+import { AddProductDialog } from './add-product-dialog';
 
 interface SaleSession {
   id: string;
@@ -58,7 +59,7 @@ interface SaleSession {
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, customers, addSaleRecord } = useData();
+  const { products, customers, addSaleRecord, addProduct } = useData();
   const { settings } = useSettings();
   
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -70,6 +71,9 @@ export function PosView() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [cartQuantities, setCartQuantities] = useState<{ [key: string]: string }>({});
+
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [newProductBarcode, setNewProductBarcode] = useState('');
   
   const createNewSession = useCallback((index: number): SaleSession => ({
     id: `session-${new Date().getTime()}-${index}`,
@@ -251,16 +255,26 @@ export function PosView() {
             title: t.errors.title,
             description: t.errors.productNotFound,
         });
+        setNewProductBarcode(barcode);
+        setIsAddProductDialogOpen(true);
     }
     setBarcodeInput('');
     barcodeInputRef.current?.focus();
-  }, [addToCart, t, toast, products]);
+  }, [addToCart, products, t, toast, setNewProductBarcode, setIsAddProductDialogOpen]);
   
   const handleBarcodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && barcodeInput.trim()) {
       event.preventDefault();
       handleScanSuccess(barcodeInput.trim());
     }
+  };
+
+  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+    addProduct(productData);
+    toast({
+        title: t.products.productAdded,
+    });
+    setIsAddProductDialogOpen(false);
   };
 
 
@@ -396,22 +410,19 @@ export function PosView() {
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
-                                    type="number"
+                                    type="text"
                                     value={cartQuantities[item.id] || ''}
                                     onChange={(e) => {
-                                        setCartQuantities(prev => ({...prev, [item.id]: e.target.value}))
+                                        const value = e.target.value;
+                                        if (/^\d*\.?\d*$/.test(value)) {
+                                            setCartQuantities(prev => ({...prev, [item.id]: value}));
+                                        }
                                     }}
                                     onBlur={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      if (!value || isNaN(value) || value <= 0) {
-                                        updateQuantity(item.id, 0);
-                                      } else {
+                                        const value = parseFloat(e.target.value);
                                         updateQuantity(item.id, value);
-                                      }
                                     }}
                                     className="h-8 text-center w-full px-1 text-sm"
-                                    step="any"
-                                    min="0"
                                 />
                                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                                     <PlusCircle className="h-4 w-4"/>
@@ -475,6 +486,13 @@ export function PosView() {
         onConfirm={() => closeSession(sessionToDelete!)}
         title={t.pos.confirmCloseSaleTitle}
         description={t.pos.confirmCloseSaleMessage}
+      />
+      <AddProductDialog
+        isOpen={isAddProductDialogOpen}
+        onClose={() => setIsAddProductDialogOpen(false)}
+        onSave={handleSaveProduct}
+        productToEdit={null}
+        initialBarcode={newProductBarcode}
       />
     </div>
   );
