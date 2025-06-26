@@ -44,38 +44,57 @@ export default function AlertsPage() {
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
     for (const customer of indebtedCustomers) {
+        const customerSalesHistory = salesHistory
+          .filter(s => s.customerId === customer.id)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
+        const oldestDebtSale = customerSalesHistory.find(s => s.totals.balance > 0);
+        
+        if (!oldestDebtSale) continue;
+        
         let dueDate: Date | null = null;
-        let oldestDebtDateForFeeCalc: Date | null = null;
+        let alertDueDate: Date | null = null;
 
         if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-            // Logic for fixed settlement day of the month
-            if (getDate(today) >= customer.settlementDay) {
-                // If settlement day for this month has passed or is today, check next month's
-                dueDate = new Date(getYear(today), getMonth(today) + 1, customer.settlementDay);
-            } else {
-                dueDate = set(today, { date: customer.settlementDay });
-            }
-        } else {
-            // Fallback to original logic based on payment terms
-            const debtCreatingSales = salesHistory
-                .filter(s => s.customerId === customer.id && s.totals.balance > 0)
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            const todayDate = getDate(today);
+            const currentMonth = getMonth(today);
+            const currentYear = getYear(today);
 
-            if (debtCreatingSales.length > 0) {
-                const oldestDebtSale = debtCreatingSales[0];
-                oldestDebtDateForFeeCalc = new Date(oldestDebtSale.date);
-                dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+            let lastSettlementDate: Date;
+            if (todayDate > customer.settlementDay) {
+                lastSettlementDate = new Date(currentYear, currentMonth, customer.settlementDay);
+            } else {
+                lastSettlementDate = new Date(currentYear, currentMonth - 1, customer.settlementDay);
             }
+            
+            if (new Date(oldestDebtSale.date) < lastSettlementDate) {
+                dueDate = lastSettlementDate;
+            }
+
+            // For alerts, we care about the *next* settlement date
+            if (todayDate >= customer.settlementDay) {
+                alertDueDate = new Date(currentYear, currentMonth + 1, customer.settlementDay);
+            } else {
+                alertDueDate = set(today, { date: customer.settlementDay });
+            }
+
+        } else {
+            const oldestDebtDate = new Date(oldestDebtSale.date);
+            dueDate = addDays(oldestDebtDate, settings.paymentTermsDays);
+            alertDueDate = dueDate;
         }
         
-        if (dueDate && differenceInCalendarDays(dueDate, today) === 1) {
+        if (alertDueDate && differenceInCalendarDays(alertDueDate, today) === 1) {
             let lateFees = 0;
-            if (oldestDebtDateForFeeCalc && settings.lateFeePercentage > 0) {
-              const feeDueDate = addDays(oldestDebtDateForFeeCalc, settings.paymentTermsDays);
-              if (today > feeDueDate) {
-                  const daysOverdue = differenceInCalendarDays(today, feeDueDate);
-                  if (daysOverdue > 0) {
-                      lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
+            if (dueDate && today > dueDate && settings.lateFeePercentage > 0) {
+              const daysOverdue = differenceInCalendarDays(today, dueDate);
+              if (daysOverdue > 0) {
+                  const overduePrincipal = customerSalesHistory
+                    .filter(tx => new Date(tx.date) <= dueDate!)
+                    .reduce((sum, tx) => sum + tx.totals.balance, 0);
+                  
+                  if (overduePrincipal > 0) {
+                    lateFees = daysOverdue * (overduePrincipal * (settings.lateFeePercentage / 100));
                   }
               }
             }
@@ -83,7 +102,7 @@ export default function AlertsPage() {
             alerts.push({
                 customerName: customer.name,
                 balance: customer.balance,
-                dueDate: dueDate,
+                dueDate: alertDueDate,
                 phone: customer.phone,
                 totalDue: customer.balance + lateFees
             });

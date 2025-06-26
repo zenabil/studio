@@ -51,15 +51,18 @@ export default function CustomersPage() {
           return { ...customer, lateFees: 0, totalDue: customer.balance };
         }
 
-        const oldestDebtSale = salesHistory
-          .filter(s => s.customerId === customer.id && s.totals.balance > 0)
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+        const customerSalesHistory = salesHistory
+          .filter(s => s.customerId === customer.id)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
+        const oldestDebtSale = customerSalesHistory.find(s => s.totals.balance > 0);
 
         if (!oldestDebtSale) {
           return { ...customer, lateFees: 0, totalDue: customer.balance };
         }
 
         let dueDate: Date | null = null;
+        let lateFees = 0;
 
         if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
             const todayDate = getDate(today);
@@ -80,11 +83,17 @@ export default function CustomersPage() {
             dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
         }
         
-        let lateFees = 0;
         if (dueDate && today > dueDate) {
           const daysOverdue = differenceInCalendarDays(today, dueDate);
           if (daysOverdue > 0) {
-            lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
+            // Calculate the balance that was actually overdue
+            const overduePrincipal = customerSalesHistory
+              .filter(tx => new Date(tx.date) <= dueDate!)
+              .reduce((sum, tx) => sum + tx.totals.balance, 0);
+
+            if (overduePrincipal > 0) {
+              lateFees = daysOverdue * (overduePrincipal * (settings.lateFeePercentage / 100));
+            }
           }
         }
 
