@@ -7,10 +7,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const calculateItemTotal = (item: CartItem): number => {
-  if (item.quantityPerBox && item.boxPrice && item.boxPrice > 0 && item.quantityPerBox > 0 && item.quantity >= item.quantityPerBox) {
-    const numberOfBoxes = Math.floor(item.quantity / item.quantityPerBox);
-    const remainingUnits = item.quantity % item.quantityPerBox;
-    return (numberOfBoxes * item.boxPrice) + (remainingUnits * item.price);
+  const { quantity, price, quantityPerBox, boxPrice } = item;
+
+  // Check if the product has valid box pricing information and if the quantity sold qualifies for the bulk discount.
+  if (quantityPerBox && boxPrice && boxPrice > 0 && quantityPerBox > 0 && quantity >= quantityPerBox) {
+    // Apply a flat discounted rate (price per unit from box) to the entire quantity.
+    const pricePerUnitInBox = boxPrice / quantityPerBox;
+    return quantity * pricePerUnitInBox;
   }
-  return item.quantity * item.price;
+  
+  // Otherwise, use the standard unit price for all items.
+  return quantity * price;
 };
