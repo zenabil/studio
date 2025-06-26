@@ -46,6 +46,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerCombobox } from '@/components/customer-combobox';
 import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
+import { calculateItemTotal } from '@/lib/utils';
 
 interface SaleSession {
   id: string;
@@ -213,7 +214,7 @@ export function PosView() {
   const { subtotal, total } = useMemo(() => {
     const cart = activeSession?.cart || [];
     const discount = activeSession?.discount || 0;
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const subtotal = cart.reduce((sum, item) => sum + calculateItemTotal(item), 0);
     const total = subtotal - discount;
     return { subtotal, total };
   }, [activeSession]);
@@ -414,13 +415,17 @@ export function PosView() {
                                     value={cartQuantities[item.id] || ''}
                                     onChange={(e) => {
                                         const value = e.target.value;
-                                        if (/^\d*\.?\d*$/.test(value)) {
-                                            setCartQuantities(prev => ({...prev, [item.id]: value}));
-                                        }
+                                        setCartQuantities(prev => ({...prev, [item.id]: value}));
                                     }}
                                     onBlur={(e) => {
                                         const value = parseFloat(e.target.value);
-                                        updateQuantity(item.id, value);
+                                        updateQuantity(item.id, isNaN(value) ? 0 : value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const value = parseFloat((e.target as HTMLInputElement).value);
+                                            updateQuantity(item.id, isNaN(value) ? 0 : value);
+                                        }
                                     }}
                                     className="h-8 text-center w-full px-1 text-sm"
                                 />
@@ -430,7 +435,7 @@ export function PosView() {
                             </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          {settings.currency}{(item.price * item.quantity).toFixed(2)}
+                          {settings.currency}{calculateItemTotal(item).toFixed(2)}
                         </TableCell>
                       </TableRow>
                     ))}

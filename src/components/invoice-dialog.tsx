@@ -16,6 +16,7 @@ import {
   } from 'lucide-react';
 import type { Product, Customer } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
+import { calculateItemTotal } from '@/lib/utils';
 
 interface CartItem extends Product {
     quantity: number;
@@ -80,14 +81,18 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cart.map(item => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-right">{settings.currency}{item.price.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{settings.currency}{(item.price * item.quantity).toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
+              {cart.map(item => {
+                const lineTotal = calculateItemTotal(item);
+                const effectiveUnitPrice = item.quantity > 0 ? lineTotal / item.quantity : 0;
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{effectiveUnitPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{lineTotal.toFixed(2)}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
             <TableFooter>
                 <TableRow>
