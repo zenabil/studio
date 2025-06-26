@@ -25,6 +25,9 @@ import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
 import { MakePaymentDialog } from '@/components/make-payment-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
+import { addDays, differenceInCalendarDays } from 'date-fns';
+
+type CustomerWithFees = Customer & { lateFees: number; totalDue: number; };
 
 export default function CustomersPage() {
   const { t } = useLanguage();
@@ -35,17 +38,45 @@ export default function CustomersPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-  const [viewingInvoicesFor, setViewingInvoicesFor] = useState<Customer | null>(null);
+  const [viewingInvoicesFor, setViewingInvoicesFor] = useState<CustomerWithFees | null>(null);
   const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
 
-  const filteredCustomers = useMemo(() => {
+  const customersWithFees: CustomerWithFees[] = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return customers
+      .map(customer => {
+        if (customer.balance <= 0 || !settings.lateFeePercentage || settings.lateFeePercentage <= 0) {
+          return { ...customer, lateFees: 0, totalDue: customer.balance };
+        }
+
+        const oldestDebtSale = salesHistory
+          .filter(s => s.customerId === customer.id && s.totals.balance > 0)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+        if (!oldestDebtSale) {
+          return { ...customer, lateFees: 0, totalDue: customer.balance };
+        }
+
+        const dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+        let lateFees = 0;
+        
+        if (today > dueDate) {
+          const daysOverdue = differenceInCalendarDays(today, dueDate);
+          if (daysOverdue > 0) {
+            lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
+          }
+        }
+
+        return { ...customer, lateFees, totalDue: customer.balance + lateFees };
+      })
       .filter(customer =>
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => b.spent - a.spent);
-  }, [customers, searchTerm]);
+  }, [customers, salesHistory, settings.paymentTermsDays, settings.lateFeePercentage, searchTerm]);
   
   const handleOpenAddDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -133,19 +164,23 @@ export default function CustomersPage() {
                 <TableHead className="text-center">{t.customers.settlementDay}</TableHead>
                 <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
                 <TableHead className="text-right">{t.customers.balance}</TableHead>
+                <TableHead className="text-right">{t.customers.lateFees}</TableHead>
+                <TableHead className="text-right">{t.customers.totalDue}</TableHead>
                 <TableHead className="text-right">{t.customers.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {customersWithFees.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
                   <TableCell className="text-center">{customer.settlementDay || '-'}</TableCell>
                   <TableCell className="text-right">{settings.currency}{customer.spent.toFixed(2)}</TableCell>
-                  <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-success'}`}>
-                    {settings.currency}{customer.balance.toFixed(2)}
+                  <TableCell className="text-right">{settings.currency}{customer.balance.toFixed(2)}</TableCell>
+                  <TableCell className="text-right text-destructive">{settings.currency}{customer.lateFees.toFixed(2)}</TableCell>
+                  <TableCell className={`text-right font-bold ${customer.totalDue > 0 ? 'text-destructive' : 'text-success'}`}>
+                    {settings.currency}{customer.totalDue.toFixed(2)}
                   </TableCell>
                   <TableCell className="flex justify-end">
                     {customer.balance > 0 && (

@@ -23,6 +23,7 @@ export interface Settings {
   theme: Theme;
   colorPreset: string; // name of the preset
   paymentTermsDays: number;
+  lateFeePercentage: number;
 }
 
 // Define the context type
@@ -59,6 +60,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     theme: 'dark',
     colorPreset: 'Teal',
     paymentTermsDays: 30,
+    lateFeePercentage: 0.1,
   });
   
   useEffect(() => {

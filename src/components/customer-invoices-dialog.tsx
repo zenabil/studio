@@ -14,10 +14,12 @@ import type { Customer, SaleRecord } from '@/lib/data';
 import { format } from 'date-fns';
 import { useSettings } from '@/contexts/settings-context';
 
+type CustomerWithFees = Customer & { lateFees: number; totalDue: number; };
+
 interface CustomerInvoicesDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  customer: Customer | null;
+  customer: CustomerWithFees | null;
   salesHistory: SaleRecord[];
 }
 
@@ -107,6 +109,16 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
                 <TableRow>
                   <TableCell colSpan={4} className="text-right font-bold">{t.customers.endingBalance}</TableCell>
                   <TableCell className="text-right font-bold">{settings.currency}{customer.balance.toFixed(2)}</TableCell>
+                </TableRow>
+                {customer.lateFees > 0 && (
+                  <TableRow>
+                      <TableCell colSpan={4} className="text-right font-bold text-destructive">{t.customers.lateFees}</TableCell>
+                      <TableCell className="text-right font-bold text-destructive">{settings.currency}{customer.lateFees.toFixed(2)}</TableCell>
+                  </TableRow>
+                )}
+                <TableRow className="text-lg">
+                    <TableCell colSpan={4} className="text-right font-bold">{t.customers.totalDue}</TableCell>
+                    <TableCell className="text-right font-bold">{settings.currency}{customer.totalDue.toFixed(2)}</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>

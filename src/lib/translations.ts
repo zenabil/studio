@@ -91,7 +91,7 @@ export const translations = {
       email: "Email",
       phone: "Téléphone",
       totalSpent: "Total Dépensé",
-      balance: "Solde Dû",
+      balance: "Solde",
       actions: "Actions",
       addCustomer: "Ajouter un client",
       searchCustomers: "Rechercher des clients...",
@@ -136,6 +136,8 @@ export const translations = {
       settlementDay: "Jour de règlement",
       settlementDayPlaceholder: "ex: 15 (laisser vide pour utiliser les termes globaux)",
       settlementDayInvalid: "Le jour doit être entre 1 et 31.",
+      lateFees: "Pénalités de retard",
+      totalDue: "Total Dû",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -201,6 +203,8 @@ export const translations = {
       restoreErrorInvalidFile: "Le fichier de sauvegarde est corrompu ou son format est invalide.",
       paymentTerms: "Conditions de paiement (jours)",
       paymentTermsDescription: "Le nombre de jours avant qu'une facture ne soit considérée comme due.",
+      lateFeePercentage: "Pourcentage de pénalité de retard (par jour)",
+      lateFeePercentageDescription: "Le pourcentage du solde dû appliqué comme pénalité pour chaque jour de retard.",
     },
     errors: {
       title: "Erreur",
@@ -299,7 +303,7 @@ export const translations = {
       email: "البريد الإلكتروني",
       phone: "الهاتف",
       totalSpent: "إجمالي الإنفاق",
-      balance: "الرصيد المستحق",
+      balance: "الرصيد",
       actions: "الإجراءات",
       addCustomer: "إضافة عميل",
       searchCustomers: "البحث عن عملاء...",
@@ -344,6 +348,8 @@ export const translations = {
       settlementDay: "يوم التسوية",
       settlementDayPlaceholder: "مثال: 15 (اتركه فارغًا لاستخدام الشروط العامة)",
       settlementDayInvalid: "يجب أن يكون اليوم بين 1 و 31.",
+      lateFees: "غرامات التأخير",
+      totalDue: "المجموع المستحق",
     },
     reports: {
       title: "التقارير والتحليلات",
@@ -409,6 +415,8 @@ export const translations = {
       restoreErrorInvalidFile: "ملف النسخ الاحتياطي تالف أو أن تنسيقه غير صالح.",
       paymentTerms: "شروط الدفع (أيام)",
       paymentTermsDescription: "عدد الأيام قبل اعتبار الفاتورة مستحقة.",
+      lateFeePercentage: "نسبة غرامة التأخير (لكل يوم)",
+      lateFeePercentageDescription: "النسبة المئوية من الرصيد المستحق التي تطبق كغرامة عن كل يوم تأخير.",
     },
     errors: {
       title: "خطأ",
