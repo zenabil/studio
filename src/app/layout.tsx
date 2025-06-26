@@ -28,9 +28,9 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AppProviders>
           <SidebarProvider>
-            <div className="flex min-h-screen w-full bg-background">
+            <div className="flex h-screen w-full bg-background">
               <SidebarNav />
-              <div className="flex flex-1 flex-col">
+              <div className="flex flex-1 flex-col overflow-y-auto">
                 <main className="flex-1 p-4 pt-20 md:p-6">{children}</main>
               </div>
             </div>
