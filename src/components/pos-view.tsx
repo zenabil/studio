@@ -389,7 +389,7 @@ export function PosView() {
   }
 
   return (
-    <div className="grid h-[calc(100vh-5rem)] grid-cols-1 gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:h-[calc(100vh-5rem)]">
       <div className="lg:col-span-2">
         <Card className="h-full">
           <CardHeader>
@@ -432,7 +432,7 @@ export function PosView() {
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[calc(100vh-14rem)]">
+            <ScrollArea className="h-[50vh] lg:h-[calc(100vh-14rem)]">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {filteredProducts.map((product) => (
                   <Card key={product.id} className="overflow-hidden transition-all hover:scale-105 hover:shadow-lg flex flex-col">

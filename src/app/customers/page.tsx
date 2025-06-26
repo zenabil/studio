@@ -106,9 +106,9 @@ export default function CustomersPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
+        <CardHeader className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
           <CardTitle>{t.customers.title}</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex w-full gap-2 md:w-auto">
             <Input
               placeholder={t.customers.searchCustomers}
               value={searchTerm}

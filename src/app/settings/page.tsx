@@ -194,7 +194,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>{t.settings.dataManagement}</CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-4">
+            <CardContent className="flex flex-col gap-4 sm:flex-row">
                 <Button type="button" onClick={handleBackup}>{t.settings.backupData}</Button>
                 <input
                   type="file"
@@ -212,7 +212,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>{t.settings.activation}</CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-4 items-end">
+            <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-end">
                 <div className="space-y-2 flex-grow">
                     <Label htmlFor="licenseKey">{t.settings.licenseKey}</Label>
                     <Input id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" />
