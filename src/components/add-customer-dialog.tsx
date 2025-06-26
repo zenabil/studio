@@ -37,8 +37,8 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
 
   const formSchema = z.object({
     name: z.string().min(2, { message: t.customers.nameMinLength }),
-    email: z.string().email({ message: t.customers.emailInvalid }),
-    phone: z.string().min(5, { message: t.customers.phoneMinLength }),
+    email: z.string().email({ message: t.customers.emailInvalid }).or(z.literal('')),
+    phone: z.string(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({

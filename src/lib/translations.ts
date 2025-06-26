@@ -133,7 +133,6 @@ export const translations = {
       noCustomerFound: "Aucun client trouvé.",
       nameMinLength: "Le nom doit comporter au moins 2 caractères.",
       emailInvalid: "Veuillez saisir une adresse e-mail valide.",
-      phoneMinLength: "Le numéro de téléphone doit comporter au moins 5 chiffres.",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -317,7 +316,6 @@ export const translations = {
       noCustomerFound: "لم يتم العثور على عملاء.",
       nameMinLength: "يجب أن يتكون الاسم من حرفين على الأقل.",
       emailInvalid: "الرجاء إدخال بريد إلكتروني صحيح.",
-      phoneMinLength: "يجب أن يتكون رقم الهاتف من 5 أرقام على الأقل.",
     },
     reports: {
       title: "التقارير والتحليلات",
