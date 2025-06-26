@@ -25,7 +25,7 @@ import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
 import { MakePaymentDialog } from '@/components/make-payment-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
-import { addDays, differenceInCalendarDays } from 'date-fns';
+import { addDays, differenceInCalendarDays, getDate, getMonth, getYear } from 'date-fns';
 
 type CustomerWithFees = Customer & { lateFees: number; totalDue: number; };
 
@@ -59,10 +59,29 @@ export default function CustomersPage() {
           return { ...customer, lateFees: 0, totalDue: customer.balance };
         }
 
-        const dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
-        let lateFees = 0;
+        let dueDate: Date | null = null;
+
+        if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
+            const todayDate = getDate(today);
+            const currentMonth = getMonth(today);
+            const currentYear = getYear(today);
+
+            let lastSettlementDate: Date;
+            if (todayDate > customer.settlementDay) {
+                lastSettlementDate = new Date(currentYear, currentMonth, customer.settlementDay);
+            } else {
+                lastSettlementDate = new Date(currentYear, currentMonth - 1, customer.settlementDay);
+            }
+            
+            if (new Date(oldestDebtSale.date) < lastSettlementDate) {
+                dueDate = lastSettlementDate;
+            }
+        } else {
+            dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+        }
         
-        if (today > dueDate) {
+        let lateFees = 0;
+        if (dueDate && today > dueDate) {
           const daysOverdue = differenceInCalendarDays(today, dueDate);
           if (daysOverdue > 0) {
             lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
