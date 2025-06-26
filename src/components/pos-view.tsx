@@ -51,7 +51,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
 import { calculateItemTotal } from '@/lib/utils';
 import Loading from '@/app/loading';
-import { Skeleton } from './ui/skeleton';
+import { PosProductCard } from './pos-product-card';
 
 interface SaleSession {
   id: string;
@@ -114,64 +114,62 @@ export function PosView() {
     }
   }, [sessions, activeSessionId]);
 
-  const updateActiveSession = (data: Partial<Omit<SaleSession, 'id'>>) => {
+  const updateActiveSession = useCallback((data: Partial<Omit<SaleSession, 'id'>>) => {
     setSessions(prevSessions =>
       prevSessions.map(session =>
         session.id === activeSessionId ? { ...session, ...data } : session
       )
     );
-  };
-  
-  const updateQuantity = (productId: string, newQuantity: number) => {
-    if (!activeSession) return;
-  
-    const finalQuantity = Math.min(newQuantity, 999999999999);
-  
-    if (isNaN(finalQuantity) || finalQuantity <= 0) {
-      const newCart = activeSession.cart.filter(item => item.id !== productId);
-      updateActiveSession({ cart: newCart });
-      setCartQuantities(prev => {
-          const next = {...prev};
-          delete next[productId];
-          return next;
-      });
-    } else {
-      const newCart = activeSession.cart.map(item =>
-        item.id === productId ? { ...item, quantity: finalQuantity } : item
-      );
-      updateActiveSession({ cart: newCart });
-      setCartQuantities(prev => ({ ...prev, [productId]: String(finalQuantity) }));
-    }
-  };
+  }, [activeSessionId]);
 
-  const handleCartQuantityChange = (productId: string, value: string) => {
+  const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
+    if (!activeSession) return;
+    
+    const finalQuantity = Math.max(0, newQuantity);
+
+    const newCart = [...activeSession.cart];
+    const existingItemIndex = newCart.findIndex(item => item.id === productId);
+
+    if (existingItemIndex > -1) {
+        if (finalQuantity > 0) {
+            newCart[existingItemIndex].quantity = finalQuantity;
+        } else {
+            newCart.splice(existingItemIndex, 1);
+        }
+    }
+    
+    updateActiveSession({ cart: newCart });
+  }, [activeSession, updateActiveSession]);
+  
+  const handleQuantityInputChange = (productId: string, value: string) => {
     setCartQuantities(prev => ({ ...prev, [productId]: value }));
-  
-    if (!activeSession) return;
-    
-    const newQuantity = parseFloat(value);
-    
-    if (!isNaN(newQuantity) && newQuantity > 0) {
-        const finalQuantity = Math.min(newQuantity, 999999999999);
-        const newCart = activeSession.cart.map(item =>
-            item.id === productId ? { ...item, quantity: finalQuantity } : item
-        );
-        updateActiveSession({ cart: newCart });
-    }
   };
 
-  const handleCartQuantityBlur = (productId: string) => {
-      if (!activeSession) return;
-      const value = cartQuantities[productId] ?? '';
+  const handleQuantityInputBlur = (productId: string) => {
+      const value = cartQuantities[productId] || '';
       const newQuantity = parseFloat(value);
       
-      if (isNaN(newQuantity) || newQuantity <= 0) {
-          updateQuantity(productId, 0);
+      if (isNaN(newQuantity)) {
+          handleQuantityChange(productId, 0);
       } else {
-          updateQuantity(productId, newQuantity);
+          handleQuantityChange(productId, newQuantity);
       }
   };
-  
+
+  const handleIncrementQuantity = (productId: string) => {
+    const item = activeSession?.cart.find(i => i.id === productId);
+    if (item) {
+        handleQuantityChange(productId, item.quantity + 1);
+    }
+  };
+
+  const handleDecrementQuantity = (productId: string) => {
+    const item = activeSession?.cart.find(i => i.id === productId);
+    if (item) {
+        handleQuantityChange(productId, item.quantity - 1);
+    }
+  };
+
   useEffect(() => {
     if (activeSession) {
         const newQuantities: { [key: string]: string } = {};
@@ -209,17 +207,13 @@ export function PosView() {
     const newCart = [...activeSession.cart];
     const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
   
-    let finalQuantity;
     if (existingItemIndex > -1) {
-      finalQuantity = newCart[existingItemIndex].quantity + 1;
-      newCart[existingItemIndex].quantity = finalQuantity;
+      newCart[existingItemIndex].quantity += 1;
     } else {
-      finalQuantity = 1;
-      newCart.push({ ...product, quantity: finalQuantity });
+      newCart.push({ ...product, quantity: 1 });
     }
     updateActiveSession({ cart: newCart });
-    setCartQuantities(prev => ({...prev, [product.id]: String(finalQuantity)}))
-  }, [activeSession]);
+  }, [activeSession, updateActiveSession]);
   
   const resetSale = useCallback(() => {
     if (!activeSessionId) return;
@@ -229,7 +223,7 @@ export function PosView() {
           amountPaid: 0,
           discount: 0,
       });
-  }, [activeSessionId]);
+  }, [activeSessionId, updateActiveSession]);
   
   const addNewSession = () => {
     const newSession = createNewSession(sessions.length + 1);
@@ -426,44 +420,13 @@ export function PosView() {
             <ScrollArea className="h-[55vh] lg:h-full">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 pr-4">
                 {filteredProducts.map((product) => (
-                  <Card 
-                    key={product.id} 
-                    className="overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col group cursor-pointer"
-                    onClick={() => addToCart(product)}
-                  >
-                    <div className="aspect-video w-full overflow-hidden relative bg-muted">
-                        <Image 
-                            src={product.imageUrl || `https://placehold.co/400x300.png`} 
-                            alt={product.name}
-                            width={400}
-                            height={300}
-                            unoptimized={!!product.imageUrl}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        />
-                         <div className="absolute top-2 right-2 bg-background/80 text-foreground text-xs font-bold px-2 py-1 rounded-full backdrop-blur-sm">
-                           {settings.currency}{product.price.toFixed(2)}
-                         </div>
-                         {!product.imageUrl && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Skeleton className="w-full h-full" />
-                          </div>
-                         )}
-                    </div>
-                    <div className="p-3 flex-grow flex flex-col">
-                       <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors flex-grow">{product.name}</h3>
-                       <p className="text-xs text-muted-foreground mt-1">{product.category}</p>
-                    </div>
-                    <CardFooter className="p-2 mt-auto">
-                      <Button
-                        size="sm"
-                        className="w-full h-9"
-                        onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t.pos.addToCart}
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                   <PosProductCard
+                      key={product.id}
+                      product={product}
+                      onAddToCart={addToCart}
+                      currency={settings.currency}
+                      t={t}
+                    />
                 ))}
               </div>
             </ScrollArea>
@@ -516,23 +479,23 @@ export function PosView() {
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
                            <div className="flex items-center justify-center gap-1 w-28 mx-auto">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleDecrementQuantity(item.id)}>
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
                                     type="text"
                                     value={cartQuantities[item.id] || ''}
-                                    onChange={(e) => handleCartQuantityChange(item.id, e.target.value)}
-                                    onBlur={() => handleCartQuantityBlur(item.id)}
+                                    onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
+                                    onBlur={() => handleQuantityInputBlur(item.id)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
-                                            handleCartQuantityBlur(item.id);
+                                            handleQuantityInputBlur(item.id);
                                             (e.target as HTMLInputElement).blur();
                                         }
                                     }}
                                     className="h-8 text-center w-full px-1 text-sm bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary"
                                 />
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleIncrementQuantity(item.id)}>
                                     <PlusCircle className="h-4 w-4"/>
                                 </Button>
                             </div>

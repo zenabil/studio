@@ -9,7 +9,7 @@
     "minStock": 20,
     "quantityPerBox": 50,
     "boxPrice": 115,
-    "barcode": "1234567890123"
+    "barcode": "123456789012"
   },
   {
     "id": "prod-02",
