@@ -51,13 +51,22 @@ export default function CustomersPage() {
           return { ...customer, lateFees: 0, totalDue: customer.balance };
         }
 
-        const customerSalesHistory = salesHistory
+        const customerTransactionsDesc = salesHistory
           .filter(s => s.customerId === customer.id)
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          
-        const oldestDebtSale = customerSalesHistory.find(s => s.totals.balance > 0);
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        if (!oldestDebtSale) {
+        let oldestDebtDate: Date | null = null;
+        let tempBalance = customer.balance;
+        for (const tx of customerTransactionsDesc) {
+            if (tempBalance > 0) {
+                oldestDebtDate = new Date(tx.date);
+                tempBalance -= tx.totals.balance;
+            } else {
+                break; 
+            }
+        }
+        
+        if (!oldestDebtDate) {
           return { ...customer, lateFees: 0, totalDue: customer.balance };
         }
 
@@ -76,24 +85,17 @@ export default function CustomersPage() {
                 lastSettlementDate = new Date(currentYear, currentMonth - 1, customer.settlementDay);
             }
             
-            if (new Date(oldestDebtSale.date) < lastSettlementDate) {
+            if (oldestDebtDate < lastSettlementDate) {
                 dueDate = lastSettlementDate;
             }
         } else {
-            dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+            dueDate = addDays(oldestDebtDate, settings.paymentTermsDays);
         }
         
         if (dueDate && today > dueDate) {
           const daysOverdue = differenceInCalendarDays(today, dueDate);
-          if (daysOverdue > 0) {
-            // Calculate the balance that was actually overdue
-            const overduePrincipal = customerSalesHistory
-              .filter(tx => new Date(tx.date) <= dueDate!)
-              .reduce((sum, tx) => sum + tx.totals.balance, 0);
-
-            if (overduePrincipal > 0) {
-              lateFees = daysOverdue * (overduePrincipal * (settings.lateFeePercentage / 100));
-            }
+          if (daysOverdue > 0 && customer.balance > 0) {
+            lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
           }
         }
 

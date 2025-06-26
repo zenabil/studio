@@ -44,58 +44,64 @@ export default function AlertsPage() {
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
     for (const customer of indebtedCustomers) {
-        const customerSalesHistory = salesHistory
+        const customerTransactionsDesc = salesHistory
           .filter(s => s.customerId === customer.id)
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          
-        const oldestDebtSale = customerSalesHistory.find(s => s.totals.balance > 0);
-        
-        if (!oldestDebtSale) continue;
-        
-        let dueDate: Date | null = null;
-        let alertDueDate: Date | null = null;
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+        let oldestDebtDate: Date | null = null;
+        let tempBalance = customer.balance;
+        for (const tx of customerTransactionsDesc) {
+            if (tempBalance > 0) {
+                oldestDebtDate = new Date(tx.date);
+                tempBalance -= tx.totals.balance;
+            } else {
+                break; 
+            }
+        }
+        
+        let alertDueDate: Date | null = null;
         if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
             const todayDate = getDate(today);
             const currentMonth = getMonth(today);
             const currentYear = getYear(today);
 
-            let lastSettlementDate: Date;
-            if (todayDate > customer.settlementDay) {
-                lastSettlementDate = new Date(currentYear, currentMonth, customer.settlementDay);
-            } else {
-                lastSettlementDate = new Date(currentYear, currentMonth - 1, customer.settlementDay);
-            }
-            
-            if (new Date(oldestDebtSale.date) < lastSettlementDate) {
-                dueDate = lastSettlementDate;
-            }
-
-            // For alerts, we care about the *next* settlement date
             if (todayDate >= customer.settlementDay) {
                 alertDueDate = new Date(currentYear, currentMonth + 1, customer.settlementDay);
             } else {
                 alertDueDate = set(today, { date: customer.settlementDay });
             }
-
-        } else {
-            const oldestDebtDate = new Date(oldestDebtSale.date);
-            dueDate = addDays(oldestDebtDate, settings.paymentTermsDays);
-            alertDueDate = dueDate;
+        } else if (oldestDebtDate) {
+            alertDueDate = addDays(oldestDebtDate, settings.paymentTermsDays);
         }
         
         if (alertDueDate && differenceInCalendarDays(alertDueDate, today) === 1) {
             let lateFees = 0;
-            if (dueDate && today > dueDate && settings.lateFeePercentage > 0) {
-              const daysOverdue = differenceInCalendarDays(today, dueDate);
-              if (daysOverdue > 0) {
-                  const overduePrincipal = customerSalesHistory
-                    .filter(tx => new Date(tx.date) <= dueDate!)
-                    .reduce((sum, tx) => sum + tx.totals.balance, 0);
-                  
-                  if (overduePrincipal > 0) {
-                    lateFees = daysOverdue * (overduePrincipal * (settings.lateFeePercentage / 100));
+            if (oldestDebtDate) {
+              let feeDueDate: Date | null = null;
+              if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
+                  const todayDate = getDate(today);
+                  const currentMonth = getMonth(today);
+                  const currentYear = getYear(today);
+
+                  let lastSettlementDate: Date;
+                  if (todayDate > customer.settlementDay) {
+                      lastSettlementDate = new Date(currentYear, currentMonth, customer.settlementDay);
+                  } else {
+                      lastSettlementDate = new Date(currentYear, currentMonth - 1, customer.settlementDay);
                   }
+                  
+                  if (oldestDebtDate < lastSettlementDate) {
+                      feeDueDate = lastSettlementDate;
+                  }
+              } else {
+                  feeDueDate = addDays(oldestDebtDate, settings.paymentTermsDays);
+              }
+              
+              if (feeDueDate && today > feeDueDate) {
+                const daysOverdue = differenceInCalendarDays(today, feeDueDate);
+                if (daysOverdue > 0 && customer.balance > 0) {
+                  lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
+                }
               }
             }
 
@@ -109,7 +115,7 @@ export default function AlertsPage() {
         }
     }
     return alerts;
-}, [customers, salesHistory, settings.paymentTermsDays, settings.lateFeePercentage]);
+  }, [customers, salesHistory, settings.paymentTermsDays, settings.lateFeePercentage]);
 
   const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
     if (!alert.phone) {
