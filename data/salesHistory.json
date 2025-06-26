@@ -1,0 +1,67 @@
+[
+  {
+    "id": "SALE-001",
+    "customerId": "cust-02",
+    "items": [
+      {
+        "id": "prod-01",
+        "name": "Café Espresso",
+        "category": "Boissons",
+        "price": 2.5,
+        "purchasePrice": 0.8,
+        "stock": 100,
+        "minStock": 20,
+        "quantityPerBox": 50,
+        "boxPrice": 115,
+        "barcode": "1234567890123",
+        "quantity": 2
+      },
+      {
+        "id": "prod-02",
+        "name": "Croissant au Beurre",
+        "category": "Pâtisseries",
+        "price": 1.8,
+        "purchasePrice": 0.6,
+        "stock": 50,
+        "minStock": 15,
+        "quantityPerBox": 24,
+        "boxPrice": 40,
+        "barcode": "2345678901234",
+        "quantity": 1
+      }
+    ],
+    "totals": {
+      "subtotal": 6.8,
+      "discount": 0,
+      "total": 6.8,
+      "amountPaid": 5,
+      "balance": 1.8
+    },
+    "date": "2023-10-26T10:00:00.000Z"
+  },
+  {
+    "id": "SALE-002",
+    "customerId": "cust-02",
+    "items": [
+      {
+        "id": "prod-05",
+        "name": "Salade César",
+        "category": "Salades",
+        "price": 7.2,
+        "purchasePrice": 3.5,
+        "stock": 15,
+        "minStock": 5,
+        "barcode": "5678901234567",
+        "quantity": 1
+      }
+    ],
+    "totals": {
+      "subtotal": 7.2,
+      "discount": 1,
+      "total": 6.2,
+      "amountPaid": 0,
+      "balance": 6.2
+    },
+    "date": "2023-10-27T12:30:00.000Z"
+  }
+]

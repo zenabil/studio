@@ -11,12 +11,13 @@ import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getBackupData } from '@/lib/data-actions';
 
 export default function SettingsPage() {
   const { settings, setSettings, colorPresets } = useSettings();
   const { t } = useLanguage();
-  const { products, customers, salesHistory, restoreData } = useData();
+  const { restoreData } = useData();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,21 +36,27 @@ export default function SettingsPage() {
     toast({ title: t.settings.settingsSaved });
   };
   
-  const handleBackup = () => {
-    const dataToBackup = {
-      products,
-      customers,
-      salesHistory,
-      settings: watchedSettings,
-    };
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(dataToBackup, null, 2)
-    )}`;
-    const link = document.createElement('a');
-    link.href = jsonString;
-    link.download = `mercurio-pos-backup-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    toast({ title: t.settings.backupSuccess });
+  const handleBackup = async () => {
+    try {
+      const { products, customers, salesHistory } = await getBackupData();
+      const dataToBackup = {
+        products,
+        customers,
+        salesHistory,
+        settings: watchedSettings,
+      };
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(dataToBackup, null, 2)
+      )}`;
+      const link = document.createElement('a');
+      link.href = jsonString;
+      link.download = `mercurio-pos-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      toast({ title: t.settings.backupSuccess });
+    } catch (error) {
+      console.error("Backup failed:", error);
+      toast({ variant: 'destructive', title: t.settings.restoreErrorTitle, description: "Failed to fetch data for backup." });
+    }
   };
   
   const handleRestoreClick = () => {
@@ -61,7 +68,7 @@ export default function SettingsPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target?.result;
         if (typeof text !== 'string') {
@@ -69,14 +76,16 @@ export default function SettingsPage() {
         }
         const data = JSON.parse(text);
 
-        if (data.products && data.customers && data.salesHistory && data.settings) {
-          restoreData({
+        if (data.products && data.customers && data.salesHistory) {
+          await restoreData({
             products: data.products,
             customers: data.customers,
             salesHistory: data.salesHistory,
           });
-          setSettings(data.settings);
-          reset(data.settings);
+          if (data.settings) {
+            setSettings(data.settings);
+            reset(data.settings);
+          }
           toast({ title: t.settings.restoreSuccess });
         } else {
           throw new Error(t.settings.restoreErrorInvalidFile);

@@ -46,6 +46,7 @@ import { CustomerCombobox } from '@/components/customer-combobox';
 import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
 import { calculateItemTotal } from '@/lib/utils';
+import Loading from '@/app/loading';
 
 interface SaleSession {
   id: string;
@@ -59,7 +60,7 @@ interface SaleSession {
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, customers, addSaleRecord, addProduct } = useData();
+  const { products, customers, addSaleRecord, addProduct, isLoading } = useData();
   const { settings } = useSettings();
   
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -384,8 +385,12 @@ export function PosView() {
   
   const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
 
+  if (isLoading) {
+    return <Loading />;
+  }
+
   if (!activeSessionId || !activeSession) {
-    return null;
+    return <Loading />; // Or some other placeholder for when sessions are not ready
   }
 
   return (

@@ -22,11 +22,12 @@ import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, format, set, getDate, getMonth, getYear } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import Loading from '@/app/loading';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, customers, salesHistory } = useData();
+  const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
 
   const lowStockProducts = useMemo(() => {
@@ -104,6 +105,10 @@ export default function AlertsPage() {
       description: t.alerts.smsRedirect,
     });
   };
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <div className="space-y-6">

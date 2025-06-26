@@ -1,25 +1,28 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { 
-    products as initialProducts, 
-    customers as initialCustomers, 
-    salesHistory as initialSalesHistory,
     type Product,
     type Customer,
     type SaleRecord,
     type CartItem
 } from '@/lib/data';
-
-// Define keys for localStorage
-const PRODUCTS_KEY = 'mercurio-pos-products';
-const CUSTOMERS_KEY = 'mercurio-pos-customers';
-const SALES_HISTORY_KEY = 'mercurio-pos-sales-history';
+import {
+    getProducts,
+    saveProducts,
+    getCustomers,
+    saveCustomers,
+    getSalesHistory,
+    saveSalesHistory,
+    restoreBackupData as restoreServerData
+} from '@/lib/data-actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface DataContextType {
     products: Product[];
     customers: Customer[];
     salesHistory: SaleRecord[];
+    isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id'>) => void;
     updateProduct: (productId: string, productData: Omit<Product, 'id'>) => void;
     deleteProduct: (productId: string) => void;
@@ -28,75 +31,82 @@ interface DataContextType {
     deleteCustomer: (customerId: string) => void;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => void;
     makePayment: (customerId: string, amount: number) => void;
-    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => void;
+    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-    // Initialize with default data for server-side rendering
-    const [products, setProducts] = useState<Product[]>(initialProducts);
-    const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-    const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(initialSalesHistory);
-    const [isClient, setIsClient] = useState(false);
+    const { toast } = useToast();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // This effect runs only on the client, after the initial render
+    // Load initial data from server
     useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    // Load data from localStorage once the component has mounted on the client
-    useEffect(() => {
-        if (isClient) {
+        const loadData = async () => {
             try {
-                const savedProducts = window.localStorage.getItem(PRODUCTS_KEY);
-                if (savedProducts) setProducts(JSON.parse(savedProducts));
-                
-                const savedCustomers = window.localStorage.getItem(CUSTOMERS_KEY);
-                if (savedCustomers) setCustomers(JSON.parse(savedCustomers));
-
-                const savedSalesHistory = window.localStorage.getItem(SALES_HISTORY_KEY);
-                if (savedSalesHistory) setSalesHistory(JSON.parse(savedSalesHistory));
+                setIsLoading(true);
+                const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
+                    getProducts(),
+                    getCustomers(),
+                    getSalesHistory()
+                ]);
+                setProducts(loadedProducts);
+                setCustomers(loadedCustomers);
+                setSalesHistory(loadedSalesHistory);
             } catch (error) {
-                console.error("Failed to load data from localStorage", error);
+                console.error("Failed to load data from server:", error);
+                toast({
+                    variant: 'destructive',
+                    title: "Error",
+                    description: "Could not load application data from the server."
+                })
+            } finally {
+                setIsLoading(false);
             }
-        }
-    }, [isClient]);
+        };
 
-    // Persist to localStorage whenever data changes, but only on the client
-    useEffect(() => {
-        if (isClient) {
-            localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-        }
-    }, [products, isClient]);
+        loadData();
+    }, [toast]);
 
-    useEffect(() => {
-        if (isClient) {
-            localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-        }
-    }, [customers, isClient]);
-
-    useEffect(() => {
-        if (isClient) {
-            localStorage.setItem(SALES_HISTORY_KEY, JSON.stringify(salesHistory));
-        }
-    }, [salesHistory, isClient]);
-
+    const handleDataUpdate = useCallback(async <T>(
+      updateFn: React.Dispatch<React.SetStateAction<T[]>>,
+      saveFn: (data: T[]) => Promise<void>,
+      newData: T[]
+    ) => {
+      updateFn(newData);
+      try {
+        await saveFn(newData);
+      } catch (error) {
+        console.error("Failed to save data to server:", error);
+        toast({
+          variant: 'destructive',
+          title: "Save Error",
+          description: "Could not save changes to the server. Your data might be out of sync.",
+        });
+        // Optionally, implement a rollback mechanism here
+      }
+    }, [toast]);
 
     const addProduct = (productData: Omit<Product, 'id'>) => {
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
             ...productData,
         };
-        setProducts(prev => [newProduct, ...prev]);
+        const updatedProducts = [newProduct, ...products];
+        handleDataUpdate(setProducts, saveProducts, updatedProducts);
     };
 
     const updateProduct = (productId: string, productData: Omit<Product, 'id'>) => {
-        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
+        const updatedProducts = products.map(p => p.id === productId ? { ...p, ...productData } : p);
+        handleDataUpdate(setProducts, saveProducts, updatedProducts);
     };
 
     const deleteProduct = (productId: string) => {
-        setProducts(prev => prev.filter(p => p.id !== productId));
+        const updatedProducts = products.filter(p => p.id !== productId);
+        handleDataUpdate(setProducts, saveProducts, updatedProducts);
     };
 
     const addCustomer = (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
@@ -106,15 +116,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             balance: 0,
             ...customerData,
         };
-        setCustomers(prev => [newCustomer, ...prev]);
+        const updatedCustomers = [newCustomer, ...customers];
+        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
     };
     
     const updateCustomer = (customerId: string, customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
-        setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...customerData } : c));
+        const updatedCustomers = customers.map(c => c.id === customerId ? { ...c, ...customerData } : c);
+        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
     };
 
     const deleteCustomer = (customerId: string) => {
-        setCustomers(prev => prev.filter(c => c.id !== customerId));
+        const updatedCustomers = customers.filter(c => c.id !== customerId);
+        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
     };
     
     const addSaleRecord = (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
@@ -125,33 +138,32 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             totals: totals,
             date: new Date().toISOString(),
         };
-        setSalesHistory(prev => [newSale, ...prev]);
+        
+        const updatedSalesHistory = [newSale, ...salesHistory];
+        handleDataUpdate(setSalesHistory, saveSalesHistory, updatedSalesHistory);
 
         // Update product stock
-        setProducts(prevProducts => {
-            const newProducts = [...prevProducts];
-            cart.forEach(cartItem => {
-                const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
-                if (productIndex !== -1) {
-                    newProducts[productIndex].stock -= cartItem.quantity;
-                }
-            });
-            return newProducts;
+        const updatedProducts = products.map(product => {
+            const cartItem = cart.find(item => item.id === product.id);
+            if (cartItem) {
+                return { ...product, stock: product.stock - cartItem.quantity };
+            }
+            return product;
         });
-
+        handleDataUpdate(setProducts, saveProducts, updatedProducts);
+        
         if (customerId) {
-            setCustomers(prevCustomers => 
-                prevCustomers.map(c => {
-                    if (c.id === customerId) {
-                        return {
-                            ...c,
-                            spent: c.spent + totals.total,
-                            balance: c.balance + totals.balance,
-                        }
+            const updatedCustomers = customers.map(c => {
+                if (c.id === customerId) {
+                    return {
+                        ...c,
+                        spent: c.spent + totals.total,
+                        balance: c.balance + totals.balance,
                     }
-                    return c;
-                })
-            );
+                }
+                return c;
+            });
+            handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
         }
     };
     
@@ -170,27 +182,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             date: new Date().toISOString(),
         };
 
-        setSalesHistory(prev => [...prev, paymentRecord]);
+        const updatedSalesHistory = [...salesHistory, paymentRecord];
+        handleDataUpdate(setSalesHistory, saveSalesHistory, updatedSalesHistory);
 
-        setCustomers(prev => 
-            prev.map(c => 
-                c.id === customerId 
-                ? { ...c, balance: c.balance - amount }
-                : c
-            )
+        const updatedCustomers = customers.map(c => 
+            c.id === customerId 
+            ? { ...c, balance: c.balance - amount }
+            : c
         );
+        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
     };
 
-    const restoreData = (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => {
-        if (data.products) setProducts(data.products);
-        if (data.customers) setCustomers(data.customers);
-        if (data.salesHistory) setSalesHistory(data.salesHistory);
+    const restoreData = async (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => {
+        setIsLoading(true);
+        try {
+            await restoreServerData(data);
+            // Re-fetch data from server to update UI
+            const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
+                getProducts(),
+                getCustomers(),
+                getSalesHistory()
+            ]);
+            setProducts(loadedProducts);
+            setCustomers(loadedCustomers);
+            setSalesHistory(loadedSalesHistory);
+        } catch(error) {
+            console.error("Failed to restore data:", error);
+            throw error; // re-throw to be caught in the component
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const value = {
         products,
         customers,
         salesHistory,
+        isLoading,
         addProduct,
         updateProduct,
         deleteProduct,

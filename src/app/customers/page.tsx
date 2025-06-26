@@ -26,11 +26,12 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
 import { MakePaymentDialog } from '@/components/make-payment-dialog';
 import { useSettings } from '@/contexts/settings-context';
+import Loading from '@/app/loading';
 
 export default function CustomersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { customers, salesHistory, addCustomer, updateCustomer, deleteCustomer, makePayment } = useData();
+  const { customers, salesHistory, addCustomer, updateCustomer, deleteCustomer, makePayment, isLoading } = useData();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -102,6 +103,9 @@ export default function CustomersPage() {
     setPayingCustomer(null);
   };
 
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <>

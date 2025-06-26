@@ -16,10 +16,11 @@ import type { DateRange } from 'react-day-picker';
 import { DollarSign, ShoppingCart } from 'lucide-react';
 import type { Customer } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
+import Loading from '@/app/loading';
 
 export default function ReportsPage() {
   const { t } = useLanguage();
-  const { salesHistory, customers: allCustomers } = useData();
+  const { salesHistory, customers: allCustomers, isLoading } = useData();
   const { settings } = useSettings();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -69,6 +70,9 @@ export default function ReportsPage() {
       return { totalProfits: profit, totalSales: sales, customersInPeriod: customers };
   }, [filteredSales, allCustomers]);
 
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <div className="space-y-6">

@@ -24,11 +24,12 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useSettings } from '@/contexts/settings-context';
+import Loading from '@/app/loading';
 
 export default function ProductsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, addProduct, updateProduct, deleteProduct } = useData();
+  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useData();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -83,6 +84,10 @@ export default function ProductsPage() {
       });
       handleCloseDeleteDialog();
   };
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <>
