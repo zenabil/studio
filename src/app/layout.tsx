@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { SidebarNav } from '@/components/sidebar-nav';
 import { AppProviders } from '@/components/app-providers';
+import { AppLayout } from '@/components/app-layout';
 
 export const metadata: Metadata = {
   title: 'Mercurio POS',
@@ -28,12 +28,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AppProviders>
           <SidebarProvider>
-            <div className="flex h-screen w-full bg-background">
-              <SidebarNav />
-              <div className="flex flex-1 flex-col overflow-y-auto">
-                <main className="flex-1 p-4 pt-20 md:p-6">{children}</main>
-              </div>
-            </div>
+            <AppLayout>{children}</AppLayout>
           </SidebarProvider>
           <Toaster />
         </AppProviders>

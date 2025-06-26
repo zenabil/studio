@@ -12,6 +12,8 @@ export const translations = {
       reports: "Rapports",
       alerts: "Alertes",
       settings: "Paramètres",
+      pinSidebar: "Épingler la barre latérale",
+      unpinSidebar: "Détacher la barre latérale",
     },
     pos: {
       searchProducts: "Rechercher des produits...",
@@ -211,6 +213,8 @@ export const translations = {
       reports: "التقارير",
       alerts: "التنبيهات",
       settings: "الإعدادات",
+      pinSidebar: "تثبيت الشريط الجانبي",
+      unpinSidebar: "إلغاء تثبيت الشريط الجانبي",
     },
     pos: {
       searchProducts: "البحث عن المنتجات...",

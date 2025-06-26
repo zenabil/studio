@@ -34,6 +34,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  isPinned: boolean
+  togglePin: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -89,6 +91,13 @@ const SidebarProvider = React.forwardRef<
       [setOpenProp, open]
     )
 
+    const [isPinned, setIsPinned] = React.useState(true)
+
+    const togglePin = React.useCallback(() => {
+      setIsPinned((p) => !p)
+    }, [])
+
+
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
       return isMobile
@@ -125,8 +134,10 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        isPinned,
+        togglePin,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isPinned, togglePin]
     )
 
     return (

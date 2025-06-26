@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   CircleDollarSign,
@@ -19,6 +20,8 @@ import {
   Package,
   TriangleAlert,
   Settings,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -27,12 +30,14 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, getDate, getMonth, getYear, set } from 'date-fns';
+import { Button } from './ui/button';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, dir } = useLanguage();
   const { products, customers, salesHistory } = useData();
   const { settings } = useSettings();
+  const { isPinned, togglePin } = useSidebar();
   const [lowStockCount, setLowStockCount] = useState(0);
   const [debtAlertCount, setDebtAlertCount] = useState(0);
 
@@ -66,7 +71,7 @@ export function SidebarNav() {
             }
         }
 
-        if (dueDate && differenceInCalendarDays(dueDate, today) === 1) {
+        if (dueDate && differenceInCalendarDays(dueDate, today) <= 1 && new Date() < dueDate) {
             count++;
         }
     }
@@ -105,6 +110,15 @@ export function SidebarNav() {
             <p className="text-sm text-muted-foreground">{settings.companyInfo.name}</p>
           </div>
           <div className="grow" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 hidden md:flex"
+            onClick={togglePin}
+            title={isPinned ? t.nav.unpinSidebar : t.nav.pinSidebar}
+          >
+            {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+          </Button>
           <SidebarTrigger className="hidden md:flex" />
         </div>
       </SidebarHeader>
