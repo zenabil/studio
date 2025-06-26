@@ -38,6 +38,7 @@ import {
   X,
   Barcode,
   Search,
+  Package,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
