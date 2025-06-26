@@ -94,3 +94,22 @@ export async function restoreBackupData(data: { products: Product[]; customers: 
     if (data.customers) await saveCustomers(data.customers);
     if (data.salesHistory) await saveSalesHistory(data.salesHistory);
 }
+
+
+// New function to process a sale transaction in one go
+export async function processSale(data: {
+  salesHistory: SaleRecord[];
+  products: Product[];
+  customers: Customer[];
+}): Promise<void> {
+  try {
+    await Promise.all([
+      writeDataFile('salesHistory.json', data.salesHistory),
+      writeDataFile('products.json', data.products),
+      writeDataFile('customers.json', data.customers)
+    ]);
+  } catch (error) {
+    console.error(`Error processing sale:`, error);
+    throw new Error(`Could not process the sale transaction.`);
+  }
+}

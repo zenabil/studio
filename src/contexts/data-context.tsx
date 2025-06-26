@@ -14,7 +14,8 @@ import {
     saveCustomers,
     getSalesHistory,
     saveSalesHistory,
-    restoreBackupData as restoreServerData
+    restoreBackupData as restoreServerData,
+    processSale as processSaleAction
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -130,7 +131,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
     };
     
-    const addSaleRecord = (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
+    const addSaleRecord = useCallback((cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         const newSale: SaleRecord = {
             id: `SALE-${new Date().getTime()}`,
             customerId: customerId,
@@ -140,9 +141,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         };
         
         const updatedSalesHistory = [newSale, ...salesHistory];
-        handleDataUpdate(setSalesHistory, saveSalesHistory, updatedSalesHistory);
-
-        // Update product stock
+        
         const updatedProducts = products.map(product => {
             const cartItem = cart.find(item => item.id === product.id);
             if (cartItem) {
@@ -150,10 +149,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
             return product;
         });
-        handleDataUpdate(setProducts, saveProducts, updatedProducts);
         
+        let updatedCustomers = [...customers];
         if (customerId) {
-            const updatedCustomers = customers.map(c => {
+            updatedCustomers = customers.map(c => {
                 if (c.id === customerId) {
                     return {
                         ...c,
@@ -163,9 +162,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 }
                 return c;
             });
-            handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
         }
-    };
+        
+        // Optimistically update the UI
+        setSalesHistory(updatedSalesHistory);
+        setProducts(updatedProducts);
+        setCustomers(updatedCustomers);
+
+        // Call the single server action to save all changes
+        const saveTransaction = async () => {
+            try {
+                await processSaleAction({
+                    salesHistory: updatedSalesHistory,
+                    products: updatedProducts,
+                    customers: updatedCustomers,
+                });
+            } catch (error) {
+                console.error("Failed to save sale transaction to server:", error);
+                toast({
+                    variant: 'destructive',
+                    title: "Save Error",
+                    description: "Could not save sale to the server. Your data might be out of sync.",
+                });
+            }
+        };
+
+        saveTransaction();
+
+    }, [products, customers, salesHistory, toast]);
     
     const makePayment = (customerId: string, amount: number) => {
         const paymentRecord: SaleRecord = {
