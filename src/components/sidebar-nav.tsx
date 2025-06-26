@@ -24,7 +24,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
 import { useData } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, getDate, getMonth, getYear, set } from 'date-fns';
 
@@ -33,10 +33,11 @@ export function SidebarNav() {
   const { t, dir } = useLanguage();
   const { products, customers, salesHistory } = useData();
   const { settings } = useSettings();
+  const [lowStockCount, setLowStockCount] = useState(0);
   const [debtAlertCount, setDebtAlertCount] = useState(0);
 
-  const lowStockCount = useMemo(() => {
-    return products.filter(p => p.stock <= (p.minStock || 0)).length;
+  useEffect(() => {
+    setLowStockCount(products.filter(p => p.stock <= (p.minStock || 0)).length);
   }, [products]);
 
   useEffect(() => {
