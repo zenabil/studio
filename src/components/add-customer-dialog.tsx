@@ -32,14 +32,14 @@ interface AddCustomerDialogProps {
   customerToEdit?: Customer | null;
 }
 
-const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  email: z.string().email({ message: 'Please enter a valid email.' }),
-  phone: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
-});
-
 export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: AddCustomerDialogProps) {
   const { t } = useLanguage();
+
+  const formSchema = z.object({
+    name: z.string().min(2, { message: t.customers.nameMinLength }),
+    email: z.string().email({ message: t.customers.emailInvalid }),
+    phone: z.string().min(5, { message: t.customers.phoneMinLength }),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -102,7 +102,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                 <FormItem>
                   <FormLabel>{t.customers.email}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.customers.emailPlaceholder} {...field} />
+                    <Input type="email" placeholder={t.customers.emailPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,7 +115,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                 <FormItem>
                   <FormLabel>{t.customers.phone}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.customers.phonePlaceholder} {...field} />
+                    <Input type="tel" placeholder={t.customers.phonePlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
