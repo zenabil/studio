@@ -66,7 +66,6 @@ export function PosView() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [sessions, setSessions] = useState<SaleSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -75,6 +74,13 @@ export function PosView() {
 
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [newProductBarcode, setNewProductBarcode] = useState('');
+  
+  // Refs for keyboard shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const customerComboboxRef = useRef<HTMLButtonElement>(null);
+  const discountInputRef = useRef<HTMLInputElement>(null);
+  const amountPaidInputRef = useRef<HTMLInputElement>(null);
   
   const createNewSession = useCallback((index: number): SaleSession => ({
     id: `session-${new Date().getTime()}-${index}`,
@@ -157,6 +163,29 @@ export function PosView() {
     updateActiveSession({ cart: newCart });
   }, [activeSession]);
 
+  const handleCartQuantityChange = (productId: string, value: string) => {
+    const newQuantities = { ...cartQuantities, [productId]: value };
+    setCartQuantities(newQuantities);
+
+    if (value === '' || value === '.') return;
+
+    const newQuantity = parseFloat(value);
+    if (!isNaN(newQuantity) && newQuantity >= 0) {
+        updateQuantity(productId, newQuantity);
+    }
+  };
+
+  const handleCartQuantityBlur = (productId: string) => {
+      const value = cartQuantities[productId];
+      const newQuantity = parseFloat(value);
+      
+      if (isNaN(newQuantity) || newQuantity <= 0) {
+          updateQuantity(productId, 0); // This will remove the item
+      } else {
+          updateQuantity(productId, newQuantity);
+      }
+  };
+
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (!activeSession) return;
   
@@ -171,7 +200,7 @@ export function PosView() {
     }
   };
   
-  const resetSale = () => {
+  const resetSale = useCallback(() => {
     if (!activeSessionId) return;
       updateActiveSession({
           cart: [],
@@ -179,7 +208,7 @@ export function PosView() {
           amountPaid: 0,
           discount: 0,
       });
-  }
+  }, [activeSessionId]);
   
   const addNewSession = () => {
     const newSession = createNewSession(sessions.length + 1);
@@ -221,7 +250,7 @@ export function PosView() {
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
-  const handleSaleCompletion = () => {
+  const handleSaleCompletion = useCallback(() => {
     if (!activeSession || activeSession.cart.length === 0 || !activeSessionId) {
       toast({
         variant: "destructive",
@@ -240,7 +269,7 @@ export function PosView() {
     });
     
     closeSession(activeSessionId);
-  };
+  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t.errors.emptyCart, t.errors.title, t.pos.saleSuccessMessage, t.pos.saleSuccessTitle, toast]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p.barcode === barcode);
@@ -277,6 +306,56 @@ export function PosView() {
     });
     setIsAddProductDialogOpen(false);
   };
+  
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Do not trigger shortcuts if a dialog is open.
+      if (isInvoiceOpen || !!sessionToDelete || isAddProductDialogOpen) {
+        return;
+      }
+      
+      const activeElement = document.activeElement as HTMLElement;
+
+      // Handle Enter on specific input
+      if (event.key === 'Enter' && activeElement === amountPaidInputRef.current) {
+          if (activeSession && activeSession.cart.length > 0) {
+            event.preventDefault();
+            handleSaleCompletion();
+          }
+          return; 
+      }
+
+      // Allow typing in inputs, but capture function keys and special combos
+      if (activeElement && ['INPUT', 'TEXTAREA'].includes(activeElement.tagName) && !event.key.startsWith('F') && !event.ctrlKey) {
+        return;
+      }
+
+      // Global shortcuts
+      if (event.key === 'F1') { event.preventDefault(); searchInputRef.current?.select(); }
+      if (event.key === 'F2') { event.preventDefault(); barcodeInputRef.current?.select(); }
+      if (event.key === 'F4') { event.preventDefault(); customerComboboxRef.current?.focus(); }
+      if (event.key === 'F8') { event.preventDefault(); discountInputRef.current?.select(); }
+      if (event.key === 'F9') { event.preventDefault(); amountPaidInputRef.current?.select(); }
+      if (event.key === 'F10') { event.preventDefault(); handleSaleCompletion(); }
+
+      if (event.ctrlKey && event.key.toLowerCase() === 'p') {
+          event.preventDefault();
+          if (activeSession && activeSession.cart.length > 0) {
+              setIsInvoiceOpen(true);
+          }
+      }
+      
+      if (event.key === 'Escape') {
+          event.preventDefault();
+          resetSale();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isInvoiceOpen, sessionToDelete, isAddProductDialogOpen, resetSale, activeSession, handleSaleCompletion]);
 
 
   const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
@@ -301,6 +380,7 @@ export function PosView() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-2">
                 <Input
+                  ref={searchInputRef}
                   placeholder={t.pos.searchProducts}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -413,18 +493,12 @@ export function PosView() {
                                 <Input
                                     type="text"
                                     value={cartQuantities[item.id] || ''}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        setCartQuantities(prev => ({...prev, [item.id]: value}));
-                                    }}
-                                    onBlur={(e) => {
-                                        const value = parseFloat(e.target.value);
-                                        updateQuantity(item.id, isNaN(value) ? 0 : value);
-                                    }}
+                                    onChange={(e) => handleCartQuantityChange(item.id, e.target.value)}
+                                    onBlur={() => handleCartQuantityBlur(item.id)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
-                                            const value = parseFloat((e.target as HTMLInputElement).value);
-                                            updateQuantity(item.id, isNaN(value) ? 0 : value);
+                                            handleCartQuantityBlur(item.id);
+                                            (e.target as HTMLInputElement).blur();
                                         }
                                     }}
                                     className="h-8 text-center w-full px-1 text-sm"
@@ -450,7 +524,7 @@ export function PosView() {
                 <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
                     <span>{t.pos.discount}</span>
-                    <Input type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
+                    <Input ref={discountInputRef} type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
                 <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>{settings.currency}{total.toFixed(2)}</span></div>
@@ -458,13 +532,14 @@ export function PosView() {
             <Separator className="my-4" />
              <div className="space-y-4">
                 <CustomerCombobox
+                  ref={customerComboboxRef}
                   customers={customers}
                   selectedCustomerId={activeSession.selectedCustomerId}
                   onSelectCustomer={(customerId) =>
                     updateActiveSession({ selectedCustomerId: customerId })
                   }
                 />
-                <Input type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} />
+                <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} />
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
              </div>
              <div className="mt-4 grid grid-cols-2 gap-2">

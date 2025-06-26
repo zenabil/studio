@@ -27,79 +27,79 @@ interface CustomerComboboxProps {
   onSelectCustomer: (customerId: string | null) => void;
 }
 
-export function CustomerCombobox({
-  customers,
-  selectedCustomerId,
-  onSelectCustomer,
-}: CustomerComboboxProps) {
-  const { t } = useLanguage();
-  const [open, setOpen] = React.useState(false);
+export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComboboxProps>(
+  ({ customers, selectedCustomerId, onSelectCustomer }, ref) => {
+    const { t } = useLanguage();
+    const [open, setOpen] = React.useState(false);
 
-  const selectedCustomer =
-    customers.find((c) => c.id === selectedCustomerId) || null;
+    const selectedCustomer =
+      customers.find((c) => c.id === selectedCustomerId) || null;
 
-  const handleSelect = (value: string) => {
-    if (value === 'no-customer') {
-      onSelectCustomer(null);
-    } else {
-      const customerId = value.split('---')[1];
-      onSelectCustomer(customerId);
-    }
-    setOpen(false);
-  };
+    const handleSelect = (value: string) => {
+      if (value === 'no-customer') {
+        onSelectCustomer(null);
+      } else {
+        const customerId = value.split('---')[1];
+        onSelectCustomer(customerId);
+      }
+      setOpen(false);
+    };
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {selectedCustomer ? selectedCustomer.name : t.pos.selectCustomer}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={t.customers.searchCustomers} />
-          <CommandList>
-            <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value="no-customer"
-                onSelect={handleSelect}
-              >
-                <Check
-                  className={cn(
-                    'mr-2 h-4 w-4',
-                    !selectedCustomerId ? 'opacity-100' : 'opacity-0'
-                  )}
-                />
-                {t.pos.noCustomer}
-              </CommandItem>
-              {customers.map((customer) => (
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            ref={ref}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {selectedCustomer ? selectedCustomer.name : t.pos.selectCustomer}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder={t.customers.searchCustomers} />
+            <CommandList>
+              <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
+              <CommandGroup>
                 <CommandItem
-                  key={customer.id}
-                  value={`${customer.name}---${customer.id}`}
+                  value="no-customer"
                   onSelect={handleSelect}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      selectedCustomerId === customer.id
-                        ? 'opacity-100'
-                        : 'opacity-0'
+                      !selectedCustomerId ? 'opacity-100' : 'opacity-0'
                     )}
                   />
-                  {customer.name}
+                  {t.pos.noCustomer}
                 </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
+                {customers.map((customer) => (
+                  <CommandItem
+                    key={customer.id}
+                    value={`${customer.name}---${customer.id}`}
+                    onSelect={handleSelect}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        selectedCustomerId === customer.id
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                    {customer.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+);
+CustomerCombobox.displayName = 'CustomerCombobox';
