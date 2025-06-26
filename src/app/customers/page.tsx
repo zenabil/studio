@@ -128,6 +128,7 @@ export default function CustomersPage() {
                 <TableHead>{t.customers.name}</TableHead>
                 <TableHead>{t.customers.email}</TableHead>
                 <TableHead>{t.customers.phone}</TableHead>
+                <TableHead className="text-center">{t.customers.settlementDay}</TableHead>
                 <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
                 <TableHead className="text-right">{t.customers.balance}</TableHead>
                 <TableHead className="text-right">{t.customers.actions}</TableHead>
@@ -139,6 +140,7 @@ export default function CustomersPage() {
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
+                  <TableCell className="text-center">{customer.settlementDay || '-'}</TableCell>
                   <TableCell className="text-right">{settings.currency}{customer.spent.toFixed(2)}</TableCell>
                   <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-green-500'}`}>
                     {settings.currency}{customer.balance.toFixed(2)}
