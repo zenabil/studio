@@ -17,12 +17,15 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
-import { TriangleAlert, CalendarClock } from 'lucide-react';
+import { TriangleAlert, CalendarClock, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, format, set, getDate, getMonth, getYear } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const { products, customers, salesHistory } = useData();
   const { settings } = useSettings();
 
@@ -35,7 +38,7 @@ export default function AlertsPage() {
   const debtAlerts = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const alerts: { customerName: string; balance: number; dueDate: Date }[] = [];
+    const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; }[] = [];
     
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
@@ -67,12 +70,37 @@ export default function AlertsPage() {
                 customerName: customer.name,
                 balance: customer.balance,
                 dueDate: dueDate,
+                phone: customer.phone,
             });
         }
     }
     return alerts;
 }, [customers, salesHistory, settings.paymentTermsDays]);
 
+  const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
+    if (!alert.phone) {
+      toast({
+        variant: 'destructive',
+        title: t.errors.title,
+        description: t.alerts.noPhoneNumber,
+      });
+      return;
+    }
+
+    const message = t.alerts.smsBody
+      .replace('{customerName}', alert.customerName)
+      .replace('{currency}', settings.currency)
+      .replace('{balance}', alert.balance.toFixed(2))
+      .replace('{dueDate}', format(alert.dueDate, 'PP'));
+
+    // This is a simulation. A real implementation would use an SMS gateway API.
+    console.log(`Simulating SMS to ${alert.phone}: ${message}`);
+
+    toast({
+      title: t.alerts.smsSent,
+      description: message,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -127,6 +155,7 @@ export default function AlertsPage() {
                             <TableHead>{t.alerts.customer}</TableHead>
                             <TableHead className="text-right">{t.alerts.balanceDue}</TableHead>
                             <TableHead className="text-right">{t.alerts.dueDate}</TableHead>
+                            <TableHead className="text-right">{t.products.actions}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -138,6 +167,11 @@ export default function AlertsPage() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {format(alert.dueDate, 'PP')}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button variant="ghost" size="icon" title={t.alerts.sendSms} onClick={() => handleSendSms(alert)}>
+                                      <MessageSquare className="h-4 w-4" />
+                                  </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
