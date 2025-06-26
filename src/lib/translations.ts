@@ -161,9 +161,10 @@ export const translations = {
       dueDate: "Date d'Échéance",
       noDebtAlerts: "Aucun paiement dû prochainement.",
       sendSms: "Envoyer un SMS de rappel",
-      smsSent: "SMS de rappel envoyé",
+      smsSent: "Demande d'envoi de SMS initiée",
       smsBody: "Bonjour {customerName}, ceci est un rappel que votre paiement de {currency}{balance} est dû le {dueDate}. Merci.",
       noPhoneNumber: "Ce client n'a pas de numéro de téléphone.",
+      smsRedirect: "Redirection vers l'application de messagerie pour envoyer le SMS.",
     },
     settings: {
       title: "Paramètres",
@@ -359,9 +360,10 @@ export const translations = {
       dueDate: "تاريخ الاستحقاق",
       noDebtAlerts: "لا توجد مدفوعات مستحقة قريباً.",
       sendSms: "إرسال رسالة تذكير",
-      smsSent: "تم إرسال رسالة التذكير",
+      smsSent: "بدء طلب إرسال الرسالة",
       smsBody: "مرحباً {customerName}، هذا تذكير بأن دفعتكم بمبلغ {currency}{balance} مستحقة بتاريخ {dueDate}. شكراً.",
       noPhoneNumber: "لا يوجد رقم هاتف لهذا العميل.",
+      smsRedirect: "جاري إعادة التوجيه إلى تطبيق الرسائل لإرسال الرسالة.",
     },
     settings: {
       title: "الإعدادات",

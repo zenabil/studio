@@ -93,12 +93,15 @@ export default function AlertsPage() {
       .replace('{balance}', alert.balance.toFixed(2))
       .replace('{dueDate}', format(alert.dueDate, 'PP'));
 
-    // This is a simulation. A real implementation would use an SMS gateway API.
-    console.log(`Simulating SMS to ${alert.phone}: ${message}`);
+    const phoneNumber = alert.phone.replace(/[^0-9+]/g, ''); // Clean the phone number
+    const smsUri = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+
+    // This will attempt to open the default SMS application.
+    window.open(smsUri, '_self');
 
     toast({
       title: t.alerts.smsSent,
-      description: message,
+      description: t.alerts.smsRedirect,
     });
   };
 
