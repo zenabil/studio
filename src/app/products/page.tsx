@@ -52,7 +52,7 @@ export default function ProductsPage() {
     setEditingProduct(null);
   }
 
-  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>, productId?: string) => {
+  const handleSaveProduct = (productData: Omit<Product, 'id'>, productId?: string) => {
     if (productId) {
       updateProduct(productId, productData);
       toast({

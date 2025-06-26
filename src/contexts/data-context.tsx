@@ -20,8 +20,8 @@ interface DataContextType {
     products: Product[];
     customers: Customer[];
     salesHistory: SaleRecord[];
-    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => void;
-    updateProduct: (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => void;
+    addProduct: (productData: Omit<Product, 'id'>) => void;
+    updateProduct: (productId: string, productData: Omit<Product, 'id'>) => void;
     deleteProduct: (productId: string) => void;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => void;
     updateCustomer: (customerId: string, customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => void;
@@ -78,16 +78,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [salesHistory]);
 
 
-    const addProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+    const addProduct = (productData: Omit<Product, 'id'>) => {
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
-            imageUrl: 'https://placehold.co/300x200',
             ...productData,
         };
         setProducts(prev => [newProduct, ...prev]);
     };
 
-    const updateProduct = (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => {
+    const updateProduct = (productId: string, productData: Omit<Product, 'id'>) => {
         setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
     };
 

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -141,14 +140,12 @@ export function PosView() {
   };
 
   const handleCartQuantityChange = (productId: string, value: string) => {
-    // Always update the visual input value
     setCartQuantities(prev => ({ ...prev, [productId]: value }));
   
     if (!activeSession) return;
     
     const newQuantity = parseFloat(value);
     
-    // Update the actual cart only if the number is valid and positive.
     if (!isNaN(newQuantity) && newQuantity > 0) {
         const finalQuantity = Math.min(newQuantity, 999999999999);
         const newCart = activeSession.cart.map(item =>
@@ -156,8 +153,6 @@ export function PosView() {
         );
         updateActiveSession({ cart: newCart });
     }
-    // If the input is empty, "0", or invalid, we don't update the cart immediately.
-    // The total price will not change. It will be cleaned up on blur.
   };
 
   const handleCartQuantityBlur = (productId: string) => {
@@ -165,11 +160,9 @@ export function PosView() {
       const value = cartQuantities[productId] ?? '';
       const newQuantity = parseFloat(value);
       
-      // If the final value is not a valid positive number, remove the item.
       if (isNaN(newQuantity) || newQuantity <= 0) {
-          updateQuantity(productId, 0); // Re-use updateQuantity to remove and sync state.
+          updateQuantity(productId, 0);
       } else {
-          // Otherwise, make sure the state is consistent and formatted correctly.
           updateQuantity(productId, newQuantity);
       }
   };
@@ -322,7 +315,7 @@ export function PosView() {
     }
   };
 
-  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+  const handleSaveProduct = (productData: Omit<Product, 'id'>) => {
     addProduct(productData);
     toast({
         title: t.products.productAdded,
@@ -442,24 +435,14 @@ export function PosView() {
             <ScrollArea className="h-[calc(100vh-14rem)]">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                 {filteredProducts.map((product) => (
-                  <Card key={product.id} className="overflow-hidden transition-all hover:scale-105 hover:shadow-lg">
-                    <CardContent className="p-0">
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        width={300}
-                        height={200}
-                        className="h-32 w-full object-cover"
-                        data-ai-hint="food pastry"
-                      />
-                      <div className="p-3">
-                        <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {settings.currency}{product.price.toFixed(2)}
-                        </p>
-                      </div>
+                  <Card key={product.id} className="overflow-hidden transition-all hover:scale-105 hover:shadow-lg flex flex-col">
+                    <CardContent className="p-3 flex-grow flex flex-col justify-center items-center text-center">
+                      <h3 className="font-semibold">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {settings.currency}{product.price.toFixed(2)}
+                      </p>
                     </CardContent>
-                    <CardFooter className="p-2">
+                    <CardFooter className="p-2 mt-auto">
                       <Button
                         size="sm"
                         className="w-full"
