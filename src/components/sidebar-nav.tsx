@@ -3,6 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
@@ -10,7 +18,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   CircleDollarSign,
@@ -21,6 +28,7 @@ import {
   Croissant,
   Truck,
   Package,
+  PanelLeft,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -30,6 +38,7 @@ import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, getDate, getMonth, getYear, set } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
+import { Button } from './ui/button';
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -134,12 +143,12 @@ export function SidebarNav() {
                 </Button>
             </SheetTrigger>
             <SheetContent side={dir === 'rtl' ? 'right' : 'left'} className="p-0">
-                 <SidebarHeader className="sr-only">
+                 <SheetHeader className="sr-only">
                     <SheetTitle>Navigation Menu</SheetTitle>
                     <SheetDescription>
                         Contains the main navigation links for the application.
                     </SheetDescription>
-                 </SidebarHeader>
+                 </SheetHeader>
                 <div className="flex h-full w-full flex-col">
                     <SidebarHeader>
                         <div className="flex items-center gap-3">
