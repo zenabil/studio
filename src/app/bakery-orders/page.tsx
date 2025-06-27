@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/language-context';
-import { Bread } from 'lucide-react';
+import { Croissant } from 'lucide-react';
 
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
@@ -26,7 +26,7 @@ export default function BakeryOrdersPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <Bread className="h-16 w-16 text-muted-foreground/50" />
+            <Croissant className="h-16 w-16 text-muted-foreground/50" />
             <p className="text-muted-foreground">Coming soon...</p>
           </div>
         </CardContent>

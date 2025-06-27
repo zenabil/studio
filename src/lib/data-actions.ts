@@ -81,24 +81,29 @@ async function readDataFile<T>(fileName: string, initialData: T): Promise<T> {
 
     // Check if the content is in our encrypted format
     if (parsedContent.iv && parsedContent.authTag && parsedContent.encryptedData) {
-      const decryptedString = decrypt(parsedContent);
-      return JSON.parse(decryptedString);
+      try {
+        const decryptedString = decrypt(parsedContent);
+        return JSON.parse(decryptedString);
+      } catch (decryptionError) {
+        // This block catches errors during decryption, which likely means the key changed
+        // or the data is corrupt. We will re-initialize the file with default data.
+        console.error(`Decryption failed for ${fileName}. This might be due to an old encryption key or corrupted data. Re-initializing file.`, decryptionError);
+        await writeDataFile(fileName, initialData);
+        return initialData;
+      }
     } else {
       // This is plaintext data from a previous version.
       // We'll perform a one-time migration to the encrypted format.
       console.warn(`[MIGRATION] Plaintext data found in ${fileName}. Migrating to encrypted format.`);
-      await writeDataFile(fileName, parsedContent); // This will encrypt and save it
-      return parsedContent; // Return the original data for the current session
+      await writeDataFile(fileName, parsedContent);
+      return parsedContent;
     }
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      // File doesn't exist, write initial data, which will be encrypted by writeDataFile
-      await writeDataFile(fileName, initialData);
-      return initialData;
-    } else if (error instanceof SyntaxError) {
-       // The file is not valid JSON, which could mean it's empty or corrupt.
-       // We'll treat it as corrupt and re-initialize with default data.
-       console.error(`Corrupted data file ${fileName}. Re-initializing with default data.`, error);
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
+       // If file doesn't exist or is not valid JSON (corrupt/empty), re-initialize.
+       if (error instanceof SyntaxError) {
+         console.error(`Corrupted data file ${fileName}. Re-initializing with default data.`, error);
+       }
        await writeDataFile(fileName, initialData);
        return initialData;
     } else {
