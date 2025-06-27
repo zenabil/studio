@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useMemo } from 'react';
 import type { SaleRecord } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
+import { calculateItemTotal } from '@/lib/utils';
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -18,7 +19,7 @@ export function CategorySalesChart({ salesHistory }: { salesHistory: SaleRecord[
                 if (!categoryRevenue[item.category]) {
                     categoryRevenue[item.category] = 0;
                 }
-                categoryRevenue[item.category] += item.price * item.quantity;
+                categoryRevenue[item.category] += calculateItemTotal(item);
             });
         });
 

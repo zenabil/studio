@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useMemo } from 'react';
 import type { SaleRecord } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
+import { calculateItemTotal } from '@/lib/utils';
 
 export function SalesChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
   const { t } = useLanguage();
@@ -17,7 +18,7 @@ export function SalesChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
             if (!productSales[item.id]) {
                 productSales[item.id] = { productName: item.name, revenue: 0 };
             }
-            productSales[item.id].revenue += (item.price * item.quantity);
+            productSales[item.id].revenue += calculateItemTotal(item);
         });
     });
 

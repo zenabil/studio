@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import type { SaleRecord } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import { format } from 'date-fns';
+import { LineChart as LineChartIcon } from 'lucide-react';
 
 export function SalesOverTimeChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
   const { t } = useLanguage();
@@ -14,7 +15,10 @@ export function SalesOverTimeChart({ salesHistory }: { salesHistory: SaleRecord[
     const dailySales: { [key: string]: number } = {};
     
     salesHistory.forEach(sale => {
-        const day = format(new Date(sale.date), 'yyyy-MM-dd');
+        const saleDate = new Date(sale.date);
+        if(isNaN(saleDate.getTime())) return;
+
+        const day = format(saleDate, 'yyyy-MM-dd');
         if (!dailySales[day]) {
             dailySales[day] = 0;
         }
@@ -22,18 +26,18 @@ export function SalesOverTimeChart({ salesHistory }: { salesHistory: SaleRecord[
     });
 
     return Object.keys(dailySales)
+        .sort()
         .map(day => ({
             date: format(new Date(day), 'MMM d'),
             [t.reports.sales]: dailySales[day],
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        }));
   }, [salesHistory, t.reports.sales]);
 
 
   if (salesData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[350px] text-center">
-        <LineChart className="h-12 w-12 text-muted-foreground/50" />
+        <LineChartIcon className="h-12 w-12 text-muted-foreground/50" />
         <p className="text-muted-foreground mt-4">{t.reports.noSalesData}</p>
       </div>
     )
