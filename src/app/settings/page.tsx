@@ -199,7 +199,7 @@ export default function SettingsPage() {
                       <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
                         {backgroundThemes.map((theme) => (
                           <Label key={theme.name} className="flex items-center gap-2 cursor-pointer">
-                            <RadioGroupItem value={theme.name} /> {theme.label}
+                            <RadioGroupItem value={theme.name} /> {t.settings.themes[theme.name]}
                           </Label>
                         ))}
                       </RadioGroup>

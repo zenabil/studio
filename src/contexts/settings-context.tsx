@@ -31,15 +31,15 @@ interface SettingsContextType {
   settings: Settings;
   setSettings: (newSettings: Partial<Settings>) => void;
   colorPresets: ColorPreset[];
-  backgroundThemes: { name: string; label: string }[];
+  backgroundThemes: { name: string }[];
 }
 
 const SETTINGS_KEY = 'mercurio-pos-settings';
 
 export const backgroundThemes = [
-    { name: 'neutral', label: 'Default' },
-    { name: 'zinc', label: 'Zinc' },
-    { name: 'stone', label: 'Stone' },
+    { name: 'neutral' },
+    { name: 'mint' },
+    { name: 'lavender' },
 ];
 
 const colorPresets: ColorPreset[] = [
