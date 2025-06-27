@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Trash2, CheckCircle, XCircle, Package, PackageCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { AddBakeryOrderDialog } from '@/components/add-bakery-order-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -29,27 +29,31 @@ export interface BakeryOrder {
   name: string;
   quantity: number;
   paid: boolean;
+  received: boolean;
 }
 
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [orders, setOrders] = useState<BakeryOrder[]>([
-    { id: '1', name: 'Boulangerie Al-Amal', quantity: 50, paid: true },
-    { id: '2', name: 'Patisserie Dupont', quantity: 75, paid: false },
-    { id: '3', name: 'Le Fournil de la Gare', quantity: 30, paid: false },
+    { id: '1', name: 'Boulangerie Al-Amal', quantity: 50, paid: true, received: false },
+    { id: '2', name: 'Patisserie Dupont', quantity: 75, paid: false, received: true },
+    { id: '3', name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false },
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
 
   const totalBreadRequired = useMemo(() => {
-    return orders.reduce((total, order) => total + order.quantity, 0);
+    return orders
+      .filter(order => !order.received)
+      .reduce((total, order) => total + order.quantity, 0);
   }, [orders]);
 
-  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid'>) => {
+  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received'>) => {
     const newOrder: BakeryOrder = {
       id: `order-${new Date().getTime()}`,
       paid: false,
+      received: false,
       ...orderData,
     };
     setOrders(prevOrders => [newOrder, ...prevOrders]);
@@ -66,6 +70,14 @@ export default function BakeryOrdersPage() {
     );
   };
   
+  const handleToggleReceivedStatus = (orderId: string) => {
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.id === orderId ? { ...order, received: !order.received } : order
+      )
+    );
+  };
+
   const handleOpenDeleteDialog = (order: BakeryOrder) => {
     setOrderToDelete(order);
   };
@@ -106,17 +118,23 @@ export default function BakeryOrdersPage() {
                   <TableHead>{t.bakeryOrders.name}</TableHead>
                   <TableHead className="text-center">{t.bakeryOrders.quantity}</TableHead>
                   <TableHead className="text-center">{t.bakeryOrders.status}</TableHead>
+                  <TableHead className="text-center">{t.bakeryOrders.received}</TableHead>
                   <TableHead className="text-right">{t.bakeryOrders.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.map((order) => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} className={order.received ? 'bg-muted/50 text-muted-foreground' : ''}>
                     <TableCell className="font-medium">{order.name}</TableCell>
                     <TableCell className="text-center">{order.quantity}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant={order.paid ? 'success' : 'destructive'}>
                         {order.paid ? t.bakeryOrders.paid : t.bakeryOrders.unpaid}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                       <Badge variant={order.received ? 'success' : 'outline'}>
+                        {order.received ? t.bakeryOrders.received : t.bakeryOrders.notReceived}
                       </Badge>
                     </TableCell>
                     <TableCell className="flex justify-end gap-2">
@@ -127,6 +145,14 @@ export default function BakeryOrdersPage() {
                          onClick={() => handleTogglePaidStatus(order.id)}
                        >
                          {order.paid ? <XCircle className="h-4 w-4 text-destructive" /> : <CheckCircle className="h-4 w-4 text-success" />}
+                       </Button>
+                       <Button
+                        variant="ghost"
+                        size="icon"
+                        title={t.bakeryOrders.toggleReceivedStatus}
+                        onClick={() => handleToggleReceivedStatus(order.id)}
+                       >
+                        {order.received ? <Package className="h-4 w-4" /> : <PackageCheck className="h-4 w-4 text-success" />}
                        </Button>
                        <Button 
                          variant="ghost" 

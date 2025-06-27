@@ -236,6 +236,9 @@ export const translations = {
       orderAdded: "Commande ajoutée avec succès.",
       orderDeleted: "Commande supprimée avec succès.",
       quantityMin: "La quantité doit être d'au moins 1.",
+      received: "Reçu",
+      notReceived: "Non Reçu",
+      toggleReceivedStatus: "Marquer comme reçu / non reçu",
     },
     errors: {
       title: "Erreur",
@@ -479,6 +482,9 @@ export const translations = {
       orderAdded: "تمت إضافة الطلب بنجاح.",
       orderDeleted: "تم حذف الطلب بنجاح.",
       quantityMin: "يجب أن تكون الكمية 1 على الأقل.",
+      received: "تم الاستلام",
+      notReceived: "لم يتم الاستلام",
+      toggleReceivedStatus: "تحديد كمستلم / غير مستلم",
     },
     errors: {
       title: "خطأ",
