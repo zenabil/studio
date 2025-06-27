@@ -372,11 +372,30 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             const invoiceItem = invoiceData.items.find(item => item.productId === product.id);
             if (invoiceItem) {
                 totalAmount += invoiceItem.quantity * invoiceItem.purchasePrice;
+
+                const oldStock = product.stock;
+                const oldPurchasePrice = product.purchasePrice || 0;
+                const newQuantity = invoiceItem.quantity;
+                const newPurchasePrice = invoiceItem.purchasePrice;
+                
+                const totalNewStock = oldStock + newQuantity;
+                
+                let newWeightedAveragePrice;
+                if (oldStock > 0 && totalNewStock > 0) {
+                    const totalOldValue = oldStock * oldPurchasePrice;
+                    const totalNewValue = newQuantity * newPurchasePrice;
+                    newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalNewStock;
+                } else {
+                    // If there's no old stock, the new purchase price is the only price.
+                    newWeightedAveragePrice = newPurchasePrice;
+                }
+
                 const newProductData: Product = {
                     ...product, 
-                    stock: product.stock + invoiceItem.quantity,
-                    purchasePrice: invoiceItem.purchasePrice,
+                    stock: totalNewStock,
+                    purchasePrice: parseFloat(newWeightedAveragePrice.toFixed(2)), // Use the new weighted average price
                 };
+                
                 if (invoiceItem.boxPrice !== undefined) {
                     newProductData.boxPrice = invoiceItem.boxPrice;
                 }
