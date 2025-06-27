@@ -92,6 +92,8 @@ export const translations = {
       quantityPerBoxPlaceholder: "Saisir la quantité",
       boxPrice: "Prix Carton",
       boxPricePlaceholder: "Saisir le prix du carton",
+      noResultsFound: "Aucun produit ne correspond à votre recherche.",
+      noProductsYet: "Vous n'avez encore ajouté aucun produit.",
     },
     customers: {
       title: "Gestion des Clients",
@@ -436,6 +438,8 @@ export const translations = {
       quantityPerBoxPlaceholder: "أدخل الكمية",
       boxPrice: "سعر الكرتون",
       boxPricePlaceholder: "أدخل سعر الكرتون",
+      noResultsFound: "لا توجد منتجات تطابق بحثك.",
+      noProductsYet: "لم تقم بإضافة أي منتجات بعد.",
     },
     customers: {
       title: "إدارة العملاء",

@@ -122,27 +122,35 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>{product.barcode}</TableCell>
-                  <TableCell className="text-right">{settings.currency}{(product.purchasePrice || 0).toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{product.stock}</TableCell>
-                  <TableCell className="text-right">{product.minStock || 0}</TableCell>
-                  <TableCell className="text-right">{product.quantityPerBox || 0}</TableCell>
-                  <TableCell className="text-right">{settings.currency}{(product.boxPrice || 0).toFixed(2)}</TableCell>
-                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(product)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell>{product.barcode}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{(product.purchasePrice || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{product.stock}</TableCell>
+                    <TableCell className="text-right">{product.minStock || 0}</TableCell>
+                    <TableCell className="text-right">{product.quantityPerBox || 0}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{(product.boxPrice || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(product)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-24 text-center">
+                    {searchTerm ? t.products.noResultsFound : t.products.noProductsYet}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
