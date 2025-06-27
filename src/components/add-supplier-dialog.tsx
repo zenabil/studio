@@ -10,15 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useLanguage } from '@/contexts/language-context';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Supplier } from '@/lib/data';
@@ -30,8 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect, useMemo } from 'react';
-import { useData } from '@/contexts/data-context';
+import { useEffect } from 'react';
 import { Checkbox } from './ui/checkbox';
 
 interface AddSupplierDialogProps {
@@ -43,11 +35,6 @@ interface AddSupplierDialogProps {
 
 export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: AddSupplierDialogProps) {
   const { t } = useLanguage();
-  const { products } = useData();
-
-  const productCategories = useMemo(() => {
-    return [...new Set(products.map(p => p.category))];
-  }, [products]);
 
   const formSchema = z.object({
     name: z.string().min(1, { message: t.suppliers.nameRequired }),
@@ -142,18 +129,9 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t.suppliers.productCategory}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t.suppliers.categoryPlaceholder} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {productCategories.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <FormControl>
+                    <Input placeholder={t.suppliers.categoryPlaceholder} {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
