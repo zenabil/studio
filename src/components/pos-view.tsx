@@ -166,7 +166,11 @@ export function PosView() {
       const newQuantity = parseFloat(value);
       
       if (isNaN(newQuantity)) {
-          handleQuantityChange(productId, 0);
+          // Revert to original value if input is invalid
+          const item = activeSession?.cart.find(i => i.id === productId);
+          if (item) {
+              setCartQuantities(prev => ({ ...prev, [productId]: String(item.quantity) }));
+          }
       } else {
           handleQuantityChange(productId, newQuantity);
       }
@@ -197,35 +201,6 @@ export function PosView() {
         quantityInputRefs.current = quantityInputRefs.current.slice(0, activeSession.cart.length);
     }
   }, [activeSession]);
-  
-  useEffect(() => {
-    if (activeSession) {
-      if (activeSession.selectedCustomerId) {
-        const customer = customers.find(c => c.id === activeSession.selectedCustomerId);
-        if (customer && activeSession.name !== customer.name.split(' ')[0]) {
-          updateActiveSession({ name: customer.name.split(' ')[0] });
-        }
-      } else {
-        // Check if the current name is a customer name, and if so, revert to a generic name
-        const isCustomerName = customers.some(c => c.name.split(' ')[0] === activeSession.name);
-        const saleName = t.pos.sale.replace(/ /g, '\\s');
-        const isGenericName = new RegExp(`^${saleName}\\s\\d+$`, 'i').test(activeSession.name);
-
-        if (isCustomerName || !isGenericName) {
-            const saleNumbers = sessions
-                .map(s => {
-                    const regex = new RegExp(`^${saleName}\\s(\\d+)$`, 'i');
-                    const match = s.name.match(regex);
-                    return match ? parseInt(match[1], 10) : 0;
-                })
-                .filter(n => n > 0);
-            const nextNumber = saleNumbers.length > 0 ? Math.max(...saleNumbers) + 1 : sessions.length + 1;
-            updateActiveSession({ name: `${t.pos.sale} ${nextNumber}` });
-        }
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession?.selectedCustomerId, t.pos.sale, customers]);
 
 
   const addToCart = useCallback((product: Product) => {
@@ -583,7 +558,7 @@ export function PosView() {
                         <span>{t.pos.discount}</span>
                         <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
                     </div>
-                    <Input ref={discountInputRef} type="number" value={activeSession.discount || ''} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
+                    <Input ref={discountInputRef} type="number" value={activeSession.discount} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
                 <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>{settings.currency}{total.toFixed(2)}</span></div>
@@ -602,7 +577,7 @@ export function PosView() {
                     <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
                 </div>
                 <div className="relative">
-                    <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => updateActiveSession({ amountPaid: Number(e.target.value)})} className="pr-9" />
+                    <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} className="pr-9" />
                     <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F9</kbd>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
