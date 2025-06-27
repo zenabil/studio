@@ -157,24 +157,6 @@ export default function SettingsPage() {
                 <Controller name="paymentTermsDays" control={control} render={({ field }) => <Input id="paymentTerms" type="number" min="0" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />} />
                 <p className="text-sm text-muted-foreground">{t.settings.paymentTermsDescription}</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lateFeePercentage">{t.settings.lateFeePercentage}</Label>
-                <Controller 
-                    name="lateFeePercentage" 
-                    control={control} 
-                    render={({ field }) => (
-                        <Input 
-                            id="lateFeePercentage" 
-                            type="number" 
-                            min="0"
-                            step="0.01"
-                            {...field} 
-                            onChange={e => field.onChange(e.target.valueAsNumber || 0)} 
-                        />
-                    )} 
-                />
-                <p className="text-sm text-muted-foreground">{t.settings.lateFeePercentageDescription}</p>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>

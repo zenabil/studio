@@ -15,12 +15,12 @@
     "id": "prod-02",
     "name": "Croissant au Beurre",
     "category": "Pâtisseries",
-    "price": 1.8,
+    "price": 2,
     "purchasePrice": 0.6,
     "stock": 50,
     "minStock": 15,
-    "quantityPerBox": 24,
-    "boxPrice": 40,
+    "quantityPerBox": 20,
+    "boxPrice": 38,
     "barcode": "2345678901234"
   },
   {

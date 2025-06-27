@@ -39,7 +39,7 @@ export default function AlertsPage() {
   const debtAlerts = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; totalDue: number; }[] = [];
+    const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; }[] = [];
     
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
@@ -75,47 +75,16 @@ export default function AlertsPage() {
         }
         
         if (alertDueDate && differenceInCalendarDays(alertDueDate, today) === 1) {
-            let lateFees = 0;
-            if (oldestDebtDate) {
-              let feeDueDate: Date | null = null;
-              if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-                  const todayDate = getDate(today);
-                  const currentMonth = getMonth(today);
-                  const currentYear = getYear(today);
-
-                  let lastSettlementDate: Date;
-                  if (todayDate > customer.settlementDay) {
-                      lastSettlementDate = new Date(currentYear, currentMonth, customer.settlementDay);
-                  } else {
-                      lastSettlementDate = new Date(currentYear, currentMonth - 1, customer.settlementDay);
-                  }
-                  
-                  if (oldestDebtDate < lastSettlementDate) {
-                      feeDueDate = lastSettlementDate;
-                  }
-              } else {
-                  feeDueDate = addDays(oldestDebtDate, settings.paymentTermsDays);
-              }
-              
-              if (feeDueDate && today > feeDueDate) {
-                const daysOverdue = differenceInCalendarDays(today, feeDueDate);
-                if (daysOverdue > 0 && customer.balance > 0) {
-                  lateFees = daysOverdue * (customer.balance * (settings.lateFeePercentage / 100));
-                }
-              }
-            }
-
             alerts.push({
                 customerName: customer.name,
                 balance: customer.balance,
                 dueDate: alertDueDate,
                 phone: customer.phone,
-                totalDue: customer.balance + lateFees
             });
         }
     }
     return alerts;
-  }, [customers, salesHistory, settings.paymentTermsDays, settings.lateFeePercentage]);
+  }, [customers, salesHistory, settings.paymentTermsDays]);
 
   const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
     if (!alert.phone) {
@@ -130,7 +99,7 @@ export default function AlertsPage() {
     const message = t.alerts.smsBody
       .replace('{customerName}', alert.customerName)
       .replace('{currency}', settings.currency)
-      .replace('{balance}', alert.totalDue.toFixed(2))
+      .replace('{balance}', alert.balance.toFixed(2))
       .replace('{dueDate}', format(alert.dueDate, 'PP'));
 
     const phoneNumber = alert.phone.replace(/[^0-9+]/g, ''); // Clean the phone number
@@ -214,7 +183,7 @@ export default function AlertsPage() {
                             <TableRow key={index} className="bg-destructive/10 hover:bg-destructive/20">
                                 <TableCell className="font-medium">{alert.customerName}</TableCell>
                                 <TableCell className="text-right font-bold text-destructive">
-                                    {settings.currency}{alert.totalDue.toFixed(2)}
+                                    {settings.currency}{alert.balance.toFixed(2)}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {format(alert.dueDate, 'PP')}
