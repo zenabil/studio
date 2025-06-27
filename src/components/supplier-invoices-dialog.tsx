@@ -36,7 +36,7 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const statement: { id: string; date: string; description: string; debit: number; credit: number; balance: number; }[] = [];
-    let balanceBeforeTransaction = supplier.balance;
+    let balanceBeforeTransaction = supplier.balance || 0;
 
     // Iterate backwards from the most recent transaction to calculate historical balances
     for (let i = supplierTransactions.length - 1; i >= 0; i--) {
