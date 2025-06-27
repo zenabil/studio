@@ -12,17 +12,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Supplier } from '@/lib/data';
+import { type Supplier, type Product } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddSupplierDialog } from '@/components/add-supplier-dialog';
 import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
 import { SupplierInvoicesDialog } from '@/components/supplier-invoices-dialog';
+import { SupplierRestockListDialog } from '@/components/supplier-restock-list-dialog';
 import Loading from '@/app/loading';
 
 export default function SuppliersPage() {
@@ -41,6 +42,8 @@ export default function SuppliersPage() {
   const [isViewInvoicesOpen, setIsViewInvoicesOpen] = useState(false);
   const [supplierToView, setSupplierToView] = useState<Supplier | null>(null);
 
+  const [supplierForRestock, setSupplierForRestock] = useState<Supplier | null>(null);
+  const [lowStockProductsForSupplier, setLowStockProductsForSupplier] = useState<Product[]>([]);
 
   const filteredSuppliers = useMemo(() => {
     return suppliers
@@ -104,6 +107,14 @@ export default function SuppliersPage() {
     setIsViewInvoicesOpen(true);
   };
 
+  const handleGenerateRestockList = (supplier: Supplier) => {
+    const lowStockProducts = products.filter(p =>
+        p.category === supplier.productCategory && p.stock <= (p.minStock || 0)
+    );
+    setLowStockProductsForSupplier(lowStockProducts);
+    setSupplierForRestock(supplier);
+  };
+
   const dayNames = [
     t.suppliers.days.sunday,
     t.suppliers.days.monday,
@@ -162,6 +173,9 @@ export default function SuppliersPage() {
                         : '-'}
                   </TableCell>
                   <TableCell className="flex justify-end">
+                    <Button variant="ghost" size="icon" title={t.suppliers.generateRestockList} onClick={() => handleGenerateRestockList(supplier)}>
+                        <Printer className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" title={t.suppliers.addInvoice} onClick={() => handleOpenInvoiceDialog(supplier)}>
                         <FilePlus className="h-4 w-4" />
                     </Button>
@@ -205,6 +219,13 @@ export default function SuppliersPage() {
           supplier={supplierToView}
         />
       )}
+
+      <SupplierRestockListDialog
+        isOpen={!!supplierForRestock}
+        onClose={() => setSupplierForRestock(null)}
+        supplier={supplierForRestock}
+        products={lowStockProductsForSupplier}
+      />
 
       <ConfirmDialog
         isOpen={!!supplierToDelete}

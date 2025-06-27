@@ -188,7 +188,13 @@ export const translations = {
             thursday: "Jeudi",
             friday: "Vendredi",
             saturday: "Samedi"
-        }
+        },
+        generateRestockList: "Générer la liste de réapprovisionnement",
+        restockList: "Liste de Réapprovisionnement",
+        forSupplier: "Pour le fournisseur",
+        noLowStockProducts: "Aucun produit en stock faible pour ce fournisseur.",
+        quantityToOrder: "Quantité à Commander",
+        printList: "Imprimer la liste",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -492,7 +498,13 @@ export const translations = {
             thursday: "الخميس",
             friday: "الجمعة",
             saturday: "السبت"
-        }
+        },
+        generateRestockList: "إنشاء قائمة إعادة التخزين",
+        restockList: "قائمة إعادة التخزين",
+        forSupplier: "للمورد",
+        noLowStockProducts: "لا توجد منتجات ذات مخزون منخفض لهذا المورد.",
+        quantityToOrder: "الكمية المطلوبة",
+        printList: "طباعة القائمة",
     },
     reports: {
       title: "التقارير والتحليلات",
