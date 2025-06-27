@@ -4,7 +4,7 @@ export type Translation = {
 
 export const translations = {
   fr: {
-    appName: "Mercurio POS",
+    appName: "Pro POS",
     nav: {
       pos: "Caisse",
       products: "Produits",
@@ -320,7 +320,7 @@ export const translations = {
     }
   },
   ar: {
-    appName: "ميركوريو لنقاط البيع",
+    appName: "Pro POS",
     nav: {
       pos: "نقاط البيع",
       products: "المنتجات",

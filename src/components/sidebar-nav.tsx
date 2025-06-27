@@ -16,7 +16,6 @@ import {
   CircleDollarSign,
   UsersRound,
   BarChartBig,
-  Package,
   TriangleAlert,
   Settings,
   Croissant,
@@ -91,7 +90,7 @@ export function SidebarNav() {
 
   const navItems = [
     { href: '/', label: t.nav.pos, icon: CircleDollarSign },
-    { href: '/products', label: t.nav.products, icon: Package },
+    { href: '/products', label: t.nav.products, icon: UsersRound },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/suppliers', label: t.nav.suppliers, icon: Truck },
     { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Croissant },
@@ -108,9 +107,24 @@ export function SidebarNav() {
     <Sidebar side={dir === 'rtl' ? 'right' : 'left'} collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-lg">
-            <Package className="h-7 w-7 text-primary" />
-          </div>
+           <div className="bg-primary/10 p-2 rounded-lg group">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-7 w-7 text-primary transition-transform duration-300 group-hover:scale-110"
+              >
+                <path d="M7 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+                <path d="M4 16h16" />
+                <path d="M12 20v-4" />
+                <path d="M4 20h2" />
+                <path d="M18 20h2" />
+              </svg>
+           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <span className="font-headline text-lg font-bold">{t.appName}</span>
           </div>

@@ -6,7 +6,7 @@ import { AppProviders } from '@/components/app-providers';
 import { AppLayout } from '@/components/app-layout';
 
 export const metadata: Metadata = {
-  title: 'Mercurio POS',
+  title: 'Pro POS',
   description: 'Point of Sale application for small businesses',
 };
 

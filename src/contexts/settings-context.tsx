@@ -58,10 +58,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [isClient, setIsClient] = useState(false);
   const [settings, setSettingsState] = useState<Settings>({
     companyInfo: {
-      name: 'Mercurio POS',
+      name: 'Pro POS',
       address: '123 Market St, Commerce City',
       phone: '555-1234',
-      email: 'contact@mercuriopos.com',
+      email: 'contact@propos.com',
     },
     currency: '$',
     theme: 'light',
