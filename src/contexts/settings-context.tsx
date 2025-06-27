@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Define the shape of your settings
 export interface CompanyInfo {
@@ -96,48 +96,54 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isClient]);
 
-  const applyTheme = useCallback((theme: Theme, colorName: string, backgroundTheme: string) => {
-    if (typeof window === 'undefined') return;
+  // Apply theme and colors when settings change
+  useEffect(() => {
+    if (!isClient) return;
 
     const root = document.documentElement;
 
-    // Apply theme (light/dark)
-    root.classList.remove('light', 'dark');
-    let currentTheme: 'light' | 'dark';
-
-    if (theme === 'system') {
-        currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        root.classList.add(currentTheme);
-    } else {
-        currentTheme = theme;
-        root.classList.add(theme);
-    }
-    
-    // Apply background theme
+    // 1. Apply background theme class
     backgroundThemes.forEach(t => {
       if (t.name !== 'neutral') {
         root.classList.remove(`theme-${t.name}`);
       }
     });
-
-    if (backgroundTheme !== 'neutral') {
-      root.classList.add(`theme-${backgroundTheme}`);
+    if (settings.backgroundTheme && settings.backgroundTheme !== 'neutral') {
+      root.classList.add(`theme-${settings.backgroundTheme}`);
     }
-    
-    // Apply color preset
-    const preset = colorPresets.find(p => p.name === colorName) || colorPresets[0];
-    
-    root.style.setProperty('--primary', preset.primary[currentTheme]);
-    root.style.setProperty('--accent', preset.accent[currentTheme]);
 
-  }, []);
+    // 2. Define a function to apply color preset based on light/dark
+    const applyColorPreset = (effectiveTheme: 'light' | 'dark') => {
+      const preset = colorPresets.find(p => p.name === settings.colorPreset) || colorPresets[0];
+      root.style.setProperty('--primary', preset.primary[effectiveTheme]);
+      root.style.setProperty('--accent', preset.accent[effectiveTheme]);
+    };
 
-  // Apply theme and colors when settings change
-  useEffect(() => {
-      if(isClient) {
-        applyTheme(settings.theme, settings.colorPreset, settings.backgroundTheme);
-      }
-  }, [settings.theme, settings.colorPreset, settings.backgroundTheme, isClient, applyTheme]);
+    // 3. Handle theme (light/dark/system)
+    if (settings.theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      const handleSystemThemeChange = (e: MediaQueryListEvent | { matches: boolean }) => {
+        const isDark = e.matches;
+        const effectiveTheme = isDark ? 'dark' : 'light';
+        root.classList.remove('light', 'dark');
+        root.classList.add(effectiveTheme);
+        applyColorPreset(effectiveTheme);
+      };
+
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+      // Initial call
+      handleSystemThemeChange(mediaQuery);
+
+      return () => {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      };
+    } else {
+      root.classList.remove('light', 'dark');
+      root.classList.add(settings.theme);
+      applyColorPreset(settings.theme);
+    }
+  }, [settings, isClient]);
   
   const setSettings = (newSettings: Partial<Settings>) => {
     setSettingsState(prevSettings => {
