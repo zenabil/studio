@@ -76,6 +76,86 @@
     --sidebar-border: 0 0% 30%;
     --sidebar-ring: 39 100% 50%;
   }
+
+  .theme-zinc {
+    --background: 0 0% 100%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 224 71.4% 4.1%;
+    --sidebar-accent: 220 14.3% 95.9%;
+    --sidebar-accent-foreground: 220.9 39.3% 11%;
+    --sidebar-border: 220 13% 91%;
+  }
+
+  .dark .theme-zinc {
+    --background: 224 71.4% 4.1%;
+    --foreground: 210 20% 98%;
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --sidebar-background: 224 71.4% 4.1%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-accent: 215 27.9% 16.9%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 27.9% 16.9%;
+  }
+
+  .theme-stone {
+    --background: 0 0% 100%;
+    --foreground: 220 10.8% 22.2%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 10.8% 22.2%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10.8% 22.2%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 10.8% 22.2%;
+    --sidebar-accent: 220 14.3% 95.9%;
+    --sidebar-accent-foreground: 220.9 39.3% 11%;
+    --sidebar-border: 220 13% 91%;
+  }
+
+  .dark .theme-stone {
+    --background: 220 10.8% 22.2%;
+    --foreground: 210 20% 98%;
+    --card: 220 10.8% 22.2%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 10.8% 22.2%;
+    --popover-foreground: 210 20% 98%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --sidebar-background: 220 10.8% 22.2%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-accent: 215 27.9% 16.9%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 27.9% 16.9%;
+  }
 }
 
 @layer base {

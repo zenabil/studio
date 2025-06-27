@@ -22,6 +22,7 @@ export interface Settings {
   currency: string;
   theme: Theme;
   colorPreset: string; // name of the preset
+  backgroundTheme: string; // name of the background theme
   paymentTermsDays: number;
 }
 
@@ -30,9 +31,16 @@ interface SettingsContextType {
   settings: Settings;
   setSettings: (newSettings: Partial<Settings>) => void;
   colorPresets: ColorPreset[];
+  backgroundThemes: { name: string; label: string }[];
 }
 
 const SETTINGS_KEY = 'mercurio-pos-settings';
+
+export const backgroundThemes = [
+    { name: 'neutral', label: 'Default' },
+    { name: 'zinc', label: 'Zinc' },
+    { name: 'stone', label: 'Stone' },
+];
 
 const colorPresets: ColorPreset[] = [
   { name: 'Teal', primary: { light: '180 100% 25.1%', dark: '180 100% 30%' }, accent: { light: '39 100% 50%', dark: '39 100% 50%' } },
@@ -58,6 +66,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     currency: '$',
     theme: 'light',
     colorPreset: 'Teal',
+    backgroundTheme: 'neutral',
     paymentTermsDays: 30,
   });
   
@@ -87,11 +96,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isClient]);
 
-  const applyTheme = useCallback((theme: Theme, colorName: string) => {
+  const applyTheme = useCallback((theme: Theme, colorName: string, backgroundTheme: string) => {
     if (typeof window === 'undefined') return;
 
-    // Apply theme (light/dark)
     const root = document.documentElement;
+
+    // Apply theme (light/dark)
     root.classList.remove('light', 'dark');
     let currentTheme: 'light' | 'dark';
 
@@ -101,6 +111,17 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     } else {
         currentTheme = theme;
         root.classList.add(theme);
+    }
+    
+    // Apply background theme
+    backgroundThemes.forEach(t => {
+      if (t.name !== 'neutral') {
+        root.classList.remove(`theme-${t.name}`);
+      }
+    });
+
+    if (backgroundTheme !== 'neutral') {
+      root.classList.add(`theme-${backgroundTheme}`);
     }
     
     // Apply color preset
@@ -114,9 +135,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   // Apply theme and colors when settings change
   useEffect(() => {
       if(isClient) {
-        applyTheme(settings.theme, settings.colorPreset);
+        applyTheme(settings.theme, settings.colorPreset, settings.backgroundTheme);
       }
-  }, [settings.theme, settings.colorPreset, isClient, applyTheme]);
+  }, [settings.theme, settings.colorPreset, settings.backgroundTheme, isClient, applyTheme]);
   
   const setSettings = (newSettings: Partial<Settings>) => {
     setSettingsState(prevSettings => {
@@ -141,7 +162,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const value = { settings, setSettings, colorPresets };
+  const value = { settings, setSettings, colorPresets, backgroundThemes };
 
   return (
     <SettingsContext.Provider value={value}>
