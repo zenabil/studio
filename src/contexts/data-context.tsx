@@ -7,6 +7,8 @@ import {
     type SaleRecord,
     type CartItem,
     type BakeryOrder,
+    type Supplier,
+    type SupplierInvoice,
 } from '@/lib/data';
 import {
     getProducts,
@@ -16,9 +18,14 @@ import {
     getSalesHistory,
     getBakeryOrders,
     saveBakeryOrders,
+    getSuppliers,
+    saveSuppliers,
+    getSupplierInvoices,
+    saveSupplierInvoices,
     restoreBackupData as restoreServerData,
     processSale as processSaleAction,
     processPayment as processPaymentAction,
+    processSupplierInvoice as processSupplierInvoiceAction,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
@@ -29,6 +36,8 @@ interface DataContextType {
     customers: Customer[];
     salesHistory: SaleRecord[];
     bakeryOrders: BakeryOrder[];
+    suppliers: Supplier[];
+    supplierInvoices: SupplierInvoice[];
     isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => void;
     updateProduct: (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => void;
@@ -38,11 +47,15 @@ interface DataContextType {
     deleteCustomer: (customerId: string) => void;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => void;
     makePayment: (customerId: string, amount: number) => void;
-    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[] }) => Promise<void>;
+    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[] }) => Promise<void>;
     addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => void;
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => void;
     deleteBakeryOrder: (orderId: string) => void;
     setBakeryOrders: (orders: BakeryOrder[]) => void;
+    addSupplier: (supplierData: Omit<Supplier, 'id'>) => void;
+    updateSupplier: (supplierId: string, supplierData: Omit<Supplier, 'id'>) => void;
+    deleteSupplier: (supplierId: string) => void;
+    addSupplierInvoice: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -54,6 +67,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
     const [bakeryOrders, setBakeryOrdersState] = useState<BakeryOrder[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const syncData = useCallback(async (isInitialLoad = false) => {
@@ -61,16 +76,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
         }
         try {
-            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders] = await Promise.all([
+            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices] = await Promise.all([
                 getProducts(),
                 getCustomers(),
                 getSalesHistory(),
                 getBakeryOrders(),
+                getSuppliers(),
+                getSupplierInvoices(),
             ]);
             setProducts(loadedProducts);
             setCustomers(loadedCustomers);
             setSalesHistory(loadedSalesHistory);
             setBakeryOrdersState(loadedBakeryOrders);
+            setSuppliers(loadedSuppliers);
+            setSupplierInvoices(loadedSupplierInvoices);
         } catch (error) {
             console.error("Failed to sync data from server:", error);
             toast({
@@ -327,11 +346,69 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, orders);
     }
 
-    const restoreData = async (data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[] }) => {
+    const addSupplier = (supplierData: Omit<Supplier, 'id'>) => {
+        const newSupplier: Supplier = {
+            id: `supp-${new Date().getTime()}`,
+            ...supplierData,
+        };
+        const updatedSuppliers = [newSupplier, ...suppliers];
+        handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
+    };
+
+    const updateSupplier = (supplierId: string, supplierData: Omit<Supplier, 'id'>) => {
+        const updatedSuppliers = suppliers.map(s => (s.id === supplierId ? { ...s, ...supplierData } : s));
+        handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
+    };
+
+    const deleteSupplier = (supplierId: string) => {
+        const updatedSuppliers = suppliers.filter(s => s.id !== supplierId);
+        handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
+    };
+    
+    const addSupplierInvoice = useCallback((invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
+        let totalAmount = 0;
+        const updatedProducts = products.map(product => {
+            const invoiceItem = invoiceData.items.find(item => item.productId === product.id);
+            if (invoiceItem) {
+                totalAmount += invoiceItem.quantity * invoiceItem.purchasePrice;
+                return { ...product, stock: product.stock + invoiceItem.quantity };
+            }
+            return product;
+        });
+
+        const newInvoice: SupplierInvoice = {
+            id: `SINV-${new Date().getTime()}`,
+            date: new Date().toISOString(),
+            totalAmount,
+            ...invoiceData,
+        };
+        const updatedInvoices = [newInvoice, ...supplierInvoices];
+        
+        setProducts(updatedProducts);
+        setSupplierInvoices(updatedInvoices);
+
+        const saveTransaction = async () => {
+            try {
+                await processSupplierInvoiceAction({
+                    products: updatedProducts,
+                    supplierInvoices: updatedInvoices,
+                });
+            } catch (error) {
+                console.error("Failed to save supplier invoice transaction:", error);
+                toast({
+                    variant: 'destructive',
+                    title: "Save Error",
+                    description: "Could not save supplier invoice to the server.",
+                });
+            }
+        };
+        saveTransaction();
+    }, [products, supplierInvoices, toast]);
+
+    const restoreData = async (data: any) => {
         setIsLoading(true);
         try {
             await restoreServerData(data);
-            // After restoring, sync all data to get the fresh state
             await syncData(true);
         } catch(error) {
             console.error("Failed to restore data:", error);
@@ -346,6 +423,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         customers,
         salesHistory,
         bakeryOrders,
+        suppliers,
+        supplierInvoices,
         isLoading,
         addProduct,
         updateProduct,
@@ -360,6 +439,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updateBakeryOrder,
         deleteBakeryOrder,
         setBakeryOrders,
+        addSupplier,
+        updateSupplier,
+        deleteSupplier,
+        addSupplierInvoice,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

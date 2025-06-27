@@ -32,6 +32,28 @@ export interface BakeryOrder {
   isRecurring: boolean;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  phone: string;
+  productCategory: string;
+}
+
+export interface SupplierInvoiceItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  purchasePrice: number;
+}
+
+export interface SupplierInvoice {
+  id: string;
+  supplierId: string;
+  date: string;
+  items: SupplierInvoiceItem[];
+  totalAmount: number;
+}
+
 export type Sale = {
   productId: string;
   productName: string;
@@ -123,3 +145,10 @@ export const salesHistory: SaleRecord[] = [
         date: new Date('2023-10-27T12:30:00Z').toISOString()
     }
 ];
+
+export const suppliers: Supplier[] = [
+    { id: 'supp-01', name: 'Fournisseur Boissons', phone: '0123456789', productCategory: 'Boissons' },
+    { id: 'supp-02', name: 'Fournisseur Pâtisseries', phone: '0987654321', productCategory: 'Pâtisseries' },
+];
+
+export const supplierInvoices: SupplierInvoice[] = [];

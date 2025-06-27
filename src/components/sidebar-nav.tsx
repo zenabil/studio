@@ -20,6 +20,7 @@ import {
   TriangleAlert,
   Settings,
   Croissant,
+  Truck,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -92,9 +93,10 @@ export function SidebarNav() {
     { href: '/', label: t.nav.pos, icon: CircleDollarSign },
     { href: '/products', label: t.nav.products, icon: Package },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
+    { href: '/suppliers', label: t.nav.suppliers, icon: Truck },
+    { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Croissant },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
     { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
-    { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Croissant },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ];
 

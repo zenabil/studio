@@ -8,10 +8,14 @@ import {
   customers as initialCustomers,
   salesHistory as initialSalesHistory,
   bakeryOrders as initialBakeryOrders,
+  suppliers as initialSuppliers,
+  supplierInvoices as initialSupplierInvoices,
   type Product,
   type Customer,
   type SaleRecord,
   type BakeryOrder,
+  type Supplier,
+  type SupplierInvoice,
 } from '@/lib/data';
 
 const dataDir = path.join(process.cwd(), 'data');
@@ -162,21 +166,41 @@ export async function saveBakeryOrders(orders: BakeryOrder[]): Promise<void> {
     return writeDataFile('bakeryOrders.json', orders);
 }
 
+export async function getSuppliers(): Promise<Supplier[]> {
+    return readDataFile('suppliers.json', initialSuppliers);
+}
+
+export async function saveSuppliers(suppliers: Supplier[]): Promise<void> {
+    return writeDataFile('suppliers.json', suppliers);
+}
+
+export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
+    return readDataFile('supplierInvoices.json', initialSupplierInvoices);
+}
+
+export async function saveSupplierInvoices(invoices: SupplierInvoice[]): Promise<void> {
+    return writeDataFile('supplierInvoices.json', invoices);
+}
+
 export async function getBackupData() {
-    const [products, customers, salesHistory, bakeryOrders] = await Promise.all([
+    const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices] = await Promise.all([
         getProducts(),
         getCustomers(),
         getSalesHistory(),
-        getBakeryOrders()
+        getBakeryOrders(),
+        getSuppliers(),
+        getSupplierInvoices()
     ]);
-    return { products, customers, salesHistory, bakeryOrders };
+    return { products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices };
 }
 
-export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[] }) {
+export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[] }) {
     if (data.products) await saveProducts(data.products);
     if (data.customers) await saveCustomers(data.customers);
     if (data.salesHistory) await saveSalesHistory(data.salesHistory);
     if (data.bakeryOrders) await saveBakeryOrders(data.bakeryOrders);
+    if (data.suppliers) await saveSuppliers(data.suppliers);
+    if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
 }
 
 
@@ -211,4 +235,19 @@ export async function processPayment(data: {
         console.error('Error processing payment:', error);
         throw new Error('Could not process the payment transaction.');
     }
+}
+
+export async function processSupplierInvoice(data: {
+  products: Product[];
+  supplierInvoices: SupplierInvoice[];
+}): Promise<void> {
+  try {
+    await Promise.all([
+      writeDataFile('products.json', data.products),
+      writeDataFile('supplierInvoices.json', data.supplierInvoices),
+    ]);
+  } catch (error) {
+    console.error('Error processing supplier invoice:', error);
+    throw new Error('Could not process the supplier invoice transaction.');
+  }
 }
