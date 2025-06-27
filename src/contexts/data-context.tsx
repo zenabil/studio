@@ -9,24 +9,31 @@ import {
     type BakeryOrder,
     type Supplier,
     type SupplierInvoice,
-    type SupplierInvoiceItem,
 } from '@/lib/data';
 import {
     getProducts,
-    saveProducts,
     getCustomers,
-    saveCustomers,
     getSalesHistory,
     getBakeryOrders,
-    saveBakeryOrders,
     getSuppliers,
-    saveSuppliers,
     getSupplierInvoices,
-    saveSupplierInvoices,
-    restoreBackupData as restoreServerData,
-    processSale as processSaleAction,
-    processPayment as processPaymentAction,
-    processSupplierInvoice as processSupplierInvoiceAction,
+    restoreBackupData,
+    addProductInDB,
+    updateProductInDB,
+    deleteProductInDB,
+    addCustomerInDB,
+    updateCustomerInDB,
+    deleteCustomerInDB,
+    processSale,
+    processPayment,
+    addBakeryOrderInDB,
+    updateBakeryOrderInDB,
+    deleteBakeryOrderInDB,
+    saveBakeryOrders,
+    addSupplierInDB,
+    updateSupplierInDB,
+    deleteSupplierInDB,
+    processSupplierInvoice,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
@@ -40,23 +47,23 @@ interface DataContextType {
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => void;
-    updateProduct: (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => void;
-    deleteProduct: (productId: string) => void;
-    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => void;
-    updateCustomer: (customerId: string, customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => void;
-    deleteCustomer: (customerId: string) => void;
-    addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => void;
-    makePayment: (customerId: string, amount: number) => void;
+    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => Promise<void>;
+    updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
+    deleteProduct: (productId: string) => Promise<void>;
+    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
+    updateCustomer: (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => Promise<void>;
+    deleteCustomer: (customerId: string) => Promise<void>;
+    addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
+    makePayment: (customerId: string, amount: number) => Promise<void>;
     restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[] }) => Promise<void>;
-    addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => void;
-    updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => void;
-    deleteBakeryOrder: (orderId: string) => void;
-    setBakeryOrders: (orders: BakeryOrder[]) => void;
-    addSupplier: (supplierData: Omit<Supplier, 'id'>) => void;
-    updateSupplier: (supplierId: string, supplierData: Omit<Supplier, 'id'>) => void;
-    deleteSupplier: (supplierId: string) => void;
-    addSupplierInvoice: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => void;
+    addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => Promise<void>;
+    updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
+    deleteBakeryOrder: (orderId: string) => Promise<void>;
+    setBakeryOrders: (orders: BakeryOrder[]) => Promise<void>;
+    addSupplier: (supplierData: Omit<Supplier, 'id'>) => Promise<void>;
+    updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id'>>) => Promise<void>;
+    deleteSupplier: (supplierId: string) => Promise<void>;
+    addSupplierInvoice: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -109,55 +116,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         syncData(true);
     }, [syncData]);
-    
-    // Auto-sync every 5 minutes
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            syncData(false);
-        }, 5 * 60 * 1000); // 300000ms = 5 minutes
 
-        return () => clearInterval(intervalId); // Cleanup on component unmount
-    }, [syncData]);
+    const addProduct = async (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+        const newProduct: Product = {
+            id: `prod-${new Date().getTime()}`,
+            ...productData,
+            imageUrl: '',
+        };
+        await addProductInDB(newProduct);
+        await syncData();
 
-    const handleDataUpdate = useCallback(async <T>(
-      updateFn: React.Dispatch<React.SetStateAction<T[]>>,
-      saveFn: (data: T[]) => Promise<void>,
-      newData: T[]
-    ) => {
-      updateFn(newData);
-      try {
-        await saveFn(newData);
-      } catch (error) {
-        console.error("Failed to save data to server:", error);
-        toast({
-          variant: 'destructive',
-          title: "Save Error",
-          description: "Could not save changes to the server. Your data might be out of sync.",
-        });
-      }
-    }, [toast]);
-    
-    const generateAndSaveProductImage = useCallback(async (productId: string, productName: string, productCategory: string) => {
         try {
-            const imageUrl = await generateProductImage({ name: productName, category: productCategory });
-            
-            setProducts(prevProducts => {
-                const newProducts = prevProducts.map(p => 
-                    p.id === productId ? { ...p, imageUrl } : p
-                );
-
-                saveProducts(newProducts).catch(error => {
-                    console.error("Failed to save product image URL to server:", error);
-                    toast({
-                        variant: 'destructive',
-                        title: "Image Save Failed",
-                        description: "Could not save the generated image URL."
-                    });
-                });
-                
-                return newProducts;
-            });
-
+            const imageUrl = await generateProductImage({ name: newProduct.name, category: newProduct.category });
+            if (imageUrl) {
+                await updateProductInDB(newProduct.id, { imageUrl });
+                await syncData();
+            }
         } catch (error) {
             console.error("Failed to generate product image:", error);
             toast({
@@ -166,63 +140,60 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 description: "Could not generate an image for the product."
             });
         }
-    }, [toast]);
-
-    const addProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
-        const newProduct: Product = {
-            id: `prod-${new Date().getTime()}`,
-            ...productData,
-            imageUrl: '',
-        };
-        const updatedProducts = [newProduct, ...products];
-        handleDataUpdate(setProducts, saveProducts, updatedProducts);
-        generateAndSaveProductImage(newProduct.id, newProduct.name, newProduct.category);
     };
 
-    const updateProduct = (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => {
-        let oldProduct: Product | undefined;
-        const updatedProducts = products.map(p => {
-            if (p.id === productId) {
-                oldProduct = { ...p }; 
-                return { ...p, ...productData };
-            }
-            return p;
-        });
-
-        handleDataUpdate(setProducts, saveProducts, updatedProducts);
+    const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
+        const oldProduct = products.find(p => p.id === productId);
+        await updateProductInDB(productId, productData);
+        await syncData();
         
-        if (oldProduct && (oldProduct.name !== productData.name || oldProduct.category !== productData.category)) {
-            generateAndSaveProductImage(productId, productData.name, productData.category);
+        const updatedProductData = { ...oldProduct, ...productData };
+        
+        if (oldProduct && (oldProduct.name !== updatedProductData.name || oldProduct.category !== updatedProductData.category)) {
+             try {
+                const imageUrl = await generateProductImage({ name: updatedProductData.name!, category: updatedProductData.category! });
+                if (imageUrl) {
+                    await updateProductInDB(productId, { imageUrl });
+                    await syncData();
+                }
+            } catch (error) {
+                console.error("Failed to generate product image:", error);
+                toast({
+                    variant: 'destructive',
+                    title: "Image Generation Failed",
+                    description: "Could not generate an image for the product."
+                });
+            }
         }
     };
 
-    const deleteProduct = (productId: string) => {
-        const updatedProducts = products.filter(p => p.id !== productId);
-        handleDataUpdate(setProducts, saveProducts, updatedProducts);
+    const deleteProduct = async (productId: string) => {
+        await deleteProductInDB(productId);
+        await syncData();
     };
 
-    const addCustomer = (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
+    const addCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
         const newCustomer: Customer = {
             id: `cust-${new Date().getTime()}`,
             spent: 0,
             balance: 0,
             ...customerData,
         };
-        const updatedCustomers = [newCustomer, ...customers];
-        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
+        await addCustomerInDB(newCustomer);
+        await syncData();
     };
     
-    const updateCustomer = (customerId: string, customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
-        const updatedCustomers = customers.map(c => c.id === customerId ? { ...c, ...customerData } : c);
-        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
+    const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
+        await updateCustomerInDB(customerId, customerData);
+        await syncData();
     };
 
-    const deleteCustomer = (customerId: string) => {
-        const updatedCustomers = customers.filter(c => c.id !== customerId);
-        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
+    const deleteCustomer = async (customerId: string) => {
+        await deleteCustomerInDB(customerId);
+        await syncData();
     };
     
-    const addSaleRecord = useCallback((cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
+    const addSaleRecord = async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         const newSale: SaleRecord = {
             id: `SALE-${new Date().getTime()}`,
             customerId: customerId,
@@ -231,218 +202,94 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             date: new Date().toISOString(),
         };
         
-        const updatedSalesHistory = [newSale, ...salesHistory];
-        
-        const updatedProducts = products.map(product => {
-            const cartItem = cart.find(item => item.id === product.id);
-            if (cartItem) {
-                return { ...product, stock: product.stock - cartItem.quantity };
-            }
-            return product;
-        });
-        
-        let updatedCustomers = [...customers];
-        if (customerId) {
-            updatedCustomers = customers.map(c => {
-                if (c.id === customerId) {
-                    return {
-                        ...c,
-                        spent: c.spent + totals.total,
-                        balance: c.balance + totals.balance,
-                    }
-                }
-                return c;
+        try {
+            await processSale({ saleRecord: newSale, cart });
+            await syncData();
+        } catch (error) {
+            console.error("Failed to process sale:", error);
+            toast({
+                variant: 'destructive',
+                title: "Save Error",
+                description: "Could not save sale to the server.",
             });
         }
-        
-        setSalesHistory(updatedSalesHistory);
-        setProducts(updatedProducts);
-        setCustomers(updatedCustomers);
-
-        const saveTransaction = async () => {
-            try {
-                await processSaleAction({
-                    salesHistory: updatedSalesHistory,
-                    products: updatedProducts,
-                    customers: updatedCustomers,
-                });
-            } catch (error) {
-                console.error("Failed to save sale transaction to server:", error);
-                toast({
-                    variant: 'destructive',
-                    title: "Save Error",
-                    description: "Could not save sale to the server. Your data might be out of sync.",
-                });
-            }
-        };
-
-        saveTransaction();
-
-    }, [products, customers, salesHistory, toast]);
+    };
     
-    const makePayment = (customerId: string, amount: number) => {
-        const paymentRecord: SaleRecord = {
-            id: `PAY-${new Date().getTime()}`,
-            customerId: customerId,
-            items: [],
-            totals: {
-                subtotal: 0,
-                discount: 0,
-                total: 0,
-                amountPaid: amount,
-                balance: -amount,
-            },
-            date: new Date().toISOString(),
-        };
-
-        const updatedSalesHistory = [...salesHistory, paymentRecord];
-        const updatedCustomers = customers.map(c => 
-            c.id === customerId 
-            ? { ...c, balance: c.balance - amount }
-            : c
-        );
-        
-        setSalesHistory(updatedSalesHistory);
-        setCustomers(updatedCustomers);
-
-        const saveTransaction = async () => {
-             try {
-                await processPaymentAction({
-                    salesHistory: updatedSalesHistory,
-                    customers: updatedCustomers,
-                });
-            } catch (error) {
-                console.error("Failed to save payment transaction to server:", error);
-                toast({
-                    variant: 'destructive',
-                    title: "Save Error",
-                    description: "Could not save payment to the server. Your data might be out of sync.",
-                });
-            }
+    const makePayment = async (customerId: string, amount: number) => {
+        try {
+            await processPayment({ customerId, amount });
+            await syncData();
+        } catch (error) {
+             console.error("Failed to process payment:", error);
+             toast({
+                variant: 'destructive',
+                title: "Save Error",
+                description: "Could not save payment to the server.",
+             });
         }
-       
-       saveTransaction();
     };
 
-    const addBakeryOrder = (orderData: Omit<BakeryOrder, 'id'>) => {
+    const addBakeryOrder = async (orderData: Omit<BakeryOrder, 'id'>) => {
         const newOrder: BakeryOrder = {
             id: `b-order-${new Date().getTime()}`,
             ...orderData,
         };
-        const updatedOrders = [newOrder, ...bakeryOrders];
-        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, updatedOrders);
+        await addBakeryOrderInDB(newOrder);
+        await syncData();
     };
 
-    const updateBakeryOrder = (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
-        const updatedOrders = bakeryOrders.map(o => o.id === orderId ? { ...o, ...orderData } : o);
-        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, updatedOrders);
+    const updateBakeryOrder = async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
+        await updateBakeryOrderInDB(orderId, orderData);
+        await syncData();
     };
     
-    const deleteBakeryOrder = (orderId: string) => {
-        const updatedOrders = bakeryOrders.filter(o => o.id !== orderId);
-        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, updatedOrders);
+    const deleteBakeryOrder = async (orderId: string) => {
+        await deleteBakeryOrderInDB(orderId);
+        await syncData();
     };
 
-    const setBakeryOrders = (orders: BakeryOrder[]) => {
-        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, orders);
+    const setBakeryOrders = async (orders: BakeryOrder[]) => {
+       await saveBakeryOrders(orders);
+       await syncData();
     }
 
-    const addSupplier = (supplierData: Omit<Supplier, 'id'>) => {
+    const addSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
         const newSupplier: Supplier = {
             id: `supp-${new Date().getTime()}`,
             ...supplierData,
         };
-        const updatedSuppliers = [newSupplier, ...suppliers];
-        handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
+        await addSupplierInDB(newSupplier);
+        await syncData();
     };
 
-    const updateSupplier = (supplierId: string, supplierData: Omit<Supplier, 'id'>) => {
-        const updatedSuppliers = suppliers.map(s => (s.id === supplierId ? { ...s, ...supplierData } : s));
-        handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
+    const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id'>>) => {
+        await updateSupplierInDB(supplierId, supplierData);
+        await syncData();
     };
 
-    const deleteSupplier = (supplierId: string) => {
-        const updatedSuppliers = suppliers.filter(s => s.id !== supplierId);
-        handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
+    const deleteSupplier = async (supplierId: string) => {
+        await deleteSupplierInDB(supplierId);
+        await syncData();
     };
     
-    const addSupplierInvoice = useCallback((invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'> & { items: SupplierInvoiceItem[] }) => {
-        let totalAmount = 0;
-        const updatedProducts = products.map(product => {
-            const invoiceItem = invoiceData.items.find(item => item.productId === product.id);
-            if (invoiceItem) {
-                totalAmount += invoiceItem.quantity * invoiceItem.purchasePrice;
-
-                const oldStock = product.stock;
-                const oldPurchasePrice = product.purchasePrice || 0;
-                const newQuantity = invoiceItem.quantity;
-                const newPurchasePrice = invoiceItem.purchasePrice;
-                
-                const totalNewStock = oldStock + newQuantity;
-                
-                let newWeightedAveragePrice;
-                if (oldStock > 0 && totalNewStock > 0) {
-                    const totalOldValue = oldStock * oldPurchasePrice;
-                    const totalNewValue = newQuantity * newPurchasePrice;
-                    newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalNewStock;
-                } else {
-                    // If there's no old stock, the new purchase price is the only price.
-                    newWeightedAveragePrice = newPurchasePrice;
-                }
-
-                const newProductData: Product = {
-                    ...product, 
-                    stock: totalNewStock,
-                    purchasePrice: parseFloat(newWeightedAveragePrice.toFixed(2)), // Use the new weighted average price
-                };
-                
-                if (invoiceItem.boxPrice !== undefined) {
-                    newProductData.boxPrice = invoiceItem.boxPrice;
-                }
-                 if (invoiceItem.quantityPerBox !== undefined) {
-                    newProductData.quantityPerBox = invoiceItem.quantityPerBox;
-                }
-                if (invoiceItem.barcode !== undefined) {
-                    newProductData.barcode = invoiceItem.barcode;
-                }
-                return newProductData;
-            }
-            return product;
-        });
-
-        const newInvoice: SupplierInvoice = {
-            id: `SINV-${new Date().getTime()}`,
-            date: new Date().toISOString(),
-            totalAmount,
-            ...invoiceData,
-        };
-        const updatedInvoices = [newInvoice, ...supplierInvoices];
-        
-        setProducts(updatedProducts);
-        setSupplierInvoices(updatedInvoices);
-
-        const saveTransaction = async () => {
-            try {
-                await processSupplierInvoiceAction({
-                    products: updatedProducts,
-                    supplierInvoices: updatedInvoices,
-                });
-            } catch (error) {
-                console.error("Failed to save supplier invoice transaction:", error);
-                toast({
-                    variant: 'destructive',
-                    title: "Save Error",
-                    description: "Could not save supplier invoice to the server.",
-                });
-            }
-        };
-        saveTransaction();
-    }, [products, supplierInvoices, toast]);
+    const addSupplierInvoice = async (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
+        try {
+            await processSupplierInvoice(invoiceData, products);
+            await syncData();
+        } catch (error) {
+            console.error("Failed to process supplier invoice:", error);
+            toast({
+                variant: 'destructive',
+                title: "Save Error",
+                description: "Could not save supplier invoice to the server.",
+            });
+        }
+    };
 
     const restoreData = async (data: any) => {
         setIsLoading(true);
         try {
-            await restoreServerData(data);
+            await restoreBackupData(data);
             await syncData(true);
         } catch(error) {
             console.error("Failed to restore data:", error);

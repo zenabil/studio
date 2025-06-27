@@ -28,7 +28,7 @@ import type { BakeryOrder } from '@/lib/data';
 interface AddBakeryOrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => boolean;
+  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => Promise<void>;
 }
 
 export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrderDialogProps) {
@@ -56,11 +56,15 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrder
     }
   }, [form, isOpen]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const success = onSave(values);
-    if (success) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await onSave(values);
       form.reset();
       onClose();
+    } catch (error) {
+      // Error is handled by the parent component (toast message)
+      // We catch it here to prevent the dialog from closing on failure
+      console.error(error);
     }
   }
 

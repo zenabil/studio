@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Supplier, type Product } from '@/lib/data';
+import { type Supplier, type Product, type SupplierInvoice } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
@@ -95,7 +95,7 @@ export default function SuppliersPage() {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handleSaveInvoice = (invoiceData: any) => {
+  const handleSaveInvoice = (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
     addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);
@@ -176,7 +176,7 @@ export default function SuppliersPage() {
                     <Button variant="ghost" size="icon" title={t.suppliers.generateRestockList} onClick={() => handleGenerateRestockList(supplier)}>
                         <Printer className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title={t.suppliers.addInvoice} onClick={() => handleOpenInvoiceDialog(supplier)}>
+                    <Button type="button" variant="ghost" size="icon" title={t.suppliers.addInvoice} onClick={() => handleOpenInvoiceDialog(supplier)}>
                         <FilePlus className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" title={t.suppliers.viewInvoices} onClick={() => handleOpenViewInvoicesDialog(supplier)}>

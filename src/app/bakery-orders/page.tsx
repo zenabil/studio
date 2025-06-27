@@ -112,7 +112,7 @@ export default function BakeryOrdersPage() {
     });
   }, [todaysOrders]);
 
-  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>): boolean => {
+  const handleSaveOrder = async (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => {
     const orderNameLower = orderData.name.toLowerCase();
     const orderExists = todaysOrders.some(order => order.name.toLowerCase() === orderNameLower);
 
@@ -122,7 +122,7 @@ export default function BakeryOrdersPage() {
             title: t.errors.title,
             description: t.bakeryOrders.orderExists,
         });
-        return false;
+        throw new Error(t.bakeryOrders.orderExists);
     }
 
     const newOrderData = {
@@ -132,11 +132,10 @@ export default function BakeryOrdersPage() {
       received: false,
       isRecurring: false,
     };
-    addBakeryOrder(newOrderData);
+    await addBakeryOrder(newOrderData);
     toast({
       title: t.bakeryOrders.orderAdded,
     });
-    return true;
   };
 
   const handleToggleStatus = (orderId: string, field: 'paid' | 'received') => {
