@@ -49,6 +49,10 @@ export default function BakeryOrdersPage() {
       .reduce((total, order) => total + order.quantity, 0);
   }, [orders]);
 
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => Number(a.received) - Number(b.received));
+  }, [orders]);
+
   const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received'>) => {
     const newOrder: BakeryOrder = {
       id: `order-${new Date().getTime()}`,
@@ -123,7 +127,7 @@ export default function BakeryOrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order) => (
+                {sortedOrders.map((order) => (
                   <TableRow key={order.id} className={order.received ? 'bg-muted/50 text-muted-foreground' : ''}>
                     <TableCell className="font-medium">{order.name}</TableCell>
                     <TableCell className="text-center">{order.quantity}</TableCell>
