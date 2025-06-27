@@ -23,9 +23,11 @@ import { useLanguage } from '@/contexts/language-context';
 import { AddBakeryOrderDialog } from '@/components/add-bakery-order-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 export interface BakeryOrder {
   id: string;
+  date: string;
   name: string;
   quantity: number;
   paid: boolean;
@@ -36,9 +38,9 @@ export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [orders, setOrders] = useState<BakeryOrder[]>([
-    { id: '1', name: 'Boulangerie Al-Amal', quantity: 50, paid: true, received: false },
-    { id: '2', name: 'Patisserie Dupont', quantity: 75, paid: false, received: true },
-    { id: '3', name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false },
+    { id: '1', date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), name: 'Boulangerie Al-Amal', quantity: 50, paid: true, received: false },
+    { id: '2', date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), name: 'Patisserie Dupont', quantity: 75, paid: false, received: true },
+    { id: '3', date: new Date().toISOString(), name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false },
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
@@ -50,12 +52,18 @@ export default function BakeryOrdersPage() {
   }, [orders]);
 
   const sortedOrders = useMemo(() => {
-    return [...orders].sort((a, b) => Number(a.received) - Number(b.received));
+    return [...orders].sort((a, b) => {
+        if (a.received !== b.received) {
+            return Number(a.received) - Number(b.received);
+        }
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
   }, [orders]);
 
-  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received'>) => {
+  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date'>) => {
     const newOrder: BakeryOrder = {
       id: `order-${new Date().getTime()}`,
+      date: new Date().toISOString(),
       paid: false,
       received: false,
       ...orderData,
@@ -119,6 +127,7 @@ export default function BakeryOrdersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>{t.bakeryOrders.date}</TableHead>
                   <TableHead>{t.bakeryOrders.name}</TableHead>
                   <TableHead className="text-center">{t.bakeryOrders.quantity}</TableHead>
                   <TableHead className="text-center">{t.bakeryOrders.status}</TableHead>
@@ -129,6 +138,7 @@ export default function BakeryOrdersPage() {
               <TableBody>
                 {sortedOrders.map((order) => (
                   <TableRow key={order.id} className={order.received ? 'bg-muted/50 text-muted-foreground' : ''}>
+                    <TableCell>{format(new Date(order.date), 'PP')}</TableCell>
                     <TableCell className="font-medium">{order.name}</TableCell>
                     <TableCell className="text-center">{order.quantity}</TableCell>
                     <TableCell className="text-center">
