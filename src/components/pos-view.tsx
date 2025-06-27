@@ -91,8 +91,7 @@ export function PosView() {
   const createNewSession = useCallback((): SaleSession => {
     const saleNumbers = sessions
       .map(s => {
-        // Match "Sale" or its translation followed by a number
-        const saleName = t.pos.sale.replace(/ /g, '\\s'); // Handle potential spaces in translation
+        const saleName = t.pos.sale.replace(/ /g, '\\s'); 
         const regex = new RegExp(`^${saleName}\\s(\\d+)$`, 'i');
         const match = s.name.match(regex);
         return match ? parseInt(match[1], 10) : 0;
@@ -165,12 +164,10 @@ export function PosView() {
       const value = cartQuantities[productId] || '';
       const newQuantity = parseFloat(value);
       
-      if (isNaN(newQuantity)) {
-          // Revert to original value if input is invalid
-          const item = activeSession?.cart.find(i => i.id === productId);
-          if (item) {
-              setCartQuantities(prev => ({ ...prev, [productId]: String(item.quantity) }));
-          }
+      const item = activeSession?.cart.find(i => i.id === productId);
+
+      if (isNaN(newQuantity) && item) {
+          setCartQuantities(prev => ({ ...prev, [productId]: String(item.quantity) }));
       } else {
           handleQuantityChange(productId, newQuantity);
       }
@@ -189,6 +186,13 @@ export function PosView() {
         handleQuantityChange(productId, item.quantity - 1);
     }
   };
+  
+  const removeFromCart = useCallback((productId: string) => {
+    if (!activeSession) return;
+    const newCart = activeSession.cart.filter(item => item.id !== productId);
+    updateActiveSession({ cart: newCart });
+  }, [activeSession, updateActiveSession]);
+
 
   useEffect(() => {
     if (activeSession) {
@@ -197,7 +201,6 @@ export function PosView() {
             newQuantities[item.id] = String(item.quantity);
         });
         setCartQuantities(newQuantities);
-        // Resize refs array to match cart size
         quantityInputRefs.current = quantityInputRefs.current.slice(0, activeSession.cart.length);
     }
   }, [activeSession]);
@@ -419,8 +422,18 @@ export function PosView() {
                     placeholder={`${t.pos.searchProducts} (F1)`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 pr-10"
                   />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                      onClick={() => setSearchTerm('')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                </div>
                <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-grow">
@@ -452,15 +465,23 @@ export function PosView() {
           <CardContent className="flex-grow">
             <ScrollArea className="h-[55vh] lg:h-full">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 pr-4">
-                {filteredProducts.map((product) => (
-                   <PosProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={addToCart}
-                      currency={settings.currency}
-                      t={t}
-                    />
-                ))}
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => (
+                    <PosProductCard
+                        key={product.id}
+                        product={product}
+                        onAddToCart={addToCart}
+                        currency={settings.currency}
+                        t={t}
+                      />
+                  ))
+                ) : (
+                  <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground h-64">
+                    <Search className="w-16 h-16 mb-4 opacity-50" />
+                    <p className="font-semibold text-lg">{t.pos.noProductsFound}</p>
+                    <p className="text-sm">{t.pos.tryDifferentKeywords}</p>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -503,12 +524,11 @@ export function PosView() {
                     <TableRow>
                       <TableHead>{t.pos.description}</TableHead>
                       <TableHead className="text-center w-32">
-                        <div className="flex items-center justify-center gap-2">
-                          {t.pos.quantity}
-                          <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F7</kbd>
-                        </div>
+                        {t.pos.quantity}
+                        <kbd className="ml-2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F7</kbd>
                       </TableHead>
                       <TableHead className="text-right">{t.pos.total}</TableHead>
+                      <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -542,6 +562,11 @@ export function PosView() {
                         <TableCell className="text-right">
                           {settings.currency}{calculateItemTotal(item).toFixed(2)}
                         </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFromCart(item.id)}>
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -558,7 +583,7 @@ export function PosView() {
                         <span>{t.pos.discount}</span>
                         <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
                     </div>
-                    <Input ref={discountInputRef} type="number" value={activeSession.discount} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} className="h-8 w-24 text-right" />
+                    <Input ref={discountInputRef} type="number" value={activeSession.discount || ''} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
                 <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>{settings.currency}{total.toFixed(2)}</span></div>
@@ -577,7 +602,7 @@ export function PosView() {
                     <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
                 </div>
                 <div className="relative">
-                    <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} className="pr-9" />
+                    <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} className="pr-9" />
                     <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F9</kbd>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>

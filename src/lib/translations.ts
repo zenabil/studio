@@ -56,6 +56,8 @@ export const translations = {
       addedToCart: "a été ajouté au panier.",
       confirmCloseSaleTitle: "Fermer la vente ?",
       confirmCloseSaleMessage: "Cette vente a des articles dans le panier. Êtes-vous sûr de vouloir la fermer ? Cette action est irréversible.",
+      noProductsFound: "Aucun produit trouvé.",
+      tryDifferentKeywords: "Essayez de rechercher avec d'autres mots-clés.",
     },
     products: {
       title: "Gestion des Produits",
@@ -396,6 +398,8 @@ export const translations = {
       addedToCart: "تمت إضافته إلى السلة.",
       confirmCloseSaleTitle: "إغلاق البيع؟",
       confirmCloseSaleMessage: "هذه البيعة تحتوي على منتجات في السلة. هل أنت متأكد من رغبتك في إغلاقها؟ لا يمكن التراجع عن هذا الإجراء.",
+      noProductsFound: "لم يتم العثور على منتجات.",
+      tryDifferentKeywords: "حاول البحث بكلمات مفتاحية مختلفة.",
     },
     products: {
       title: "إدارة المنتجات",
