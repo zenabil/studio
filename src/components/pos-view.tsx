@@ -87,18 +87,32 @@ export function PosView() {
   const amountPaidInputRef = useRef<HTMLInputElement>(null);
   const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   
-  const createNewSession = useCallback((index: number): SaleSession => ({
-    id: `session-${new Date().getTime()}-${index}`,
-    name: `${t.pos.sale} ${index}`,
-    cart: [],
-    selectedCustomerId: null,
-    amountPaid: 0,
-    discount: 0,
-  }), [t.pos.sale]);
+  const createNewSession = useCallback((): SaleSession => {
+    const saleNumbers = sessions
+      .map(s => {
+        // Match "Sale" or its translation followed by a number
+        const saleName = t.pos.sale.replace(/ /g, '\\s'); // Handle potential spaces in translation
+        const regex = new RegExp(`^${saleName}\\s(\\d+)$`, 'i');
+        const match = s.name.match(regex);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(n => n > 0);
+  
+    const nextNumber = saleNumbers.length > 0 ? Math.max(...saleNumbers) + 1 : sessions.length + 1;
+  
+    return {
+      id: `session-${new Date().getTime()}-${nextNumber}`,
+      name: `${t.pos.sale} ${nextNumber}`,
+      cart: [],
+      selectedCustomerId: null,
+      amountPaid: 0,
+      discount: 0,
+    };
+  }, [sessions, t.pos.sale]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && sessions.length === 0) {
-      const initialSession = createNewSession(1);
+      const initialSession = createNewSession();
       setSessions([initialSession]);
       setActiveSessionId(initialSession.id);
     }
@@ -184,22 +198,31 @@ export function PosView() {
   }, [activeSession]);
   
   useEffect(() => {
-      if (activeSession) {
-          if (activeSession.selectedCustomerId) {
-              const customer = customers.find(c => c.id === activeSession.selectedCustomerId);
-              if (customer && activeSession.name !== customer.name.split(' ')[0]) {
-                  updateActiveSession({ name: customer.name.split(' ')[0] });
-              }
-          } else {
-              const sessionIndex = sessions.findIndex(s => s.id === activeSessionId);
-              if (sessionIndex !== -1) {
-                const defaultName = `${t.pos.sale} ${sessionIndex + 1}`;
-                if (activeSession.name !== defaultName) {
-                  updateActiveSession({ name: defaultName });
-                }
-              }
-          }
+    if (activeSession) {
+      if (activeSession.selectedCustomerId) {
+        const customer = customers.find(c => c.id === activeSession.selectedCustomerId);
+        if (customer && activeSession.name !== customer.name.split(' ')[0]) {
+          updateActiveSession({ name: customer.name.split(' ')[0] });
+        }
+      } else {
+        // Check if the current name is a customer name, and if so, revert to a generic name
+        const isCustomerName = customers.some(c => c.name.split(' ')[0] === activeSession.name);
+        const saleName = t.pos.sale.replace(/ /g, '\\s');
+        const isGenericName = new RegExp(`^${saleName}\\s\\d+$`, 'i').test(activeSession.name);
+
+        if (isCustomerName || !isGenericName) {
+            const saleNumbers = sessions
+                .map(s => {
+                    const regex = new RegExp(`^${saleName}\\s(\\d+)$`, 'i');
+                    const match = s.name.match(regex);
+                    return match ? parseInt(match[1], 10) : 0;
+                })
+                .filter(n => n > 0);
+            const nextNumber = saleNumbers.length > 0 ? Math.max(...saleNumbers) + 1 : sessions.length + 1;
+            updateActiveSession({ name: `${t.pos.sale} ${nextNumber}` });
+        }
       }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSession?.selectedCustomerId, t.pos.sale, customers]);
 
@@ -229,7 +252,7 @@ export function PosView() {
   }, [activeSessionId, updateActiveSession]);
   
   const addNewSession = () => {
-    const newSession = createNewSession(sessions.length + 1);
+    const newSession = createNewSession();
     setSessions(prev => [...prev, newSession]);
     setActiveSessionId(newSession.id);
   };
@@ -238,7 +261,7 @@ export function PosView() {
       setSessions(prev => {
           const newSessions = prev.filter(s => s.id !== sessionId);
           if (newSessions.length === 0) {
-              const newInitialSession = createNewSession(1);
+              const newInitialSession = createNewSession();
               setActiveSessionId(newInitialSession.id)
               return [newInitialSession];
           }
