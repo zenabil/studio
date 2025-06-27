@@ -35,16 +35,6 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
     const selectedCustomer =
       customers.find((c) => c.id === selectedCustomerId) || null;
 
-    const handleSelect = (value: string) => {
-      if (value === 'no-customer') {
-        onSelectCustomer(null);
-      } else {
-        const customerId = value.split('---')[1];
-        onSelectCustomer(customerId);
-      }
-      setOpen(false);
-    };
-
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -60,13 +50,17 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-          <Command onSelect={handleSelect}>
+          <Command>
             <CommandInput placeholder={t.customers.searchCustomers} />
             <CommandList>
               <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="no-customer"
+                  onSelect={() => {
+                    onSelectCustomer(null);
+                    setOpen(false);
+                  }}
                 >
                   <Check
                     className={cn(
@@ -80,6 +74,11 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                   <CommandItem
                     key={customer.id}
                     value={`${customer.name}---${customer.id}`}
+                    onSelect={(currentValue) => {
+                      const customerId = currentValue.split('---')[1];
+                      onSelectCustomer(customerId);
+                      setOpen(false);
+                    }}
                   >
                     <Check
                       className={cn(
