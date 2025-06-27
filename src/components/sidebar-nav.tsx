@@ -146,10 +146,24 @@ export function SidebarNav() {
            </div>
           <div className="group-data-[collapsible=icon]:hidden">
             {isMounted ? (
-                <span className="font-headline text-lg font-bold">{t.appName}</span>
+                <div className="flex flex-col">
+                    <span className="font-headline text-lg font-bold leading-tight">{t.appName}</span>
+                    {settings.isActivated ? (
+                        <Badge variant="success" className="w-fit px-1.5 text-[10px] leading-none">
+                            {t.appStatus.pro}
+                        </Badge>
+                    ) : (
+                        <Badge variant="accent" className="w-fit px-1.5 text-[10px] leading-none">
+                            {t.appStatus.trial}
+                        </Badge>
+                    )}
+                </div>
               ) : (
-                <Skeleton className="h-6 w-36" />
-            )}
+                <div className="flex flex-col gap-1">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-3 w-12" />
+                </div>
+              )}
           </div>
         </div>
       </SidebarHeader>

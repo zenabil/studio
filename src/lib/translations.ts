@@ -5,6 +5,10 @@ export type Translation = {
 export const translations = {
   fr: {
     appName: "Frucio",
+    appStatus: {
+      pro: "PRO",
+      trial: "TRIAL",
+    },
     nav: {
       pos: "Caisse",
       products: "Produits",
@@ -329,6 +333,10 @@ export const translations = {
   },
   ar: {
     appName: "Frucio",
+    appStatus: {
+      pro: "برو",
+      trial: "تجريبي",
+    },
     nav: {
       pos: "نقاط البيع",
       products: "المنتجات",
