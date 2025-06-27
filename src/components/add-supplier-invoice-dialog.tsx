@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Supplier, SupplierInvoiceItem } from '@/lib/data';
+import type { Supplier, SupplierInvoiceItem, SupplierInvoice } from '@/lib/data';
 import {
   Form,
   FormControl,
@@ -39,7 +39,7 @@ import { Trash2 } from 'lucide-react';
 interface AddSupplierInvoiceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (invoiceData: Omit<any, 'id' | 'date' | 'totalAmount'>) => void;
+  onSave: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => void;
   supplier: Supplier;
 }
 

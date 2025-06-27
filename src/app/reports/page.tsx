@@ -29,6 +29,7 @@ import { DollarSign, ShoppingCart, Users, LineChart, Package, Crown } from 'luci
 import type { Customer } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
+import { calculateItemTotal } from '@/lib/utils';
 
 export default function ReportsPage() {
   const { t } = useLanguage();
@@ -70,8 +71,11 @@ export default function ReportsPage() {
           }
 
           sale.items.forEach(item => {
-              profit += (item.price - (item.purchasePrice || 0)) * item.quantity;
+              const revenue = calculateItemTotal(item);
+              const cost = (item.purchasePrice || 0) * item.quantity;
+              profit += revenue - cost;
               productsSoldCount += item.quantity;
+
               if (!productQuantities[item.id]) {
                   productQuantities[item.id] = 0;
               }

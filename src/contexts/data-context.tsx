@@ -47,7 +47,7 @@ interface DataContextType {
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => Promise<void>;
+    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
@@ -117,7 +117,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         syncData(true);
     }, [syncData]);
 
-    const addProduct = async (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+    const addProduct = async (productData: Omit<Product, 'id' | 'imageUrl'>): Promise<Product> => {
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
             ...productData,
@@ -126,20 +126,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         await addProductInDB(newProduct);
         await syncData();
 
-        try {
-            const imageUrl = await generateProductImage({ name: newProduct.name, category: newProduct.category });
-            if (imageUrl) {
-                await updateProductInDB(newProduct.id, { imageUrl });
-                await syncData();
-            }
-        } catch (error) {
-            console.error("Failed to generate product image:", error);
-            toast({
-                variant: 'destructive',
-                title: "Image Generation Failed",
-                description: "Could not generate an image for the product."
+        // Kick off image generation but don't wait for it to complete
+        generateProductImage({ name: newProduct.name, category: newProduct.category })
+            .then(async (imageUrl) => {
+                if (imageUrl) {
+                    await updateProductInDB(newProduct.id, { imageUrl });
+                    await syncData(); // Sync again to show the new image
+                }
+            })
+            .catch(error => {
+                console.error("Failed to generate product image:", error);
+                toast({
+                    variant: 'destructive',
+                    title: "Image Generation Failed",
+                    description: "Could not generate an image for the product."
+                });
             });
-        }
+        
+        return newProduct;
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {

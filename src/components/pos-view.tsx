@@ -347,12 +347,16 @@ export function PosView() {
     }
   };
 
-  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>) => {
-    addProduct(productData);
+  const handleSaveProduct = async (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+    const newProduct = await addProduct(productData);
+    if (newProduct) {
+      addToCart(newProduct);
+    }
     toast({
         title: t.products.productAdded,
     });
     setIsAddProductDialogOpen(false);
+    setNewProductBarcode('');
   };
   
   useEffect(() => {
