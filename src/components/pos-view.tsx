@@ -502,9 +502,9 @@ export function PosView() {
                             <TabsTrigger key={session.id} value={session.id} className="relative pr-8">
                                 {session.name}
                                 {sessions.length > 1 && (
-                                    <button onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20">
+                                    <span onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20 cursor-pointer">
                                         <X className="h-3 w-3" />
-                                    </button>
+                                    </span>
                                 )}
                             </TabsTrigger>
                         ))}
