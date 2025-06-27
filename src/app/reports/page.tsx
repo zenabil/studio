@@ -20,6 +20,7 @@ import { CustomerPaymentsChart } from '@/components/reports/customer-payments-ch
 import { ProfitsChart } from '@/components/reports/profits-chart';
 import { SalesOverTimeChart } from '@/components/reports/sales-over-time-chart';
 import { CategorySalesChart } from '@/components/reports/category-sales-chart';
+import { SalesForecastCard } from '@/components/reports/sales-forecast-card';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -164,6 +165,8 @@ export default function ReportsPage() {
           </Card>
       </div>
       
+      <SalesForecastCard />
+
       <Card>
           <CardHeader>
             <CardTitle>{t.reports.salesOverTime}</CardTitle>

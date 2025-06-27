@@ -213,7 +213,12 @@ export const translations = {
       bestSellers: "Meilleures Ventes",
       top5byUnits: "Top 5 des produits par unités vendues.",
       unitsSold: "Unités Vendues",
-      noSalesData: "Aucune donnée de vente à afficher."
+      noSalesData: "Aucune donnée de vente à afficher.",
+      salesForecast: "Prévision des Ventes",
+      salesForecastDescription: "Utiliser l'IA pour prédire les ventes d'aujourd'hui pour un produit sélectionné.",
+      selectProduct: "Sélectionner un produit",
+      predictedSales: "Ventes prévues pour aujourd'hui",
+      notEnoughData: "Données de vente insuffisantes pour faire une prévision.",
     },
     alerts: {
       title: "Alertes",
@@ -311,6 +316,7 @@ export const translations = {
       cameraAccessDenied: "Veuillez autoriser l'accès à la caméra pour utiliser cette fonctionnalité.",
       productNotFound: "Produit non trouvé avec ce code-barres.",
       scanError: "Une erreur est survenue lors du scan.",
+      forecastError: "La prévision des ventes a échoué.",
     }
   },
   ar: {
@@ -523,7 +529,12 @@ export const translations = {
       bestSellers: "الأكثر مبيعاً",
       top5byUnits: "أفضل 5 منتجات حسب الوحدات المباعة.",
       unitsSold: "الوحدات المباعة",
-      noSalesData: "لا توجد بيانات مبيعات لعرضها."
+      noSalesData: "لا توجد بيانات مبيعات لعرضها.",
+      salesForecast: "توقع المبيعات",
+      salesForecastDescription: "استخدام الذكاء الاصطناعي لتوقع مبيعات اليوم لمنتج محدد.",
+      selectProduct: "اختر منتجًا",
+      predictedSales: "المبيعات المتوقعة لليوم",
+      notEnoughData: "بيانات المبيعات غير كافية لعمل توقع.",
     },
     alerts: {
       title: "التنبيهات",
@@ -621,6 +632,7 @@ export const translations = {
       cameraAccessDenied: "يرجى السماح بالوصول إلى الكاميرا لاستخدام هذه الميزة.",
       productNotFound: "المنتج غير موجود بهذا الباركود.",
       scanError: "حدث خطأ أثناء المسح.",
+      forecastError: "فشل توقع المبيعات.",
     }
   },
 };
