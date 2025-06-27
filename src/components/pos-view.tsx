@@ -374,6 +374,7 @@ export function PosView() {
       if (event.key === 'F1') { event.preventDefault(); searchInputRef.current?.select(); }
       if (event.key === 'F2') { event.preventDefault(); barcodeInputRef.current?.select(); }
       if (event.key === 'F4') { event.preventDefault(); customerComboboxRef.current?.focus(); }
+      if (event.key === 'F6') { event.preventDefault(); resetSale(); }
       if (event.key === 'F7') {
         event.preventDefault();
         if (quantityInputRefs.current.length > 0) {
@@ -609,7 +610,8 @@ export function PosView() {
                 </Button>
                 <Button variant="destructive" onClick={resetSale}>
                     <XCircle className="h-4 w-4"/>
-                    {t.pos.newSale}
+                    <span>{t.pos.newSale}</span>
+                    <kbd className="rounded bg-background/20 text-destructive-foreground px-1.5 font-mono text-[10px] font-medium">F6</kbd>
                 </Button>
              </div>
              <div className="mt-2">
