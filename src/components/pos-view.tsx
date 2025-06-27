@@ -39,6 +39,7 @@ import {
   Barcode,
   Search,
   Package,
+  ShoppingCart,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -284,9 +285,16 @@ export function PosView() {
     const cart = activeSession?.cart || [];
     const discount = activeSession?.discount || 0;
     const subtotal = cart.reduce((sum, item) => sum + calculateItemTotal(item), 0);
-    const total = subtotal - discount;
+    const total = Math.max(0, subtotal - discount);
     return { subtotal, total };
-  }, [activeSession]);
+  }, [activeSession?.cart, activeSession?.discount]);
+
+  useEffect(() => {
+    if (activeSession) {
+      updateActiveSession({ amountPaid: total });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total, activeSessionId]);
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
@@ -506,7 +514,7 @@ export function PosView() {
             <ScrollArea className="h-48">
               {activeSession.cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                  <Package className="w-12 h-12 mb-4" />
+                  <ShoppingCart className="w-12 h-12 mb-4" />
                   <p>{t.pos.addToCart}...</p>
                 </div>
               ) : (
@@ -570,7 +578,7 @@ export function PosView() {
                         <span>{t.pos.discount}</span>
                         <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
                     </div>
-                    <Input ref={discountInputRef} type="number" value={activeSession.discount} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
+                    <Input ref={discountInputRef} type="number" value={activeSession.discount || ''} onChange={(e) => updateActiveSession({ discount: Math.max(0, Number(e.target.value))})} className="h-8 w-24 text-right" />
                 </div>
                 <Separator/>
                 <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>{settings.currency}{total.toFixed(2)}</span></div>
