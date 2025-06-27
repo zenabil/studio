@@ -16,13 +16,13 @@ const DailySaleSchema = z.object({
     quantity: z.number().describe("The total quantity sold on that date."),
 });
 
-export const SalesForecastInputSchema = z.object({
+const SalesForecastInputSchema = z.object({
   productName: z.string().describe('The name of the product being forecasted.'),
   dailySales: z.array(DailySaleSchema).describe('A history of daily sales quantities for the product.'),
 });
 export type SalesForecastInput = z.infer<typeof SalesForecastInputSchema>;
 
-export const SalesForecastOutputSchema = z.object({
+const SalesForecastOutputSchema = z.object({
     forecastedQuantity: z.number().int().describe('The predicted integer sales quantity for today. Provide only the number.'),
     reasoning: z.string().describe("A brief explanation of the forecast, considering trends and patterns.")
 });
