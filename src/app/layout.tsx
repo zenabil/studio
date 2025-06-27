@@ -6,7 +6,7 @@ import { AppProviders } from '@/components/app-providers';
 import { AppLayout } from '@/components/app-layout';
 
 export const metadata: Metadata = {
-  title: 'Mercurio Les Freres',
+  title: 'Frucio',
   description: 'Point of Sale application for small businesses',
 };
 
