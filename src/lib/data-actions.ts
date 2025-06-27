@@ -33,7 +33,16 @@ const SUPPLIER_INVOICES_FILE = path.join(DATA_DIR, 'supplierInvoices.json');
 const LICENSE_KEYS_FILE = path.join(DATA_DIR, 'licenseKeys.json');
 
 const ALGORITHM = 'aes-256-gcm';
-const KEY = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
+
+// Validate and load the encryption key
+const ENCRYPTION_KEY_STRING = process.env.ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY_STRING) {
+    throw new Error('ENCRYPTION_KEY is not defined in your .env file. Please provide a 32-byte key (64 hex characters).');
+}
+if (Buffer.from(ENCRYPTION_KEY_STRING, 'hex').length !== 32) {
+    throw new Error('ENCRYPTION_KEY in your .env file must be a 32-byte key (64 hex characters).');
+}
+const KEY = Buffer.from(ENCRYPTION_KEY_STRING, 'hex');
 
 // Encryption function
 function encrypt(text: string): { iv: string; authTag: string; encryptedData: string } {
