@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { translations, Translation } from '@/lib/translations';
 
 export type Language = 'fr' | 'ar';
@@ -23,11 +23,9 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     document.documentElement.lang = language;
   }, [language]);
 
-  const contextValue = useMemo(() => {
-    const t = translations[language];
-    const dir = language === 'ar' ? 'rtl' : 'ltr';
-    return { language, setLanguage, t, dir };
-  }, [language]);
+  const t = translations[language];
+  const dir = language === 'ar' ? 'rtl' : 'ltr';
+  const contextValue = { language, setLanguage, t, dir };
   
   return (
     <LanguageContext.Provider value={contextValue}>

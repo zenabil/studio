@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, getDate, getMonth, getYear, set } from 'date-fns';
+import { Skeleton } from './ui/skeleton';
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -36,6 +37,11 @@ export function SidebarNav() {
   const { settings } = useSettings();
   const [lowStockCount, setLowStockCount] = useState(0);
   const [debtAlertCount, setDebtAlertCount] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -126,7 +132,11 @@ export function SidebarNav() {
               </svg>
            </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <span className="font-headline text-lg font-bold">{t.appName}</span>
+            {isMounted ? (
+                <span className="font-headline text-lg font-bold">{t.appName}</span>
+              ) : (
+                <Skeleton className="h-6 w-36" />
+            )}
           </div>
         </div>
       </SidebarHeader>
