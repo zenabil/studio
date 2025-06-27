@@ -19,6 +19,7 @@ import {
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
+import { useLanguage } from './language-context';
 
 interface DataContextType {
     products: Product[];
@@ -40,38 +41,52 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
+    const { t } = useLanguage();
     const [products, setProducts] = useState<Product[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Load initial data from server
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setIsLoading(true);
-                const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
-                    getProducts(),
-                    getCustomers(),
-                    getSalesHistory()
-                ]);
-                setProducts(loadedProducts);
-                setCustomers(loadedCustomers);
-                setSalesHistory(loadedSalesHistory);
-            } catch (error) {
-                console.error("Failed to load data from server:", error);
-                toast({
-                    variant: 'destructive',
-                    title: "Error",
-                    description: "Could not load application data from the server."
-                })
-            } finally {
+    const syncData = useCallback(async (isInitialLoad = false) => {
+        if (isInitialLoad) {
+            setIsLoading(true);
+        }
+        try {
+            const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
+                getProducts(),
+                getCustomers(),
+                getSalesHistory()
+            ]);
+            setProducts(loadedProducts);
+            setCustomers(loadedCustomers);
+            setSalesHistory(loadedSalesHistory);
+        } catch (error) {
+            console.error("Failed to sync data from server:", error);
+            toast({
+                variant: 'destructive',
+                title: t.errors.title,
+                description: "Could not load application data from the server."
+            });
+        } finally {
+            if (isInitialLoad) {
                 setIsLoading(false);
             }
-        };
+        }
+    }, [toast, t]);
 
-        loadData();
-    }, [toast]);
+    // Initial data load
+    useEffect(() => {
+        syncData(true);
+    }, [syncData]);
+    
+    // Auto-sync every 5 minutes
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            syncData(false);
+        }, 5 * 60 * 1000); // 300000ms = 5 minutes
+
+        return () => clearInterval(intervalId); // Cleanup on component unmount
+    }, [syncData]);
 
     const handleDataUpdate = useCallback(async <T>(
       updateFn: React.Dispatch<React.SetStateAction<T[]>>,
@@ -88,7 +103,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           title: "Save Error",
           description: "Could not save changes to the server. Your data might be out of sync.",
         });
-        // Optionally, implement a rollback mechanism here
       }
     }, [toast]);
     
@@ -138,7 +152,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         let oldProduct: Product | undefined;
         const updatedProducts = products.map(p => {
             if (p.id === productId) {
-                oldProduct = { ...p }; // Create a copy of the old product state
+                oldProduct = { ...p }; 
                 return { ...p, ...productData };
             }
             return p;
@@ -210,12 +224,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             });
         }
         
-        // Optimistically update the UI
         setSalesHistory(updatedSalesHistory);
         setProducts(updatedProducts);
         setCustomers(updatedCustomers);
 
-        // Call the single server action to save all changes
         const saveTransaction = async () => {
             try {
                 await processSaleAction({
@@ -267,7 +279,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(true);
         try {
             await restoreServerData(data);
-            // Re-fetch data from server to update UI
             const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
                 getProducts(),
                 getCustomers(),
@@ -278,7 +289,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setSalesHistory(loadedSalesHistory);
         } catch(error) {
             console.error("Failed to restore data:", error);
-            throw error; // re-throw to be caught in the component
+            throw error; 
         } finally {
             setIsLoading(false);
         }
