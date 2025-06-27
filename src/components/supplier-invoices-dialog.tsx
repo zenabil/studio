@@ -51,7 +51,7 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
             date: tx.date,
             description: t.suppliers.payment,
             debit: 0,
-            credit: tx.totalAmount,
+            credit: tx.amountPaid || 0,
             balance: balanceAfterTransaction
         });
       } else {
@@ -121,7 +121,7 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
               <TableFooter>
                 <TableRow className="text-lg">
                     <TableCell colSpan={4} className="text-right font-bold">{t.customers.totalDue}</TableCell>
-                    <TableCell className="text-right font-bold">{settings.currency}{supplier.balance.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-bold">{settings.currency}{(supplier.balance || 0).toFixed(2)}</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>

@@ -256,7 +256,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                       <FormItem className="flex items-center gap-2">
                         <FormLabel className="text-base">{t.pos.amountPaid}:</FormLabel>
                         <FormControl>
-                            <Input className="w-32 text-base" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                            <Input className="w-32 text-base" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -36,13 +36,11 @@ const ALGORITHM = 'aes-256-gcm';
 
 // Validate and load the encryption key
 const ENCRYPTION_KEY_STRING = process.env.ENCRYPTION_KEY;
-if (!ENCRYPTION_KEY_STRING) {
-    throw new Error('ENCRYPTION_KEY is not defined in your .env file. Please provide a 32-byte key (64 hex characters).');
-}
-if (Buffer.from(ENCRYPTION_KEY_STRING, 'hex').length !== 32) {
-    throw new Error('ENCRYPTION_KEY in your .env file must be a 32-byte key (64 hex characters).');
+if (!ENCRYPTION_KEY_STRING || Buffer.from(ENCRYPTION_KEY_STRING, 'hex').length !== 32) {
+    throw new Error('ENCRYPTION_KEY is not defined in your .env file or is invalid. Please provide a 32-byte key (64 hex characters).');
 }
 const KEY = Buffer.from(ENCRYPTION_KEY_STRING, 'hex');
+
 
 // Encryption function
 function encrypt(text: string): { iv: string; authTag: string; encryptedData: string } {
@@ -328,6 +326,7 @@ export async function processSupplierPayment(data: { supplierId: string; amount:
         items: [], // An empty items array signifies a payment
         totalAmount: data.amount,
         isPayment: true,
+        amountPaid: data.amount,
     };
     invoices.push(paymentRecord);
 
