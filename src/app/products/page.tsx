@@ -1,6 +1,5 @@
 'use client';
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -20,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, Package } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
@@ -53,7 +52,7 @@ export default function ProductsPage() {
     setEditingProduct(null);
   }
 
-  const handleSaveProduct = (productData: Omit<Product, 'id' | 'imageUrl'>, productId?: string) => {
+  const handleSaveProduct = (productData: Omit<Product, 'id'>, productId?: string) => {
     if (productId) {
       updateProduct(productId, productData);
       toast({
@@ -110,7 +109,6 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">Image</TableHead>
                 <TableHead>{t.products.name}</TableHead>
                 <TableHead>{t.products.category}</TableHead>
                 <TableHead>{t.products.barcode}</TableHead>
@@ -126,22 +124,6 @@ export default function ProductsPage() {
             <TableBody>
               {filteredProducts.map((product) => (
                 <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
-                  <TableCell>
-                    <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-                        {product.imageUrl ? (
-                            <Image
-                                src={product.imageUrl}
-                                alt={product.name}
-                                width={48}
-                                height={48}
-                                unoptimized
-                                className="object-cover w-full h-full"
-                            />
-                        ) : (
-                            <Package className="w-6 h-6 text-muted-foreground" />
-                        )}
-                    </div>
-                  </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category}</TableCell>
                   <TableCell>{product.barcode}</TableCell>

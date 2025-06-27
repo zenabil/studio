@@ -28,7 +28,7 @@ import { useEffect } from 'react';
 interface AddProductDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: Omit<Product, 'id' | 'imageUrl'>, id?:string) => void;
+  onSave: (product: Omit<Product, 'id'>, id?:string) => void;
   productToEdit?: Product | null;
   initialBarcode?: string;
 }

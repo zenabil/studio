@@ -36,7 +36,6 @@ import {
     processSupplierInvoice,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
-import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
 import { useLanguage } from './language-context';
 
 interface DataContextType {
@@ -47,7 +46,7 @@ interface DataContextType {
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => Promise<Product>;
+    addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
@@ -117,58 +116,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         syncData(true);
     }, [syncData]);
 
-    const addProduct = async (productData: Omit<Product, 'id' | 'imageUrl'>): Promise<Product> => {
+    const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
             ...productData,
-            imageUrl: '',
         };
         await addProductInDB(newProduct);
         await syncData();
-
-        // Kick off image generation but don't wait for it to complete
-        generateProductImage({ name: newProduct.name, category: newProduct.category })
-            .then(async (imageUrl) => {
-                if (imageUrl) {
-                    await updateProductInDB(newProduct.id, { imageUrl });
-                    await syncData(); // Sync again to show the new image
-                }
-            })
-            .catch(error => {
-                console.error("Failed to generate product image:", error);
-                toast({
-                    variant: 'destructive',
-                    title: "Image Generation Failed",
-                    description: "Could not generate an image for the product."
-                });
-            });
-        
         return newProduct;
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
-        const oldProduct = products.find(p => p.id === productId);
         await updateProductInDB(productId, productData);
         await syncData();
-        
-        const updatedProductData = { ...oldProduct, ...productData };
-        
-        if (oldProduct && (oldProduct.name !== updatedProductData.name || oldProduct.category !== updatedProductData.category)) {
-             try {
-                const imageUrl = await generateProductImage({ name: updatedProductData.name!, category: updatedProductData.category! });
-                if (imageUrl) {
-                    await updateProductInDB(productId, { imageUrl });
-                    await syncData();
-                }
-            } catch (error) {
-                console.error("Failed to generate product image:", error);
-                toast({
-                    variant: 'destructive',
-                    title: "Image Generation Failed",
-                    description: "Could not generate an image for the product."
-                });
-            }
-        }
     };
 
     const deleteProduct = async (productId: string) => {
