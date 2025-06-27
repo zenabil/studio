@@ -9,6 +9,7 @@ import {
     type BakeryOrder,
     type Supplier,
     type SupplierInvoice,
+    type SupplierInvoiceItem,
 } from '@/lib/data';
 import {
     getProducts,
@@ -365,13 +366,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         handleDataUpdate(setSuppliers, saveSuppliers, updatedSuppliers);
     };
     
-    const addSupplierInvoice = useCallback((invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
+    const addSupplierInvoice = useCallback((invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'> & { items: SupplierInvoiceItem[] }) => {
         let totalAmount = 0;
         const updatedProducts = products.map(product => {
             const invoiceItem = invoiceData.items.find(item => item.productId === product.id);
             if (invoiceItem) {
                 totalAmount += invoiceItem.quantity * invoiceItem.purchasePrice;
-                return { ...product, stock: product.stock + invoiceItem.quantity };
+                const newProductData: Product = {
+                    ...product, 
+                    stock: product.stock + invoiceItem.quantity,
+                    purchasePrice: invoiceItem.purchasePrice,
+                };
+                if (invoiceItem.boxPrice !== undefined) {
+                    newProductData.boxPrice = invoiceItem.boxPrice;
+                }
+                 if (invoiceItem.quantityPerBox !== undefined) {
+                    newProductData.quantityPerBox = invoiceItem.quantityPerBox;
+                }
+                return newProductData;
             }
             return product;
         });

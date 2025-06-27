@@ -44,6 +44,8 @@ export interface SupplierInvoiceItem {
   productName: string;
   quantity: number;
   purchasePrice: number;
+  boxPrice?: number;
+  quantityPerBox?: number;
 }
 
 export interface SupplierInvoice {
