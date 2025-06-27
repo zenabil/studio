@@ -9,8 +9,8 @@ import {
   DialogClose,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/language-context';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/form';
 import { useEffect, useMemo } from 'react';
 import { useData } from '@/contexts/data-context';
-import { ScrollArea } from './ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
