@@ -25,61 +25,65 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-export interface BakeryOrder {
-  id: string;
-  date: string;
-  name: string;
-  quantity: number;
-  paid: boolean;
-  received: boolean;
-  isRecurring: boolean;
-}
+import { useData } from '@/contexts/data-context';
+import type { BakeryOrder } from '@/lib/data';
+import Loading from '@/app/loading';
 
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [orders, setOrders] = useState<BakeryOrder[]>([
-    { id: '1', date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), name: 'Boulangerie Al-Amal', quantity: 50, paid: true, received: false, isRecurring: true },
-    { id: '2', date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), name: 'Patisserie Dupont', quantity: 75, paid: false, received: true, isRecurring: false },
-    { id: '3', date: new Date().toISOString(), name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false, isRecurring: false },
-  ]);
+  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, setBakeryOrders, isLoading } = useData();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
 
   useEffect(() => {
+    if (isLoading) return;
+
     const today = new Date();
     const todayISO = today.toISOString();
 
-    setOrders(currentOrders => {
-        // Keep all recurring orders (as templates) and any orders from today
-        let relevantOrders = currentOrders.filter(o => o.isRecurring || isToday(new Date(o.date)));
+    let ordersToProcess = [...bakeryOrders];
+    let hasChanged = false;
 
-        // Get unique recurring templates by name
-        const templates = relevantOrders.filter(o => o.isRecurring);
-        const uniqueTemplateNames = [...new Set(templates.map(t => t.name))];
+    // Remove old, non-recurring orders
+    const initialCount = ordersToProcess.length;
+    ordersToProcess = ordersToProcess.filter(o => o.isRecurring || isToday(new Date(o.date)));
+    if(ordersToProcess.length !== initialCount) hasChanged = true;
 
-        // Check if instances for today exist and create if not
-        uniqueTemplateNames.forEach(name => {
-            const instanceExists = relevantOrders.some(o => o.name === name && isToday(new Date(o.date)));
-            if (!instanceExists) {
-                const template = templates.find(t => t.name === name);
-                if (template) {
-                    relevantOrders.push({
-                        ...template,
-                        id: `order-${new Date().getTime()}-${Math.random()}`,
-                        date: todayISO,
-                        paid: false,
-                        received: false,
-                    });
-                }
+    // Get unique recurring templates by name
+    const templates = ordersToProcess.filter(o => o.isRecurring);
+    const uniqueTemplateNames = [...new Set(templates.map(t => t.name))];
+    
+    // Check if instances for today exist and create if not
+    uniqueTemplateNames.forEach(name => {
+        const instanceExists = ordersToProcess.some(o => o.name === name && isToday(new Date(o.date)));
+        if (!instanceExists) {
+            const template = templates.find(t => t.name === name);
+            if (template) {
+                const newInstance: Omit<BakeryOrder, 'id'> = {
+                    ...template,
+                    date: todayISO,
+                    paid: false,
+                    received: false,
+                };
+                // We use addBakeryOrder from context to ensure persistence
+                addBakeryOrder(newInstance); 
+                // We don't set hasChanged here as addBakeryOrder will trigger a re-render
             }
-        });
-        return relevantOrders;
+        }
     });
-  }, []);
+    
+    // If only non-recurring orders were removed, we need to update the state
+    if (hasChanged) {
+        setBakeryOrders(ordersToProcess);
+    }
 
-  const todaysOrders = useMemo(() => orders.filter(o => isToday(new Date(o.date))), [orders]);
+  // We run this only when the data is loaded
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
+  const todaysOrders = useMemo(() => bakeryOrders.filter(o => isToday(new Date(o.date))), [bakeryOrders]);
 
   const totalBreadRequired = useMemo(() => {
     return todaysOrders
@@ -99,47 +103,41 @@ export default function BakeryOrdersPage() {
     });
   }, [todaysOrders]);
 
-  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => {
-    const newOrder: BakeryOrder = {
-      id: `order-${new Date().getTime()}`,
+  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date'>) => {
+    const newOrderData = {
+      ...orderData,
       date: new Date().toISOString(),
       paid: false,
       received: false,
-      isRecurring: false,
-      ...orderData,
     };
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
+    addBakeryOrder(newOrderData);
     toast({
       title: t.bakeryOrders.orderAdded,
     });
   };
 
-  const handleTogglePaidStatus = (orderId: string) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, paid: !order.paid } : order
-      )
-    );
-  };
-  
-  const handleToggleReceivedStatus = (orderId: string) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, received: !order.received } : order
-      )
-    );
+  const handleToggleStatus = (orderId: string, field: 'paid' | 'received') => {
+      const order = bakeryOrders.find(o => o.id === orderId);
+      if (order) {
+          updateBakeryOrder(orderId, { [field]: !order[field] });
+          toast({ title: t.bakeryOrders.orderUpdated });
+      }
   };
 
   const handleToggleRecurring = (orderId: string) => {
-    const orderToToggle = orders.find(o => o.id === orderId);
+    const orderToToggle = bakeryOrders.find(o => o.id === orderId);
     if (!orderToToggle) return;
     
     const orderName = orderToToggle.name;
     const isNowRecurring = !orderToToggle.isRecurring;
     
-    setOrders(prev => prev.map(o => 
-      (o.name === orderName) ? { ...o, isRecurring: isNowRecurring } : o
-    ));
+    const ordersToUpdate = bakeryOrders
+      .filter(o => o.name === orderName)
+      .map(o => ({...o, isRecurring: isNowRecurring}));
+
+    ordersToUpdate.forEach(order => {
+        updateBakeryOrder(order.id, { isRecurring: isNowRecurring });
+    });
     
     toast({ title: isNowRecurring ? t.bakeryOrders.orderPinned : t.bakeryOrders.orderUnpinned });
   };
@@ -154,12 +152,16 @@ export default function BakeryOrdersPage() {
 
   const handleDeleteOrder = () => {
     if (!orderToDelete) return;
-    setOrders(prevOrders => prevOrders.filter(order => order.id !== orderToDelete.id));
+    deleteBakeryOrder(orderToDelete.id);
     toast({
         title: t.bakeryOrders.orderDeleted,
     });
     handleCloseDeleteDialog();
   };
+
+  if (isLoading) {
+      return <Loading />;
+  }
 
   return (
     <>
@@ -221,7 +223,7 @@ export default function BakeryOrdersPage() {
                          variant="ghost" 
                          size="icon" 
                          title={t.bakeryOrders.togglePaidStatus} 
-                         onClick={() => handleTogglePaidStatus(order.id)}
+                         onClick={() => handleToggleStatus(order.id, 'paid')}
                        >
                          {order.paid ? <XCircle className="h-4 w-4 text-destructive" /> : <CheckCircle className="h-4 w-4 text-success" />}
                        </Button>
@@ -229,7 +231,7 @@ export default function BakeryOrdersPage() {
                         variant="ghost"
                         size="icon"
                         title={t.bakeryOrders.toggleReceivedStatus}
-                        onClick={() => handleToggleReceivedStatus(order.id)}
+                        onClick={() => handleToggleStatus(order.id, 'received')}
                        >
                         {order.received ? <Package className="h-4 w-4" /> : <PackageCheck className="h-4 w-4 text-success" />}
                        </Button>

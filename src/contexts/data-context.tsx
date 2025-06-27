@@ -5,7 +5,8 @@ import {
     type Product,
     type Customer,
     type SaleRecord,
-    type CartItem
+    type CartItem,
+    type BakeryOrder,
 } from '@/lib/data';
 import {
     getProducts,
@@ -13,9 +14,11 @@ import {
     getCustomers,
     saveCustomers,
     getSalesHistory,
-    saveSalesHistory,
+    getBakeryOrders,
+    saveBakeryOrders,
     restoreBackupData as restoreServerData,
-    processSale as processSaleAction
+    processSale as processSaleAction,
+    processPayment as processPaymentAction,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
@@ -25,6 +28,7 @@ interface DataContextType {
     products: Product[];
     customers: Customer[];
     salesHistory: SaleRecord[];
+    bakeryOrders: BakeryOrder[];
     isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id' | 'imageUrl'>) => void;
     updateProduct: (productId: string, productData: Omit<Product, 'id' | 'imageUrl'>) => void;
@@ -34,7 +38,11 @@ interface DataContextType {
     deleteCustomer: (customerId: string) => void;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => void;
     makePayment: (customerId: string, amount: number) => void;
-    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => Promise<void>;
+    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[] }) => Promise<void>;
+    addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => void;
+    updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => void;
+    deleteBakeryOrder: (orderId: string) => void;
+    setBakeryOrders: (orders: BakeryOrder[]) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -45,6 +53,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
+    const [bakeryOrders, setBakeryOrdersState] = useState<BakeryOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const syncData = useCallback(async (isInitialLoad = false) => {
@@ -52,14 +61,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
         }
         try {
-            const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
+            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders] = await Promise.all([
                 getProducts(),
                 getCustomers(),
-                getSalesHistory()
+                getSalesHistory(),
+                getBakeryOrders(),
             ]);
             setProducts(loadedProducts);
             setCustomers(loadedCustomers);
             setSalesHistory(loadedSalesHistory);
+            setBakeryOrdersState(loadedBakeryOrders);
         } catch (error) {
             console.error("Failed to sync data from server:", error);
             toast({
@@ -265,28 +276,63 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         };
 
         const updatedSalesHistory = [...salesHistory, paymentRecord];
-        handleDataUpdate(setSalesHistory, saveSalesHistory, updatedSalesHistory);
-
         const updatedCustomers = customers.map(c => 
             c.id === customerId 
             ? { ...c, balance: c.balance - amount }
             : c
         );
-        handleDataUpdate(setCustomers, saveCustomers, updatedCustomers);
+        
+        setSalesHistory(updatedSalesHistory);
+        setCustomers(updatedCustomers);
+
+        const saveTransaction = async () => {
+             try {
+                await processPaymentAction({
+                    salesHistory: updatedSalesHistory,
+                    customers: updatedCustomers,
+                });
+            } catch (error) {
+                console.error("Failed to save payment transaction to server:", error);
+                toast({
+                    variant: 'destructive',
+                    title: "Save Error",
+                    description: "Could not save payment to the server. Your data might be out of sync.",
+                });
+            }
+        }
+       
+       saveTransaction();
     };
 
-    const restoreData = async (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) => {
+    const addBakeryOrder = (orderData: Omit<BakeryOrder, 'id'>) => {
+        const newOrder: BakeryOrder = {
+            id: `b-order-${new Date().getTime()}`,
+            ...orderData,
+        };
+        const updatedOrders = [newOrder, ...bakeryOrders];
+        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, updatedOrders);
+    };
+
+    const updateBakeryOrder = (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
+        const updatedOrders = bakeryOrders.map(o => o.id === orderId ? { ...o, ...orderData } : o);
+        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, updatedOrders);
+    };
+    
+    const deleteBakeryOrder = (orderId: string) => {
+        const updatedOrders = bakeryOrders.filter(o => o.id !== orderId);
+        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, updatedOrders);
+    };
+
+    const setBakeryOrders = (orders: BakeryOrder[]) => {
+        handleDataUpdate(setBakeryOrdersState, saveBakeryOrders, orders);
+    }
+
+    const restoreData = async (data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[] }) => {
         setIsLoading(true);
         try {
             await restoreServerData(data);
-            const [loadedProducts, loadedCustomers, loadedSalesHistory] = await Promise.all([
-                getProducts(),
-                getCustomers(),
-                getSalesHistory()
-            ]);
-            setProducts(loadedProducts);
-            setCustomers(loadedCustomers);
-            setSalesHistory(loadedSalesHistory);
+            // After restoring, sync all data to get the fresh state
+            await syncData(true);
         } catch(error) {
             console.error("Failed to restore data:", error);
             throw error; 
@@ -299,6 +345,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         products,
         customers,
         salesHistory,
+        bakeryOrders,
         isLoading,
         addProduct,
         updateProduct,
@@ -309,6 +356,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addSaleRecord,
         makePayment,
         restoreData,
+        addBakeryOrder,
+        updateBakeryOrder,
+        deleteBakeryOrder,
+        setBakeryOrders,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

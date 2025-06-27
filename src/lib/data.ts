@@ -22,6 +22,16 @@ export type Customer = {
   settlementDay?: number;
 };
 
+export interface BakeryOrder {
+  id: string;
+  date: string;
+  name: string;
+  quantity: number;
+  paid: boolean;
+  received: boolean;
+  isRecurring: boolean;
+}
+
 export type Sale = {
   productId: string;
   productName: string;
@@ -64,6 +74,13 @@ export const customers: Customer[] = [
   { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 89.20, balance: 0 },
   { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00, balance: -10.00 },
 ];
+
+export const bakeryOrders: BakeryOrder[] = [
+    { id: '1', date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), name: 'Boulangerie Al-Amal', quantity: 50, paid: true, received: true, isRecurring: true },
+    { id: '2', date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), name: 'Patisserie Dupont', quantity: 75, paid: false, received: true, isRecurring: false },
+    { id: '3', date: new Date().toISOString(), name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false, isRecurring: false },
+];
+
 
 export const salesData: Sale[] = [
   { productId: 'prod-01', productName: 'Café Espresso', unitsSold: 120, revenue: 300.00 },

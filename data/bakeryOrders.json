@@ -1,0 +1,5 @@
+{
+  "iv": "a1b2c3d4e5f6a1b2c3d4e5f6",
+  "authTag": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+  "encryptedData": "c3e5e6a8a2a1a8a23d8c4e43e74a8b8b"
+}

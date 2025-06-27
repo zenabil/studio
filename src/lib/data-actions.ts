@@ -7,9 +7,11 @@ import {
   products as initialProducts,
   customers as initialCustomers,
   salesHistory as initialSalesHistory,
+  bakeryOrders as initialBakeryOrders,
   type Product,
   type Customer,
-  type SaleRecord
+  type SaleRecord,
+  type BakeryOrder,
 } from '@/lib/data';
 
 const dataDir = path.join(process.cwd(), 'data');
@@ -152,17 +154,29 @@ export async function saveSalesHistory(salesHistory: SaleRecord[]): Promise<void
   return writeDataFile('salesHistory.json', salesHistory);
 }
 
-export async function getBackupData() {
-    const products = await getProducts();
-    const customers = await getCustomers();
-    const salesHistory = await getSalesHistory();
-    return { products, customers, salesHistory };
+export async function getBakeryOrders(): Promise<BakeryOrder[]> {
+    return readDataFile('bakeryOrders.json', initialBakeryOrders);
 }
 
-export async function restoreBackupData(data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[] }) {
+export async function saveBakeryOrders(orders: BakeryOrder[]): Promise<void> {
+    return writeDataFile('bakeryOrders.json', orders);
+}
+
+export async function getBackupData() {
+    const [products, customers, salesHistory, bakeryOrders] = await Promise.all([
+        getProducts(),
+        getCustomers(),
+        getSalesHistory(),
+        getBakeryOrders()
+    ]);
+    return { products, customers, salesHistory, bakeryOrders };
+}
+
+export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[] }) {
     if (data.products) await saveProducts(data.products);
     if (data.customers) await saveCustomers(data.customers);
     if (data.salesHistory) await saveSalesHistory(data.salesHistory);
+    if (data.bakeryOrders) await saveBakeryOrders(data.bakeryOrders);
 }
 
 
@@ -182,4 +196,19 @@ export async function processSale(data: {
     console.error(`Error processing sale:`, error);
     throw new Error(`Could not process the sale transaction.`);
   }
+}
+
+export async function processPayment(data: {
+    salesHistory: SaleRecord[];
+    customers: Customer[];
+}): Promise<void> {
+    try {
+        await Promise.all([
+            writeDataFile('salesHistory.json', data.salesHistory),
+            writeDataFile('customers.json', data.customers)
+        ]);
+    } catch (error) {
+        console.error('Error processing payment:', error);
+        throw new Error('Could not process the payment transaction.');
+    }
 }

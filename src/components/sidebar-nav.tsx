@@ -50,26 +50,36 @@ export function SidebarNav() {
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
     for (const customer of indebtedCustomers) {
-        let dueDate: Date | null = null;
-
+        let alertDueDate: Date | null = null;
+        
+        // Priority 1: Customer-specific settlement day
         if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-            if (getDate(today) >= customer.settlementDay) {
-                dueDate = new Date(getYear(today), getMonth(today) + 1, customer.settlementDay);
+            const todayDate = getDate(today);
+            const currentMonth = getMonth(today);
+            const currentYear = getYear(today);
+
+            if (todayDate >= customer.settlementDay) {
+                // Due date is next month
+                alertDueDate = new Date(currentYear, currentMonth + 1, customer.settlementDay);
             } else {
-                dueDate = set(today, { date: customer.settlementDay });
+                // Due date is this month
+                alertDueDate = set(today, { date: customer.settlementDay });
             }
-        } else {
+        } 
+        // Priority 2: Global payment terms based on oldest debt-creating sale
+        else {
             const debtCreatingSales = salesHistory
                 .filter(s => s.customerId === customer.id && s.totals.balance > 0)
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
+            
             if (debtCreatingSales.length > 0) {
                 const oldestDebtSale = debtCreatingSales[0];
-                dueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+                alertDueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
             }
         }
-
-        if (dueDate && differenceInCalendarDays(dueDate, today) === 1) {
+        
+        // Check if the due date is tomorrow to trigger an alert
+        if (alertDueDate && differenceInCalendarDays(alertDueDate, today) === 1) {
             count++;
         }
     }
