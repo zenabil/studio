@@ -99,11 +99,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setSuppliers(loadedSuppliers);
             setSupplierInvoices(loadedSupplierInvoices);
         } catch (error) {
-            console.error("Failed to sync data from server:", error);
+            console.error("Failed to sync data:", error);
             toast({
                 variant: 'destructive',
                 title: t.errors.title,
-                description: "Could not load application data from the server."
+                description: "Could not load application data."
             });
         } finally {
             if (isInitialLoad) {
@@ -214,7 +214,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({
                 variant: 'destructive',
                 title: "Save Error",
-                description: "Could not save sale to the server.",
+                description: "Could not save sale data.",
             });
         }
     };
@@ -228,7 +228,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
              toast({
                 variant: 'destructive',
                 title: "Save Error",
-                description: "Could not save payment to the server.",
+                description: "Could not save payment data.",
              });
         }
     };
@@ -278,14 +278,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     const addSupplierInvoice = async (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
         try {
-            await processSupplierInvoice(invoiceData, products);
+            await processSupplierInvoice(invoiceData);
             await syncData();
         } catch (error) {
             console.error("Failed to process supplier invoice:", error);
             toast({
                 variant: 'destructive',
                 title: "Save Error",
-                description: "Could not save supplier invoice to the server.",
+                description: "Could not save supplier invoice.",
             });
         }
     };

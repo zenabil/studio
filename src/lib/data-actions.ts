@@ -1,160 +1,208 @@
 'use server';
 
 import {
-    collection,
-    getDocs,
-    doc,
-    setDoc,
-    updateDoc,
-    deleteDoc,
-    writeBatch,
-    runTransaction,
-    query,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import {
-  products as initialProducts,
-  customers as initialCustomers,
-  salesHistory as initialSalesHistory,
-  bakeryOrders as initialBakeryOrders,
-  suppliers as initialSuppliers,
-  supplierInvoices as initialSupplierInvoices,
-  type Product,
-  type Customer,
-  type SaleRecord,
-  type BakeryOrder,
-  type Supplier,
-  type SupplierInvoice,
-  type CartItem,
+    products as initialProducts,
+    customers as initialCustomers,
+    salesHistory as initialSalesHistory,
+    bakeryOrders as initialBakeryOrders,
+    suppliers as initialSuppliers,
+    supplierInvoices as initialSupplierInvoices,
+    type Product,
+    type Customer,
+    type SaleRecord,
+    type BakeryOrder,
+    type Supplier,
+    type SupplierInvoice,
+    type CartItem,
 } from '@/lib/data';
 
-// Helper function to seed a collection if it's empty
-async function seedCollection<T extends {id: string}>(collectionName: string, initialData: T[]) {
-    const batch = writeBatch(db);
-    initialData.forEach((item) => {
-        const docRef = doc(db, collectionName, item.id);
-        batch.set(docRef, item);
-    });
-    await batch.commit();
-    console.log(`Collection '${collectionName}' seeded with ${initialData.length} documents.`);
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
+import 'dotenv/config';
+
+const DATA_DIR = path.join(process.cwd(), 'data');
+const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const CUSTOMERS_FILE = path.join(DATA_DIR, 'customers.json');
+const SALES_HISTORY_FILE = path.join(DATA_DIR, 'salesHistory.json');
+const BAKERY_ORDERS_FILE = path.join(DATA_DIR, 'bakeryOrders.json');
+const SUPPLIERS_FILE = path.join(DATA_DIR, 'suppliers.json');
+const SUPPLIER_INVOICES_FILE = path.join(DATA_DIR, 'supplierInvoices.json');
+
+const ALGORITHM = 'aes-256-gcm';
+const KEY = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
+
+// Encryption function
+function encrypt(text: string): { iv: string; authTag: string; encryptedData: string } {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    return {
+        iv: iv.toString('hex'),
+        encryptedData: encrypted.toString('hex'),
+        authTag: authTag.toString('hex'),
+    };
 }
 
-// Generic function to read a collection, and seed it if it's empty
-async function getCollection<T>(collectionName: string, initialData: T[]): Promise<T[]> {
+// Decryption function
+function decrypt(data: { iv: string; authTag: string; encryptedData: string }): string {
+    const iv = Buffer.from(data.iv, 'hex');
+    const authTag = Buffer.from(data.authTag, 'hex');
+    const encrypted = Buffer.from(data.encryptedData, 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
+    decipher.setAuthTag(authTag);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    return decrypted.toString('utf8');
+}
+
+// Helper to read, decrypt and parse data, or seed if not present
+async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
   try {
-    const collectionRef = collection(db, collectionName);
-    const snapshot = await getDocs(collectionRef);
-    
-    if (snapshot.empty && initialData.length > 0) {
-        await seedCollection(collectionName, initialData as any[]);
-        return initialData;
-    }
-    
-    return snapshot.docs.map(doc => doc.data() as T);
-  } catch (error: any) {
-    if(error.code === 'permission-denied' || error.code === 'unauthenticated'){
-      console.warn(`[Firestore] Permission denied for ${collectionName}. This is expected if Firestore is not configured. Returning initial data.`);
-      return initialData;
-    }
-    console.error(`[Firestore] Error reading collection ${collectionName}:`, error);
-    throw error;
+    const fileContent = await fs.readFile(filePath, 'utf-8');
+    const decrypted = decrypt(JSON.parse(fileContent));
+    return JSON.parse(decrypted);
+  } catch (error) {
+    console.warn(`Could not read or decrypt ${filePath}. Seeding with initial data.`);
+    await writeData(filePath, initialData);
+    return initialData;
   }
+}
+
+// Helper to encrypt and write data
+async function writeData<T>(filePath: string, data: T[]): Promise<void> {
+  const encrypted = encrypt(JSON.stringify(data, null, 2));
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(encrypted, null, 2));
 }
 
 // Public API for data fetching operations
 export async function getProducts(): Promise<Product[]> {
-  return getCollection('products', initialProducts);
+  return readData(PRODUCTS_FILE, initialProducts);
 }
 export async function getCustomers(): Promise<Customer[]> {
-  return getCollection('customers', initialCustomers);
+  return readData(CUSTOMERS_FILE, initialCustomers);
 }
 export async function getSalesHistory(): Promise<SaleRecord[]> {
-  return getCollection('salesHistory', initialSalesHistory);
+  return readData(SALES_HISTORY_FILE, initialSalesHistory);
 }
 export async function getBakeryOrders(): Promise<BakeryOrder[]> {
-    return getCollection('bakeryOrders', initialBakeryOrders);
+    return readData(BAKERY_ORDERS_FILE, initialBakeryOrders);
 }
 export async function getSuppliers(): Promise<Supplier[]> {
-    return getCollection('suppliers', initialSuppliers);
+    return readData(SUPPLIERS_FILE, initialSuppliers);
 }
 export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
-    return getCollection('supplierInvoices', initialSupplierInvoices);
+    return readData(SUPPLIER_INVOICES_FILE, initialSupplierInvoices);
 }
 
 // Granular write operations
 export async function addProductInDB(product: Product): Promise<void> {
-    await setDoc(doc(db, 'products', product.id), product);
+    const products = await getProducts();
+    products.push(product);
+    await writeData(PRODUCTS_FILE, products);
 }
 export async function updateProductInDB(productId: string, productData: Partial<Product>): Promise<void> {
-    await updateDoc(doc(db, 'products', productId), productData);
+    let products = await getProducts();
+    products = products.map(p => p.id === productId ? { ...p, ...productData } : p);
+    await writeData(PRODUCTS_FILE, products);
 }
 export async function deleteProductInDB(productId: string): Promise<void> {
-    await deleteDoc(doc(db, 'products', productId));
+    let products = await getProducts();
+    products = products.filter(p => p.id !== productId);
+    await writeData(PRODUCTS_FILE, products);
 }
 
 export async function addCustomerInDB(customer: Customer): Promise<void> {
-    await setDoc(doc(db, 'customers', customer.id), customer);
+    const customers = await getCustomers();
+    customers.push(customer);
+    await writeData(CUSTOMERS_FILE, customers);
 }
 export async function updateCustomerInDB(customerId: string, customerData: Partial<Customer>): Promise<void> {
-    await updateDoc(doc(db, 'customers', customerId), customerData);
+    let customers = await getCustomers();
+    customers = customers.map(c => c.id === customerId ? { ...c, ...customerData } : c);
+    await writeData(CUSTOMERS_FILE, customers);
 }
 export async function deleteCustomerInDB(customerId: string): Promise<void> {
-    await deleteDoc(doc(db, 'customers', customerId));
+    let customers = await getCustomers();
+    customers = customers.filter(c => c.id !== customerId);
+    await writeData(CUSTOMERS_FILE, customers);
 }
 
 export async function addBakeryOrderInDB(order: BakeryOrder): Promise<void> {
-    await setDoc(doc(db, 'bakeryOrders', order.id), order);
+    const orders = await getBakeryOrders();
+    orders.push(order);
+    await writeData(BAKERY_ORDERS_FILE, orders);
 }
 export async function updateBakeryOrderInDB(orderId: string, orderData: Partial<BakeryOrder>): Promise<void> {
-    await updateDoc(doc(db, 'bakeryOrders', orderId), orderData);
+    let orders = await getBakeryOrders();
+    orders = orders.map(o => o.id === orderId ? { ...o, ...orderData } : o);
+    await writeData(BAKERY_ORDERS_FILE, orders);
 }
 export async function deleteBakeryOrderInDB(orderId: string): Promise<void> {
-    await deleteDoc(doc(db, 'bakeryOrders', orderId));
+    let orders = await getBakeryOrders();
+    orders = orders.filter(o => o.id !== orderId);
+    await writeData(BAKERY_ORDERS_FILE, orders);
 }
 
 export async function addSupplierInDB(supplier: Supplier): Promise<void> {
-    await setDoc(doc(db, 'suppliers', supplier.id), supplier);
+    const suppliers = await getSuppliers();
+    suppliers.push(supplier);
+    await writeData(SUPPLIERS_FILE, suppliers);
 }
 export async function updateSupplierInDB(supplierId: string, supplierData: Partial<Supplier>): Promise<void> {
-    await updateDoc(doc(db, 'suppliers', supplierId), supplierData);
+    let suppliers = await getSuppliers();
+    suppliers = suppliers.map(s => s.id === supplierId ? { ...s, ...supplierData } : s);
+    await writeData(SUPPLIERS_FILE, suppliers);
 }
 export async function deleteSupplierInDB(supplierId: string): Promise<void> {
-    await deleteDoc(doc(db, 'suppliers', supplierId));
+    let suppliers = await getSuppliers();
+    suppliers = suppliers.filter(s => s.id !== supplierId);
+    await writeData(SUPPLIERS_FILE, suppliers);
 }
 
-// Transactional operations
+// "Transactional" operations
 export async function processSale(data: { saleRecord: SaleRecord; cart: CartItem[] }): Promise<void> {
-    await runTransaction(db, async (transaction) => {
-        // 1. Add sale record
-        const saleRef = doc(db, 'salesHistory', data.saleRecord.id);
-        transaction.set(saleRef, data.saleRecord);
+    const [products, customers, sales] = await Promise.all([
+        getProducts(),
+        getCustomers(),
+        getSalesHistory()
+    ]);
 
-        // 2. Update product stock
-        for (const item of data.cart) {
-            const productRef = doc(db, 'products', item.id);
-            const productDoc = await transaction.get(productRef);
-            if (!productDoc.exists()) {
-                throw new Error(`Product with ID ${item.id} does not exist!`);
-            }
-            const newStock = productDoc.data().stock - item.quantity;
-            transaction.update(productRef, { stock: newStock });
-        }
-
-        // 3. Update customer balance
-        if (data.saleRecord.customerId) {
-            const customerRef = doc(db, 'customers', data.saleRecord.customerId);
-            const customerDoc = await transaction.get(customerRef);
-             if (!customerDoc.exists()) {
-                throw new Error(`Customer with ID ${data.saleRecord.customerId} does not exist!`);
-            }
-            const newSpent = customerDoc.data().spent + data.saleRecord.totals.total;
-            const newBalance = customerDoc.data().balance + data.saleRecord.totals.balance;
-            transaction.update(customerRef, { spent: newSpent, balance: newBalance });
+    // 1. Update product stock
+    data.cart.forEach(item => {
+        const product = products.find(p => p.id === item.id);
+        if (product) {
+            product.stock -= item.quantity;
         }
     });
+
+    // 2. Update customer balance
+    if (data.saleRecord.customerId) {
+        const customer = customers.find(c => c.id === data.saleRecord.customerId);
+        if (customer) {
+            customer.spent += data.saleRecord.totals.total;
+            customer.balance += data.saleRecord.totals.balance;
+        }
+    }
+    
+    // 3. Add sale record
+    sales.push(data.saleRecord);
+
+    // 4. Write all changes
+    await Promise.all([
+        writeData(PRODUCTS_FILE, products),
+        writeData(CUSTOMERS_FILE, customers),
+        writeData(SALES_HISTORY_FILE, sales)
+    ]);
 }
 
 export async function processPayment(data: { customerId: string; amount: number }): Promise<void> {
+    const [customers, sales] = await Promise.all([
+        getCustomers(),
+        getSalesHistory()
+    ]);
+    
     const paymentRecord: SaleRecord = {
         id: `PAY-${new Date().getTime()}`,
         customerId: data.customerId,
@@ -162,50 +210,42 @@ export async function processPayment(data: { customerId: string; amount: number 
         totals: {
             subtotal: 0,
             discount: 0,
-            total: data.amount, // Record the payment amount as the total
+            total: data.amount,
             amountPaid: data.amount,
             balance: -data.amount,
         },
         date: new Date().toISOString(),
     };
-
-    await runTransaction(db, async (transaction) => {
-        // 1. Add payment record to sales history
-        const saleRef = doc(db, 'salesHistory', paymentRecord.id);
-        transaction.set(saleRef, paymentRecord);
-        
-        // 2. Update customer balance
-        const customerRef = doc(db, 'customers', data.customerId);
-        const customerDoc = await transaction.get(customerRef);
-        if (!customerDoc.exists()) {
-            throw new Error(`Customer with ID ${data.customerId} does not exist!`);
-        }
-        const newBalance = customerDoc.data().balance - data.amount;
-        transaction.update(customerRef, { balance: newBalance });
-    });
+    
+    // 1. Add payment record
+    sales.push(paymentRecord);
+    
+    // 2. Update customer balance
+    const customer = customers.find(c => c.id === data.customerId);
+    if(customer) {
+        customer.balance -= data.amount;
+    }
+    
+    // 3. Write all changes
+    await Promise.all([
+        writeData(CUSTOMERS_FILE, customers),
+        writeData(SALES_HISTORY_FILE, sales)
+    ]);
 }
 
-export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>, products: Product[]): Promise<void> {
+export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>): Promise<void> {
+    const [products, invoices] = await Promise.all([
+        getProducts(),
+        getSupplierInvoices()
+    ]);
+
     let totalAmount = 0;
     
-    const newInvoice: SupplierInvoice = {
-        id: `SINV-${new Date().getTime()}`,
-        date: new Date().toISOString(),
-        totalAmount: 0, // Will be calculated below
-        ...invoiceData,
-    };
-
-    await runTransaction(db, async (transaction) => {
-        // Update product stock and prices
-        for (const item of invoiceData.items) {
-            totalAmount += item.quantity * item.purchasePrice;
-            const productRef = doc(db, 'products', item.productId);
-            const productDoc = await transaction.get(productRef);
-            if (!productDoc.exists()) {
-                throw new Error(`Product with ID ${item.productId} does not exist!`);
-            }
-            
-            const product = productDoc.data() as Product;
+    // Update product stock and prices
+    invoiceData.items.forEach(item => {
+        totalAmount += item.quantity * item.purchasePrice;
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
             const oldStock = product.stock;
             const oldPurchasePrice = product.purchasePrice || 0;
             const newQuantity = item.quantity;
@@ -219,27 +259,31 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
                 newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalNewStock;
             }
             
-            const productUpdateData: Partial<Product> = {
-                stock: totalNewStock,
-                purchasePrice: parseFloat(newWeightedAveragePrice.toFixed(2)),
-            };
-
-            if (item.boxPrice !== undefined) productUpdateData.boxPrice = item.boxPrice;
-            if (item.quantityPerBox !== undefined) productUpdateData.quantityPerBox = item.quantityPerBox;
-            if (item.barcode !== undefined) productUpdateData.barcode = item.barcode;
-            
-            transaction.update(productRef, productUpdateData);
+            product.stock = totalNewStock;
+            product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+            if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
+            if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
+            if (item.barcode !== undefined) product.barcode = item.barcode;
         }
-
-        // Add the supplier invoice with the calculated total
-        newInvoice.totalAmount = totalAmount;
-        const invoiceRef = doc(db, 'supplierInvoices', newInvoice.id);
-        transaction.set(invoiceRef, newInvoice);
     });
+
+    const newInvoice: SupplierInvoice = {
+        id: `SINV-${new Date().getTime()}`,
+        date: new Date().toISOString(),
+        totalAmount,
+        ...invoiceData,
+    };
+
+    invoices.push(newInvoice);
+    
+    await Promise.all([
+        writeData(PRODUCTS_FILE, products),
+        writeData(SUPPLIER_INVOICES_FILE, invoices)
+    ]);
 }
 
 
-// Backup and Restore (using batched writes for efficiency)
+// Backup and Restore
 export async function getBackupData() {
     const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices] = await Promise.all([
         getProducts(),
@@ -252,32 +296,23 @@ export async function getBackupData() {
     return { products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices };
 }
 
-async function saveCollection<T extends {id: string}>(collectionName: string, data: T[]) {
-    const batch = writeBatch(db);
-    data.forEach(item => {
-        const docRef = doc(db, collectionName, item.id);
-        batch.set(docRef, item);
-    });
-    await batch.commit();
-}
-
 export async function saveProducts(products: Product[]): Promise<void> {
-  return saveCollection('products', products);
+  return writeData(PRODUCTS_FILE, products);
 }
 export async function saveCustomers(customers: Customer[]): Promise<void> {
-  return saveCollection('customers', customers);
+  return writeData(CUSTOMERS_FILE, customers);
 }
 export async function saveSalesHistory(salesHistory: SaleRecord[]): Promise<void> {
-  return saveCollection('salesHistory', salesHistory);
+  return writeData(SALES_HISTORY_FILE, salesHistory);
 }
 export async function saveBakeryOrders(orders: BakeryOrder[]): Promise<void> {
-    return saveCollection('bakeryOrders', orders);
+    return writeData(BAKERY_ORDERS_FILE, orders);
 }
 export async function saveSuppliers(suppliers: Supplier[]): Promise<void> {
-    return saveCollection('suppliers', suppliers);
+    return writeData(SUPPLIERS_FILE, suppliers);
 }
 export async function saveSupplierInvoices(invoices: SupplierInvoice[]): Promise<void> {
-    return saveCollection('supplierInvoices', invoices);
+    return writeData(SUPPLIER_INVOICES_FILE, invoices);
 }
 
 export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[] }) {
