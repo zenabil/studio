@@ -104,6 +104,16 @@ export default function SuppliersPage() {
     setIsViewInvoicesOpen(true);
   };
 
+  const dayNames = [
+    t.suppliers.days.sunday,
+    t.suppliers.days.monday,
+    t.suppliers.days.tuesday,
+    t.suppliers.days.wednesday,
+    t.suppliers.days.thursday,
+    t.suppliers.days.friday,
+    t.suppliers.days.saturday,
+  ];
+
   if (isLoading) {
     return <Loading />;
   }
@@ -133,6 +143,7 @@ export default function SuppliersPage() {
                 <TableHead>{t.suppliers.name}</TableHead>
                 <TableHead>{t.suppliers.phone}</TableHead>
                 <TableHead>{t.suppliers.productCategory}</TableHead>
+                <TableHead>{t.suppliers.visitDays}</TableHead>
                 <TableHead className="text-right">{t.suppliers.actions}</TableHead>
               </TableRow>
             </TableHeader>
@@ -142,6 +153,14 @@ export default function SuppliersPage() {
                   <TableCell className="font-medium">{supplier.name}</TableCell>
                   <TableCell>{supplier.phone}</TableCell>
                   <TableCell>{supplier.productCategory}</TableCell>
+                  <TableCell>
+                    {supplier.visitDays && supplier.visitDays.length > 0
+                        ? supplier.visitDays
+                            .sort((a,b) => a - b)
+                            .map(dayIndex => dayNames[dayIndex])
+                            .join(', ')
+                        : '-'}
+                  </TableCell>
                   <TableCell className="flex justify-end">
                     <Button variant="ghost" size="icon" title={t.suppliers.addInvoice} onClick={() => handleOpenInvoiceDialog(supplier)}>
                         <FilePlus className="h-4 w-4" />

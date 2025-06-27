@@ -37,6 +37,7 @@ export interface Supplier {
   name: string;
   phone: string;
   productCategory: string;
+  visitDays?: number[];
 }
 
 export interface SupplierInvoiceItem {

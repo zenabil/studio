@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/form';
 import { useEffect, useMemo } from 'react';
 import { useData } from '@/contexts/data-context';
+import { Checkbox } from './ui/checkbox';
 
 interface AddSupplierDialogProps {
   isOpen: boolean;
@@ -52,7 +53,18 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
     name: z.string().min(1, { message: t.suppliers.nameRequired }),
     phone: z.string().min(1, { message: t.suppliers.phoneRequired }),
     productCategory: z.string().min(1, { message: t.suppliers.categoryRequired }),
+    visitDays: z.array(z.number()).optional(),
   });
+  
+  const days = [
+    { id: 0, label: t.suppliers.days.sunday },
+    { id: 1, label: t.suppliers.days.monday },
+    { id: 2, label: t.suppliers.days.tuesday },
+    { id: 3, label: t.suppliers.days.wednesday },
+    { id: 4, label: t.suppliers.days.thursday },
+    { id: 5, label: t.suppliers.days.friday },
+    { id: 6, label: t.suppliers.days.saturday },
+  ];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,6 +72,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
       name: '',
       phone: '',
       productCategory: '',
+      visitDays: [],
     },
   });
 
@@ -70,12 +83,14 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
           name: supplierToEdit.name,
           phone: supplierToEdit.phone,
           productCategory: supplierToEdit.productCategory,
+          visitDays: supplierToEdit.visitDays || [],
         });
       } else {
         form.reset({
           name: '',
           phone: '',
           productCategory: '',
+          visitDays: [],
         });
       }
     }
@@ -141,6 +156,51 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
                   </Select>
                   <FormMessage />
                 </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="visitDays"
+              render={() => (
+                  <FormItem>
+                      <FormLabel>{t.suppliers.visitDays}</FormLabel>
+                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 rounded-lg border p-4">
+                          {days.map((day) => (
+                              <FormField
+                                  key={day.id}
+                                  control={form.control}
+                                  name="visitDays"
+                                  render={({ field }) => {
+                                      return (
+                                          <FormItem
+                                              key={day.id}
+                                              className="flex flex-row items-center gap-2 space-y-0"
+                                          >
+                                              <FormControl>
+                                                  <Checkbox
+                                                      checked={field.value?.includes(day.id)}
+                                                      onCheckedChange={(checked) => {
+                                                          return checked
+                                                              ? field.onChange([...(field.value || []), day.id])
+                                                              : field.onChange(
+                                                                  (field.value || []).filter(
+                                                                      (value) => value !== day.id
+                                                                  )
+                                                              );
+                                                      }}
+                                                  />
+                                              </FormControl>
+                                              <FormLabel className="font-normal cursor-pointer">
+                                                  {day.label}
+                                              </FormLabel>
+                                          </FormItem>
+                                      );
+                                  }}
+                              />
+                          ))}
+                      </div>
+                      <FormMessage />
+                  </FormItem>
               )}
             />
             <DialogFooter>

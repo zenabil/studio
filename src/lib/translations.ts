@@ -179,6 +179,16 @@ export const translations = {
         invoiceAdded: "Facture ajoutée avec succès",
         noProductsInCategory: "Aucun produit dans cette catégorie.",
         noInvoices: "Aucune facture trouvée pour ce fournisseur.",
+        visitDays: "Jours de visite",
+        days: {
+            sunday: "Dimanche",
+            monday: "Lundi",
+            tuesday: "Mardi",
+            wednesday: "Mercredi",
+            thursday: "Jeudi",
+            friday: "Vendredi",
+            saturday: "Samedi"
+        }
     },
     reports: {
       title: "Rapports et Analyses",
@@ -473,6 +483,16 @@ export const translations = {
         invoiceAdded: "تمت إضافة الفاتورة بنجاح.",
         noProductsInCategory: "لا توجد منتجات في هذه الفئة.",
         noInvoices: "لا توجد فواتير لهذا المورد.",
+        visitDays: "أيام الزيارة",
+        days: {
+            sunday: "الأحد",
+            monday: "الاثنين",
+            tuesday: "الثلاثاء",
+            wednesday: "الأربعاء",
+            thursday: "الخميس",
+            friday: "الجمعة",
+            saturday: "السبت"
+        }
     },
     reports: {
       title: "التقارير والتحليلات",
