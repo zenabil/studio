@@ -28,7 +28,7 @@ import type { BakeryOrder } from '@/app/bakery-orders/page';
 interface AddBakeryOrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date'>) => void;
+  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => void;
 }
 
 export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrderDialogProps) {

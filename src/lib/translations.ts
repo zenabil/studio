@@ -215,7 +215,8 @@ export const translations = {
     },
     bakeryOrders: {
       title: "Commandes Boulangerie",
-      description: "Gérez les commandes de pain et de pâtisseries ici.",
+      description: "Gérez les commandes de pain et de pâtisseries du jour ici.",
+      todaysOrders: "Commandes du jour",
       addOrder: "Ajouter une commande",
       date: "Date",
       name: "Nom",
@@ -240,6 +241,10 @@ export const translations = {
       received: "Reçu",
       notReceived: "Non Reçu",
       toggleReceivedStatus: "Marquer comme reçu / non reçu",
+      pin: "Épingler la commande",
+      unpin: "Désépingler la commande",
+      orderPinned: "Commande épinglée pour les jours suivants.",
+      orderUnpinned: "Commande non récurrente."
     },
     errors: {
       title: "Erreur",
@@ -461,8 +466,9 @@ export const translations = {
       }
     },
     bakeryOrders: {
-      title: "طلبات الخبز",
-      description: "إدارة طلبات الخبز والمعجنات من هنا.",
+      title: "طلبات المخبز",
+      description: "إدارة طلبات الخبز والمعجنات اليومية من هنا.",
+      todaysOrders: "طلبات اليوم",
       addOrder: "إضافة طلب",
       date: "التاريخ",
       name: "الاسم",
@@ -487,6 +493,10 @@ export const translations = {
       received: "تم الاستلام",
       notReceived: "لم يتم الاستلام",
       toggleReceivedStatus: "تحديد كمستلم / غير مستلم",
+      pin: "تثبيت الطلب",
+      unpin: "إلغاء تثبيت الطلب",
+      orderPinned: "تم تثبيت الطلب للأيام القادمة.",
+      orderUnpinned: "الطلب غير متكرر."
     },
     errors: {
       title: "خطأ",
