@@ -4,7 +4,7 @@ export type Translation = {
 
 export const translations = {
   fr: {
-    appName: "Pro POS",
+    appName: "Mercurio Les Freres",
     nav: {
       pos: "Caisse",
       products: "Produits",
@@ -320,7 +320,7 @@ export const translations = {
     }
   },
   ar: {
-    appName: "Pro POS",
+    appName: "Mercurio Les Freres",
     nav: {
       pos: "نقاط البيع",
       products: "المنتجات",
@@ -357,7 +357,7 @@ export const translations = {
       unitPrice: "سعر الوحدة",
       lineTotal: "المجموع",
       thankYou: "شكرا لتسوقكم!",
-      paymentReceived: "تم استلام الدفعة",
+      paymentReceived: "تم استلام دفعة",
       newSale: "بيع جديد",
       sale: "بيع",
       saleSuccessTitle: "اكتمل البيع!",
