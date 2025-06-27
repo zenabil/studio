@@ -23,8 +23,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Checkbox } from './ui/checkbox';
+import { useData } from '@/contexts/data-context';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface AddSupplierDialogProps {
   isOpen: boolean;
@@ -35,6 +43,11 @@ interface AddSupplierDialogProps {
 
 export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: AddSupplierDialogProps) {
   const { t } = useLanguage();
+  const { products } = useData();
+
+  const productCategories = useMemo(() => {
+    return [...new Set(products.map(p => p.category))];
+  }, [products]);
 
   const formSchema = z.object({
     name: z.string().min(1, { message: t.suppliers.nameRequired }),
@@ -129,9 +142,18 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t.suppliers.productCategory}</FormLabel>
-                   <FormControl>
-                    <Input placeholder={t.suppliers.categoryPlaceholder} {...field} />
-                  </FormControl>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t.suppliers.categoryPlaceholder} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {productCategories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
