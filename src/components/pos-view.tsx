@@ -371,13 +371,24 @@ export function PosView() {
   }, [isInvoiceOpen, sessionToDelete, isAddProductDialogOpen, resetSale, activeSession, handleSaleCompletion]);
 
 
-  const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
+  const categories = useMemo(() => ['all', ...Array.from(new Set(products.map((p) => p.category)))], [products]);
   
-  const filteredProducts = products.filter(
-    (p) =>
-      (selectedCategory === 'all' || p.category === selectedCategory) &&
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter(
+        (p) =>
+          (selectedCategory === 'all' || p.category === selectedCategory) &&
+          p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => {
+        const aHasBarcode = !!a.barcode && a.barcode.trim() !== '';
+        const bHasBarcode = !!b.barcode && b.barcode.trim() !== '';
+        if (aHasBarcode === bHasBarcode) {
+          return 0;
+        }
+        return aHasBarcode ? 1 : -1;
+      });
+  }, [products, selectedCategory, searchTerm]);
   
   const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
 
