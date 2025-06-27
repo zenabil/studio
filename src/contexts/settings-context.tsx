@@ -1,5 +1,9 @@
+
 'use client';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { getLicenseKeys } from '@/lib/data-actions';
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from './language-context';
 
 // Define the shape of your settings
 export interface CompanyInfo {
@@ -23,6 +27,9 @@ export interface Settings {
   theme: Theme;
   colorPreset: string; // name of the preset
   paymentTermsDays: number;
+  isActivated: boolean;
+  licenseKey: string | null;
+  firstLaunchDate: string | null;
 }
 
 // Define the context type
@@ -30,6 +37,8 @@ interface SettingsContextType {
   settings: Settings;
   setSettings: (newSettings: Partial<Settings>) => void;
   colorPresets: ColorPreset[];
+  activateLicense: (key: string) => Promise<boolean>;
+  isLoading: boolean;
 }
 
 const SETTINGS_KEY = 'mercurio-pos-settings';
@@ -50,7 +59,10 @@ const colorPresets: ColorPreset[] = [
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
+  const { t } = useLanguage();
+  const [isLoading, setIsLoading] = useState(true);
+
   const [settings, setSettingsState] = useState<Settings>({
     companyInfo: {
       name: 'Frucio',
@@ -62,48 +74,50 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     theme: 'light',
     colorPreset: 'Teal',
     paymentTermsDays: 30,
+    isActivated: false,
+    licenseKey: null,
+    firstLaunchDate: null,
   });
   
-  useEffect(() => {
-      setIsClient(true);
-  }, []);
-
   // Load settings from localStorage on initial client render
   useEffect(() => {
-    if (isClient) {
-      try {
-        const savedSettings = localStorage.getItem(SETTINGS_KEY);
-        if (savedSettings) {
-          const parsed = JSON.parse(savedSettings);
-          // Deep merge to ensure no fields are undefined from older versions of settings
-          setSettingsState(prevSettings => {
-            const newSettings = { ...prevSettings, ...parsed };
-            if (parsed.companyInfo) {
-              newSettings.companyInfo = { ...prevSettings.companyInfo, ...parsed.companyInfo };
-            }
-            return newSettings;
-          });
+    try {
+      const savedSettings = localStorage.getItem(SETTINGS_KEY);
+      const initialSettings = { ...settings };
+      
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        // Deep merge to ensure no fields are undefined from older versions of settings
+        const newSettings = { ...initialSettings, ...parsed };
+        if (parsed.companyInfo) {
+          newSettings.companyInfo = { ...initialSettings.companyInfo, ...parsed.companyInfo };
         }
-      } catch (error) {
-        console.error("Failed to load settings from localStorage", error);
+        setSettingsState(newSettings);
+      } else {
+        // First ever launch for this user
+        initialSettings.firstLaunchDate = new Date().toISOString();
+        setSettingsState(initialSettings);
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(initialSettings));
       }
+    } catch (error) {
+      console.error("Failed to load settings from localStorage", error);
+    } finally {
+        setIsLoading(false);
     }
-  }, [isClient]);
+  }, []);
 
   // Apply theme and colors when settings change
   useEffect(() => {
-    if (!isClient) return;
+    if (isLoading) return;
 
     const root = document.documentElement;
 
-    // Define a function to apply color preset based on light/dark
     const applyColorPreset = (effectiveTheme: 'light' | 'dark') => {
       const preset = colorPresets.find(p => p.name === settings.colorPreset) || colorPresets[0];
       root.style.setProperty('--primary', preset.primary[effectiveTheme]);
       root.style.setProperty('--accent', preset.accent[effectiveTheme]);
     };
 
-    // Handle theme (light/dark/system)
     if (settings.theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       
@@ -116,7 +130,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       };
 
       mediaQuery.addEventListener('change', handleSystemThemeChange);
-      // Initial call
       handleSystemThemeChange(mediaQuery);
 
       return () => {
@@ -127,11 +140,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       root.classList.add(settings.theme);
       applyColorPreset(settings.theme);
     }
-  }, [settings, isClient]);
+  }, [settings.theme, settings.colorPreset, isLoading]);
   
-  const setSettings = (newSettings: Partial<Settings>) => {
+  const setSettings = useCallback((newSettings: Partial<Settings>) => {
     setSettingsState(prevSettings => {
-        // Deep merge for companyInfo to avoid overwriting nested fields
         const updatedSettings = {
             ...prevSettings,
             ...newSettings,
@@ -141,18 +153,35 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             }
         };
 
-        if (isClient) {
-            try {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
-            } catch (error) {
-                console.error("Failed to save settings to localStorage", error);
-            }
+        try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
+        } catch (error) {
+            console.error("Failed to save settings to localStorage", error);
         }
+        
         return updatedSettings;
     });
-  };
+  }, []);
 
-  const value = { settings, setSettings, colorPresets };
+  const activateLicense = useCallback(async (key: string): Promise<boolean> => {
+    try {
+        const validKeys = await getLicenseKeys();
+        if (validKeys.includes(key.trim())) {
+            setSettings({ isActivated: true, licenseKey: key.trim() });
+            toast({ title: t.settings.activateSuccess });
+            return true;
+        } else {
+            toast({ variant: 'destructive', title: t.errors.title, description: t.settings.activateError });
+            return false;
+        }
+    } catch (error) {
+        console.error("Failed to validate license key:", error);
+        toast({ variant: 'destructive', title: t.errors.title, description: t.errors.forecastError });
+        return false;
+    }
+  }, [setSettings, toast, t]);
+
+  const value = { settings, setSettings, colorPresets, activateLicense, isLoading };
 
   return (
     <SettingsContext.Provider value={value}>

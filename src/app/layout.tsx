@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppProviders } from '@/components/app-providers';
 import { AppLayout } from '@/components/app-layout';
+import { ActivationProvider } from '@/components/activation-provider';
 
 export const metadata: Metadata = {
   title: 'Frucio',
@@ -27,9 +28,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AppProviders>
-          <SidebarProvider>
-            <AppLayout>{children}</AppLayout>
-          </SidebarProvider>
+          <ActivationProvider>
+            <SidebarProvider>
+              <AppLayout>{children}</AppLayout>
+            </SidebarProvider>
+          </ActivationProvider>
           <Toaster />
         </AppProviders>
       </body>

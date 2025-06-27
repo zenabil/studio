@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -9,18 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
-import { Check } from 'lucide-react';
+import { Check, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { differenceInCalendarDays } from 'date-fns';
 
 export default function SettingsPage() {
-  const { settings, setSettings, colorPresets } = useSettings();
+  const { settings, setSettings, colorPresets, activateLicense } = useSettings();
   const { t } = useLanguage();
   const { restoreData } = useData();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [licenseKeyInput, setLicenseKeyInput] = useState('');
+  const [isActivating, setIsActivating] = useState(false);
 
   const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: settings,
@@ -113,6 +116,32 @@ export default function SettingsPage() {
     };
     reader.readAsText(file);
   };
+  
+  const handleActivate = async () => {
+    if (!licenseKeyInput) return;
+    setIsActivating(true);
+    await activateLicense(licenseKeyInput);
+    setIsActivating(false);
+  };
+
+  const getActivationStatus = () => {
+    if (settings.isActivated) {
+      return (
+        <div className="flex items-center gap-2 text-green-600">
+            <ShieldCheck className="h-5 w-5" />
+            <span className="font-medium">{t.settings.activated}</span>
+        </div>
+      )
+    }
+    const firstLaunch = settings.firstLaunchDate ? new Date(settings.firstLaunchDate) : new Date();
+    const daysSinceFirstLaunch = differenceInCalendarDays(new Date(), firstLaunch);
+    const trialDaysLeft = Math.max(0, 7 - daysSinceFirstLaunch);
+    return (
+        <p className="text-sm text-muted-foreground">
+            {t.settings.trialEnds.replace('{days}', trialDaysLeft)}
+        </p>
+    );
+  }
 
 
   return (
@@ -242,14 +271,25 @@ export default function SettingsPage() {
            <Card className="mt-4">
             <CardHeader>
               <CardTitle>{t.settings.activation}</CardTitle>
+              <CardDescription>{getActivationStatus()}</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-end">
-                <div className="space-y-2 flex-grow">
-                    <Label htmlFor="licenseKey">{t.settings.licenseKey}</Label>
-                    <Input id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" />
-                </div>
-                <Button type="button">{t.settings.activate}</Button>
-            </CardContent>
+            {!settings.isActivated && (
+              <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-end">
+                  <div className="space-y-2 flex-grow">
+                      <Label htmlFor="licenseKey">{t.settings.licenseKey}</Label>
+                      <Input 
+                        id="licenseKey" 
+                        placeholder={t.activation.placeholder}
+                        value={licenseKeyInput}
+                        onChange={(e) => setLicenseKeyInput(e.target.value)}
+                        disabled={isActivating}
+                      />
+                  </div>
+                  <Button type="button" onClick={handleActivate} disabled={isActivating || !licenseKeyInput}>
+                    {isActivating ? t.activation.activating : t.settings.activate}
+                  </Button>
+              </CardContent>
+            )}
           </Card>
         </TabsContent>
       </Tabs>

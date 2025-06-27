@@ -267,6 +267,20 @@ export const translations = {
       paymentTermsDescription: "Le nombre de jours avant qu'une facture ne soit considérée comme due.",
       lateFeePercentage: "Pourcentage de pénalité de retard (par jour)",
       lateFeePercentageDescription: "Le pourcentage du solde dû appliqué comme pénalité pour chaque jour de retard.",
+      status: "Statut",
+      trialEnds: "La période d'essai se termine dans {days} jour(s).",
+      activated: "Logiciel activé.",
+      activateSuccess: "Logiciel activé avec succès!",
+      activateError: "Clé de licence invalide.",
+    },
+    activation: {
+      title: "Activer votre logiciel",
+      trialExpired: "Votre période d'essai a expiré.",
+      description: "Veuillez entrer une clé de licence pour continuer à utiliser le logiciel.",
+      placeholder: "XXXX-XXXX-XXXX-XXXX",
+      button: "Activer",
+      activating: "Activation en cours...",
+      invalidKey: "La clé de licence fournie n'est pas valide. Veuillez réessayer."
     },
     bakeryOrders: {
       title: "Commandes Boulangerie",
@@ -577,6 +591,20 @@ export const translations = {
       paymentTermsDescription: "عدد الأيام قبل اعتبار الفاتورة مستحقة.",
       lateFeePercentage: "نسبة غرامة التأخير (لكل يوم)",
       lateFeePercentageDescription: "النسبة المئوية من الرصيد المستحق التي تطبق كغرامة عن كل يوم تأخير.",
+      status: "الحالة",
+      trialEnds: "الفترة التجريبية تنتهي خلال {days} يوم.",
+      activated: "البرنامج مفعل.",
+      activateSuccess: "تم تفعيل البرنامج بنجاح!",
+      activateError: "مفتاح الترخيص غير صالح.",
+    },
+     activation: {
+      title: "تفعيل برنامجك",
+      trialExpired: "لقد انتهت الفترة التجريبية الخاصة بك.",
+      description: "الرجاء إدخال مفتاح ترخيص لمواصلة استخدام البرنامج.",
+      placeholder: "XXXX-XXXX-XXXX-XXXX",
+      button: "تفعيل",
+      activating: "جاري التفعيل...",
+      invalidKey: "مفتاح الترخيص الذي أدخلته غير صالح. يرجى المحاولة مرة أخرى."
     },
     bakeryOrders: {
       title: "طلبات المخبز",
