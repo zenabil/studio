@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddSupplierDialog } from '@/components/add-supplier-dialog';
-import { AddSupplierInvoiceDialog } from '@/add-supplier-invoice-dialog';
+import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
 import { SupplierInvoicesDialog } from '@/components/supplier-invoices-dialog';
 import { SupplierRestockListDialog } from '@/components/supplier-restock-list-dialog';
 import Loading from '@/app/loading';
@@ -185,11 +185,11 @@ export default function SuppliersPage() {
                             .join(', ')
                         : '-'}
                   </TableCell>
-                  <TableCell className={`text-right font-bold ${supplier.balance > 0 ? 'text-destructive' : 'text-success'}`}>
-                    {settings.currency}{supplier.balance.toFixed(2)}
+                  <TableCell className={`text-right font-bold ${(supplier.balance || 0) > 0 ? 'text-destructive' : 'text-success'}`}>
+                    {settings.currency}{(supplier.balance || 0).toFixed(2)}
                   </TableCell>
                   <TableCell className="flex justify-end">
-                    {supplier.balance > 0 && (
+                    {(supplier.balance || 0) > 0 && (
                       <Button variant="ghost" size="icon" title={t.suppliers.makePayment} onClick={() => setPayingSupplier(supplier)}>
                         <Wallet className="h-4 w-4" />
                       </Button>
