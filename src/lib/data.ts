@@ -37,6 +37,7 @@ export interface Supplier {
   phone: string;
   productCategory: string;
   visitDays?: number[];
+  balance: number;
 }
 
 export interface SupplierInvoiceItem {
@@ -55,6 +56,7 @@ export interface SupplierInvoice {
   date: string;
   items: SupplierInvoiceItem[];
   totalAmount: number;
+  isPayment?: boolean;
 }
 
 export interface CartItem extends Product {
@@ -134,8 +136,8 @@ export const salesHistory: SaleRecord[] = [
 ];
 
 export const suppliers: Supplier[] = [
-    { id: 'supp-01', name: 'Fournisseur Boissons', phone: '0123456789', productCategory: 'Boissons' },
-    { id: 'supp-02', name: 'Fournisseur Pâtisseries', phone: '0987654321', productCategory: 'Pâtisseries' },
+    { id: 'supp-01', name: 'Fournisseur Boissons', phone: '0123456789', productCategory: 'Boissons', balance: 0 },
+    { id: 'supp-02', name: 'Fournisseur Pâtisseries', phone: '0987654321', productCategory: 'Pâtisseries', balance: 0 },
 ];
 
 export const supplierInvoices: SupplierInvoice[] = [];

@@ -8,12 +8,6 @@ import {
   DialogClose,
   DialogDescription,
 } from '@/components/ui/dialog';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table';
@@ -34,58 +28,98 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
   const { settings } = useSettings();
   const { supplierInvoices: allInvoices } = useData();
 
-  const supplierInvoices = useMemo(() => {
-    if (!supplier) return [];
-    return allInvoices
+  const transactions = useMemo(() => {
+    if (!supplier) return { transactions: [], startingBalance: 0 };
+
+    const supplierTransactions = allInvoices
       .filter(inv => inv.supplierId === supplier.id)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [allInvoices, supplier]);
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const statement: { id: string; date: string; description: string; debit: number; credit: number; balance: number; }[] = [];
+    let balanceBeforeTransaction = supplier.balance;
+
+    // Iterate backwards from the most recent transaction to calculate historical balances
+    for (let i = supplierTransactions.length - 1; i >= 0; i--) {
+      const tx = supplierTransactions[i];
+      const balanceAfterTransaction = balanceBeforeTransaction;
+      
+      if (tx.isPayment) {
+        // This was a payment, so to get the balance *before*, we add the amount back.
+        balanceBeforeTransaction += tx.totalAmount;
+        statement.unshift({
+            id: tx.id,
+            date: tx.date,
+            description: t.suppliers.payment,
+            debit: 0,
+            credit: tx.totalAmount,
+            balance: balanceAfterTransaction
+        });
+      } else {
+        // This was an invoice, so to get the balance *before*, we subtract the amount.
+        balanceBeforeTransaction -= tx.totalAmount;
+        statement.unshift({
+            id: tx.id,
+            date: tx.date,
+            description: `${t.suppliers.invoice} #${tx.id.split('-')[1]}`,
+            debit: tx.totalAmount,
+            credit: 0,
+            balance: balanceAfterTransaction
+        });
+      }
+    }
+    
+    return { transactions: statement, startingBalance: balanceBeforeTransaction };
+  }, [supplier, allInvoices, t]);
 
   if (!supplier) return null;
 
+  const { transactions: transactionHistory, startingBalance } = transactions;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t.suppliers.invoiceHistory}</DialogTitle>
           <DialogDescription>{supplier.name}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto p-1">
-          {supplierInvoices.length > 0 ? (
-             <Accordion type="single" collapsible className="w-full">
-                {supplierInvoices.map((invoice) => (
-                    <AccordionItem value={invoice.id} key={invoice.id}>
-                        <AccordionTrigger>
-                            <div className="flex justify-between w-full pr-4">
-                                <span>{format(new Date(invoice.date), 'PPpp')}</span>
-                                <span className="font-bold">{settings.currency}{invoice.totalAmount.toFixed(2)}</span>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                           <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>{t.suppliers.product}</TableHead>
-                                        <TableHead className="text-center">{t.suppliers.quantity}</TableHead>
-                                        <TableHead className="text-right">{t.suppliers.purchasePrice}</TableHead>
-                                        <TableHead className="text-right">{t.pos.lineTotal}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {invoice.items.map((item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{item.productName}</TableCell>
-                                            <TableCell className="text-center">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">{settings.currency}{item.purchasePrice.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">{settings.currency}{(item.quantity * item.purchasePrice).toFixed(2)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                           </Table>
-                        </AccordionContent>
-                    </AccordionItem>
+          {transactionHistory.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.pos.date}</TableHead>
+                  <TableHead>{t.suppliers.transaction}</TableHead>
+                  <TableHead className="text-right">{t.suppliers.debit}</TableHead>
+                  <TableHead className="text-right">{t.suppliers.credit}</TableHead>
+                  <TableHead className="text-right">{t.suppliers.balance}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell colSpan={4} className="font-medium">{t.customers.startingBalance}</TableCell>
+                  <TableCell className="text-right font-medium">{settings.currency}{startingBalance.toFixed(2)}</TableCell>
+                </TableRow>
+                {transactionHistory.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>{format(new Date(tx.date), 'PP')}</TableCell>
+                    <TableCell>{tx.description}</TableCell>
+                    <TableCell className={`text-right ${tx.debit > 0 ? 'text-destructive' : ''}`}>
+                      {tx.debit > 0 ? `${settings.currency}${tx.debit.toFixed(2)}` : '-'}
+                    </TableCell>
+                    <TableCell className={`text-right ${tx.credit > 0 ? 'text-green-500' : ''}`}>
+                      {tx.credit > 0 ? `${settings.currency}${tx.credit.toFixed(2)}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">{settings.currency}{tx.balance.toFixed(2)}</TableCell>
+                  </TableRow>
                 ))}
-             </Accordion>
+              </TableBody>
+              <TableFooter>
+                <TableRow className="text-lg">
+                    <TableCell colSpan={4} className="text-right font-bold">{t.customers.totalDue}</TableCell>
+                    <TableCell className="text-right font-bold">{settings.currency}{supplier.balance.toFixed(2)}</TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
           ) : (
             <p className="text-center text-muted-foreground py-8">{t.suppliers.noInvoices}</p>
           )}

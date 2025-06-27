@@ -34,6 +34,7 @@ import {
     updateSupplierInDB,
     deleteSupplierInDB,
     processSupplierInvoice,
+    processSupplierPayment,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
@@ -59,10 +60,11 @@ interface DataContextType {
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
     setBakeryOrders: (orders: BakeryOrder[]) => Promise<void>;
-    addSupplier: (supplierData: Omit<Supplier, 'id'>) => Promise<void>;
-    updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id'>>) => Promise<void>;
+    addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
+    updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
     addSupplierInvoice: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => Promise<void>;
+    makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -217,16 +219,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
        await syncData();
     }
 
-    const addSupplier = async (supplierData: Omit<Supplier, 'id'>) => {
+    const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
         const newSupplier: Supplier = {
             id: `supp-${new Date().getTime()}`,
+            balance: 0,
             ...supplierData,
         };
         await addSupplierInDB(newSupplier);
         await syncData();
     };
 
-    const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id'>>) => {
+    const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
         await updateSupplierInDB(supplierId, supplierData);
         await syncData();
     };
@@ -246,6 +249,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 variant: 'destructive',
                 title: "Save Error",
                 description: "Could not save supplier invoice.",
+            });
+        }
+    };
+    
+    const makePaymentToSupplier = async (supplierId: string, amount: number) => {
+        try {
+            await processSupplierPayment({ supplierId, amount });
+            await syncData();
+        } catch (error) {
+            console.error("Failed to process supplier payment:", error);
+            toast({
+                variant: 'destructive',
+                title: "Save Error",
+                description: "Could not save supplier payment.",
             });
         }
     };
@@ -288,6 +305,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updateSupplier,
         deleteSupplier,
         addSupplierInvoice,
+        makePaymentToSupplier,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -18,18 +18,21 @@ import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddSupplierDialog } from '@/components/add-supplier-dialog';
-import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
+import { AddSupplierInvoiceDialog } from '@/add-supplier-invoice-dialog';
 import { SupplierInvoicesDialog } from '@/components/supplier-invoices-dialog';
 import { SupplierRestockListDialog } from '@/components/supplier-restock-list-dialog';
 import Loading from '@/app/loading';
+import { useSettings } from '@/contexts/settings-context';
+import { MakeSupplierPaymentDialog } from '@/components/make-supplier-payment-dialog';
 
 export default function SuppliersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, supplierInvoices, products, isLoading } = useData();
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, supplierInvoices, products, isLoading, makePaymentToSupplier } = useData();
+  const { settings } = useSettings();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -44,6 +47,8 @@ export default function SuppliersPage() {
 
   const [supplierForRestock, setSupplierForRestock] = useState<Supplier | null>(null);
   const [lowStockProductsForSupplier, setLowStockProductsForSupplier] = useState<Product[]>([]);
+  
+  const [payingSupplier, setPayingSupplier] = useState<Supplier | null>(null);
 
   const filteredSuppliers = useMemo(() => {
     return suppliers
@@ -65,7 +70,7 @@ export default function SuppliersPage() {
     setEditingSupplier(null);
   }
 
-  const handleSaveSupplier = (supplierData: Omit<Supplier, 'id'>, supplierId?: string) => {
+  const handleSaveSupplier = (supplierData: Omit<Supplier, 'id' | 'balance'>, supplierId?: string) => {
     if (supplierId) {
       updateSupplier(supplierId, supplierData);
       toast({ title: t.suppliers.supplierUpdated });
@@ -114,6 +119,13 @@ export default function SuppliersPage() {
     setLowStockProductsForSupplier(lowStockProducts);
     setSupplierForRestock(supplier);
   };
+  
+  const handleMakePayment = (amount: number) => {
+    if (!payingSupplier) return;
+    makePaymentToSupplier(payingSupplier.id, amount);
+    toast({ title: t.suppliers.paymentSuccess });
+    setPayingSupplier(null);
+  };
 
   const dayNames = [
     t.suppliers.days.sunday,
@@ -155,6 +167,7 @@ export default function SuppliersPage() {
                 <TableHead>{t.suppliers.phone}</TableHead>
                 <TableHead>{t.suppliers.productCategory}</TableHead>
                 <TableHead>{t.suppliers.visitDays}</TableHead>
+                <TableHead className="text-right">{t.suppliers.balance}</TableHead>
                 <TableHead className="text-right">{t.suppliers.actions}</TableHead>
               </TableRow>
             </TableHeader>
@@ -172,7 +185,15 @@ export default function SuppliersPage() {
                             .join(', ')
                         : '-'}
                   </TableCell>
+                  <TableCell className={`text-right font-bold ${supplier.balance > 0 ? 'text-destructive' : 'text-success'}`}>
+                    {settings.currency}{supplier.balance.toFixed(2)}
+                  </TableCell>
                   <TableCell className="flex justify-end">
+                    {supplier.balance > 0 && (
+                      <Button variant="ghost" size="icon" title={t.suppliers.makePayment} onClick={() => setPayingSupplier(supplier)}>
+                        <Wallet className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" title={t.suppliers.generateRestockList} onClick={() => handleGenerateRestockList(supplier)}>
                         <Printer className="h-4 w-4" />
                     </Button>
@@ -225,6 +246,13 @@ export default function SuppliersPage() {
         onClose={() => setSupplierForRestock(null)}
         supplier={supplierForRestock}
         products={lowStockProductsForSupplier}
+      />
+      
+      <MakeSupplierPaymentDialog
+        isOpen={!!payingSupplier}
+        onClose={() => setPayingSupplier(null)}
+        onSave={handleMakePayment}
+        supplier={payingSupplier}
       />
 
       <ConfirmDialog

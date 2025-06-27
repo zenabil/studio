@@ -249,9 +249,10 @@ export async function processPayment(data: { customerId: string; amount: number 
 }
 
 export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>): Promise<void> {
-    const [products, invoices] = await Promise.all([
+    const [products, invoices, suppliers] = await Promise.all([
         getProducts(),
-        getSupplierInvoices()
+        getSupplierInvoices(),
+        getSuppliers()
     ]);
 
     let totalAmount = 0;
@@ -287,13 +288,50 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
         date: new Date().toISOString(),
         totalAmount,
         ...invoiceData,
+        isPayment: false,
     };
-
     invoices.push(newInvoice);
+
+    // Update supplier balance
+    const supplier = suppliers.find(s => s.id === invoiceData.supplierId);
+    if (supplier) {
+        supplier.balance += totalAmount;
+    }
     
     await Promise.all([
         writeData(PRODUCTS_FILE, products),
-        writeData(SUPPLIER_INVOICES_FILE, invoices)
+        writeData(SUPPLIER_INVOICES_FILE, invoices),
+        writeData(SUPPLIERS_FILE, suppliers)
+    ]);
+}
+
+export async function processSupplierPayment(data: { supplierId: string; amount: number }): Promise<void> {
+    const [suppliers, invoices] = await Promise.all([
+        getSuppliers(),
+        getSupplierInvoices()
+    ]);
+
+    // 1. Update supplier balance
+    const supplier = suppliers.find(s => s.id === data.supplierId);
+    if (supplier) {
+        supplier.balance -= data.amount;
+    }
+
+    // 2. Create payment record
+    const paymentRecord: SupplierInvoice = {
+        id: `SPAY-${new Date().getTime()}`,
+        supplierId: data.supplierId,
+        date: new Date().toISOString(),
+        items: [], // An empty items array signifies a payment
+        totalAmount: data.amount,
+        isPayment: true,
+    };
+    invoices.push(paymentRecord);
+
+    // 3. Write all changes
+    await Promise.all([
+        writeData(SUPPLIERS_FILE, suppliers),
+        writeData(SUPPLIER_INVOICES_FILE, invoices),
     ]);
 }
 

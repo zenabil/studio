@@ -37,7 +37,7 @@ import {
 interface AddSupplierDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (supplier: Omit<Supplier, 'id'>, id?: string) => void;
+  onSave: (supplier: Omit<Supplier, 'id' | 'balance'>, id?: string) => void;
   supplierToEdit?: Supplier | null;
 }
 
