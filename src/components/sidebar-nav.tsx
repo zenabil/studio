@@ -105,6 +105,20 @@ export function SidebarNav() {
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ];
 
+  if (!isMounted) {
+    return (
+      <div className="w-16 hidden md:block">
+        <div className="p-4"><Skeleton className="h-8 w-8" /></div>
+        <div className="p-2 space-y-2 mt-4">
+          <Skeleton className="h-9 w-12" />
+          <Skeleton className="h-9 w-12" />
+          <Skeleton className="h-9 w-12" />
+          <Skeleton className="h-9 w-12" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
     <div className="absolute top-4 z-20 flex items-center gap-2 ltr:left-4 rtl:right-4 md:hidden">
@@ -124,11 +138,9 @@ export function SidebarNav() {
                 strokeLinejoin="round"
                 className="h-7 w-7 text-primary transition-transform duration-300 group-hover:scale-110"
               >
-                <path d="M7 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
-                <path d="M4 16h16" />
-                <path d="M12 20v-4" />
-                <path d="M4 20h2" />
-                <path d="M18 20h2" />
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" x2="21" y1="6" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
               </svg>
            </div>
           <div className="group-data-[collapsible=icon]:hidden">
