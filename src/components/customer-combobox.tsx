@@ -60,14 +60,13 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-          <Command>
+          <Command onSelect={handleSelect}>
             <CommandInput placeholder={t.customers.searchCustomers} />
             <CommandList>
               <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="no-customer"
-                  onSelect={handleSelect}
                 >
                   <Check
                     className={cn(
@@ -81,7 +80,6 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                   <CommandItem
                     key={customer.id}
                     value={`${customer.name}---${customer.id}`}
-                    onSelect={handleSelect}
                   >
                     <Check
                       className={cn(
