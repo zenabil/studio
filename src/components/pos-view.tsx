@@ -53,6 +53,7 @@ import { AddProductDialog } from './add-product-dialog';
 import { calculateItemTotal } from '@/lib/utils';
 import Loading from '@/app/loading';
 import { PosProductCard } from './pos-product-card';
+import { BarcodeScannerDialog } from './barcode-scanner-dialog';
 
 interface SaleSession {
   id: string;
@@ -80,6 +81,7 @@ export function PosView() {
 
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [newProductBarcode, setNewProductBarcode] = useState('');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -140,7 +142,21 @@ export function PosView() {
   const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
     if (!activeSession) return;
     
-    const finalQuantity = Math.max(0, newQuantity);
+    const productDetails = products.find(p => p.id === productId);
+    if (!productDetails) return;
+
+    let finalQuantity = Math.max(0, newQuantity);
+    
+    if (finalQuantity > productDetails.stock) {
+        finalQuantity = productDetails.stock;
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.quantityExceedsStock
+                .replace('{productName}', productDetails.name)
+                .replace('{stock}', String(productDetails.stock)),
+        });
+    }
 
     const newCart = [...activeSession.cart];
     const existingItemIndex = newCart.findIndex(item => item.id === productId);
@@ -154,7 +170,7 @@ export function PosView() {
     }
     
     updateActiveSession({ cart: newCart });
-  }, [activeSession, updateActiveSession]);
+  }, [activeSession, updateActiveSession, products, t, toast]);
   
   const handleQuantityInputChange = (productId: string, value: string) => {
     setCartQuantities(prev => ({ ...prev, [productId]: value }));
@@ -213,12 +229,29 @@ export function PosView() {
     const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
   
     if (existingItemIndex > -1) {
+      const existingItem = newCart[existingItemIndex];
+      if (existingItem.quantity >= product.stock) {
+          toast({
+              variant: 'destructive',
+              title: t.errors.title,
+              description: t.errors.outOfStock.replace('{productName}', product.name),
+          });
+          return;
+      }
       newCart[existingItemIndex].quantity += 1;
     } else {
+      if (product.stock <= 0) {
+          toast({
+              variant: 'destructive',
+              title: t.errors.title,
+              description: t.errors.outOfStock.replace('{productName}', product.name),
+          });
+          return;
+      }
       newCart.push({ ...product, quantity: 1 });
     }
     updateActiveSession({ cart: newCart });
-  }, [activeSession, updateActiveSession]);
+  }, [activeSession, updateActiveSession, t, toast]);
   
   const resetSale = useCallback(() => {
     if (!activeSessionId) return;
@@ -266,13 +299,6 @@ export function PosView() {
     const total = Math.max(0, subtotal - discount);
     return { subtotal, total };
   }, [activeSession?.cart, activeSession?.discount]);
-
-  useEffect(() => {
-    if (activeSession) {
-      updateActiveSession({ amountPaid: total });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total, activeSessionId]);
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
@@ -436,16 +462,21 @@ export function PosView() {
                   )}
                </div>
                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-grow">
-                    <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      ref={barcodeInputRef}
-                      placeholder={`${t.pos.scanBarcode} (F2)`}
-                      value={barcodeInput}
-                      onChange={(e) => setBarcodeInput(e.target.value)}
-                      onKeyDown={handleBarcodeKeyDown}
-                      className="pl-10"
-                    />
+                  <div className="relative flex-grow flex items-center gap-2">
+                    <div className="relative flex-grow">
+                      <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        ref={barcodeInputRef}
+                        placeholder={`${t.pos.scanBarcode} (F2)`}
+                        value={barcodeInput}
+                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        onKeyDown={handleBarcodeKeyDown}
+                        className="pl-10"
+                      />
+                    </div>
+                     <Button variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
+                       <Barcode className="h-5 w-5" />
+                     </Button>
                   </div>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
@@ -647,6 +678,14 @@ export function PosView() {
         onSave={handleSaveProduct}
         productToEdit={null}
         initialBarcode={newProductBarcode}
+      />
+       <BarcodeScannerDialog
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={(barcode) => {
+          handleScanSuccess(barcode);
+          setIsScannerOpen(false);
+        }}
       />
     </div>
   );

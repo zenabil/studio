@@ -343,6 +343,8 @@ export const translations = {
       productNotFound: "Produit non trouvé avec ce code-barres.",
       scanError: "Une erreur est survenue lors du scan.",
       forecastError: "La prévision des ventes a échoué.",
+      outOfStock: "{productName} est en rupture de stock.",
+      quantityExceedsStock: "La quantité demandée pour {productName} dépasse le stock disponible ({stock})."
     }
   },
   ar: {
@@ -685,6 +687,8 @@ export const translations = {
       productNotFound: "المنتج غير موجود بهذا الباركود.",
       scanError: "حدث خطأ أثناء المسح.",
       forecastError: "فشل توقع المبيعات.",
+      outOfStock: "{productName} غير متوفر في المخزون.",
+      quantityExceedsStock: "الكمية المطلوبة من {productName} تتجاوز المخزون المتاح ({stock})."
     }
   },
 };
