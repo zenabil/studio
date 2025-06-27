@@ -40,6 +40,9 @@ const colorPresets: ColorPreset[] = [
   { name: 'Blue', primary: { light: '217.2 91.2% 52.8%', dark: '217.2 91.2% 59.8%' }, accent: { light: '217.2 81.2% 62.8%', dark: '217.2 81.2% 69.8%' } },
   { name: 'Rose', primary: { light: '346.8 77.2% 49.8%', dark: '346.8 77.2% 59.8%' }, accent: { light: '346.8 67.2% 59.8%', dark: '346.8 67.2% 69.8%' } },
   { name: 'Orange', primary: { light: '24.6 95% 53.1%', dark: '24.6 95% 58.1%' }, accent: { light: '24.6 85% 63.1%', dark: '24.6 85% 68.1%' } },
+  { name: 'Violet', primary: { light: '262.1 83.3% 57.8%', dark: '262.1 83.3% 62.8%' }, accent: { light: '262.1 73.3% 67.8%', dark: '262.1 73.3% 72.8%' } },
+  { name: 'Yellow', primary: { light: '47.9 95.8% 53.1%', dark: '47.9 95.8% 58.1%' }, accent: { light: '47.9 85.8% 63.1%', dark: '47.9 85.8% 68.1%' } },
+  { name: 'Slate', primary: { light: '215.2 21.1% 42.6%', dark: '215.2 21.1% 47.6%' }, accent: { light: '215.3 19.3% 53.7%', dark: '215.3 19.3% 58.7%' } },
 ];
 
 
