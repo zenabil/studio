@@ -23,12 +23,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useEffect } from 'react';
-import type { BakeryOrder } from '@/app/bakery-orders/page';
+import type { BakeryOrder } from '@/lib/data';
 
 interface AddBakeryOrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => void;
+  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => boolean;
 }
 
 export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrderDialogProps) {
@@ -57,9 +57,11 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrder
   }, [form, isOpen]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values);
-    form.reset();
-    onClose();
+    const success = onSave(values);
+    if (success) {
+      form.reset();
+      onClose();
+    }
   }
 
   return (

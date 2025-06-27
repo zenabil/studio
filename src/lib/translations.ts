@@ -245,7 +245,8 @@ export const translations = {
       pin: "Épingler la commande",
       unpin: "Désépingler la commande",
       orderPinned: "Commande épinglée pour les jours suivants.",
-      orderUnpinned: "Commande non récurrente."
+      orderUnpinned: "Commande non récurrente.",
+      orderExists: "Une commande avec ce nom existe déjà pour aujourd'hui."
     },
     errors: {
       title: "Erreur",
@@ -498,7 +499,8 @@ export const translations = {
       pin: "تثبيت الطلب",
       unpin: "إلغاء تثبيت الطلب",
       orderPinned: "تم تثبيت الطلب للأيام القادمة.",
-      orderUnpinned: "الطلب غير متكرر."
+      orderUnpinned: "الطلب غير متكرر.",
+      orderExists: "يوجد طلب بهذا الاسم لهذا اليوم بالفعل."
     },
     errors: {
       title: "خطأ",

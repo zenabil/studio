@@ -103,17 +103,31 @@ export default function BakeryOrdersPage() {
     });
   }, [todaysOrders]);
 
-  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date'>) => {
+  const handleSaveOrder = (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>): boolean => {
+    const orderNameLower = orderData.name.toLowerCase();
+    const orderExists = todaysOrders.some(order => order.name.toLowerCase() === orderNameLower);
+
+    if (orderExists) {
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.bakeryOrders.orderExists,
+        });
+        return false;
+    }
+
     const newOrderData = {
       ...orderData,
       date: new Date().toISOString(),
       paid: false,
       received: false,
+      isRecurring: false,
     };
     addBakeryOrder(newOrderData);
     toast({
       title: t.bakeryOrders.orderAdded,
     });
+    return true;
   };
 
   const handleToggleStatus = (orderId: string, field: 'paid' | 'received') => {
