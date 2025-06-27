@@ -9,8 +9,8 @@ import {
   DialogClose,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/language-context';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/form';
 import { useEffect, useMemo } from 'react';
 import { useData } from '@/contexts/data-context';
-import { ScrollArea } from './ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
+import { useSettings } from '@/contexts/settings-context';
 
 interface AddSupplierInvoiceDialogProps {
   isOpen: boolean;
@@ -56,11 +57,13 @@ const invoiceItemSchema = z.object({
 const formSchema = z.object({
   supplierId: z.string(),
   items: z.array(invoiceItemSchema).min(1),
+  amountPaid: z.coerce.number().min(0).optional(),
 });
 
 export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: AddSupplierInvoiceDialogProps) {
   const { t } = useLanguage();
   const { products } = useData();
+  const { settings } = useSettings();
 
   const supplierProducts = useMemo(() => {
     return products.filter(p => p.category === supplier.productCategory);
@@ -71,6 +74,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
     defaultValues: {
       supplierId: supplier.id,
       items: [],
+      amountPaid: 0,
     },
   });
 
@@ -84,7 +88,6 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
     return watchedItems.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
   }, [watchedItems]);
 
-  // This useEffect will handle the automatic calculation of the purchase price.
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
       if (name && (name.endsWith('.boxPrice') || name.endsWith('.quantityPerBox'))) {
@@ -105,6 +108,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
       form.reset({
         supplierId: supplier.id,
         items: [{ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' }],
+        amountPaid: 0,
       });
     }
   }, [isOpen, supplier, form]);
@@ -139,8 +143,8 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                                 field.onChange(value);
                                 form.setValue(`items.${index}.productName`, product?.name || '');
                                 form.setValue(`items.${index}.purchasePrice`, product?.purchasePrice || 0);
-                                form.setValue(`items.${index}.boxPrice`, product?.boxPrice || 0);
-                                form.setValue(`items.${index}.quantityPerBox`, product?.quantityPerBox || 0);
+                                form.setValue(`items.${index}.boxPrice`, product?.boxPrice);
+                                form.setValue(`items.${index}.quantityPerBox`, product?.quantityPerBox);
                                 form.setValue(`items.${index}.barcode`, product?.barcode || '');
                               }}
                               defaultValue={field.value}
@@ -207,7 +211,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         render={({ field }) => (
                           <FormItem>
                             {index === 0 && <FormLabel>{t.products.boxPrice}</FormLabel>}
-                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                            <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -220,7 +224,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         render={({ field }) => (
                           <FormItem>
                             {index === 0 && <FormLabel>{t.products.quantityPerBox}</FormLabel>}
-                            <FormControl><Input type="number" step="1" {...field} /></FormControl>
+                            <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -244,8 +248,23 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                 {t.suppliers.addItem}
               </Button>
             </ScrollArea>
-            <div className="text-right font-bold text-lg pr-6">
-              {t.pos.grandTotal}: {totalAmount.toFixed(2)}
+             <div className="flex justify-end items-center gap-8 pr-6 border-t pt-4">
+                 <FormField
+                    control={form.control}
+                    name="amountPaid"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-2">
+                        <FormLabel className="text-base">{t.pos.amountPaid}:</FormLabel>
+                        <FormControl>
+                            <Input className="w-32 text-base" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                <div className="text-right font-bold text-lg">
+                    {t.pos.grandTotal}: {settings.currency}{totalAmount.toFixed(2)}
+                 </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>

@@ -72,18 +72,21 @@ export default function AlertsPage() {
             }
         }
         
-        // Check if the due date is tomorrow to trigger an alert
-        if (alertDueDate && differenceInCalendarDays(alertDueDate, today) === 1) {
-            alerts.push({
-                customerName: customer.name,
-                balance: customer.balance,
-                dueDate: alertDueDate,
-                phone: customer.phone,
-            });
+        if (alertDueDate) {
+          const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
+          // Alert for payments that are overdue, due today, or due tomorrow.
+          if (daysUntilDue <= 1) { 
+              alerts.push({
+                  customerName: customer.name,
+                  balance: customer.balance,
+                  dueDate: alertDueDate,
+                  phone: customer.phone,
+              });
+          }
         }
     }
     return alerts;
-  }, [customers, salesHistory, settings.paymentTermsDays, t]);
+  }, [customers, salesHistory, settings.paymentTermsDays]);
 
   const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
     if (!alert.phone) {
