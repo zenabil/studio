@@ -56,6 +56,7 @@ export interface SupplierInvoice {
   date: string;
   items: SupplierInvoiceItem[];
   totalAmount: number;
+  amountPaid?: number;
   isPayment?: boolean;
 }
 

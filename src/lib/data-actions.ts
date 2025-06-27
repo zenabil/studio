@@ -283,11 +283,14 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
         }
     });
 
+    const amountPaid = invoiceData.amountPaid || 0;
+
     const newInvoice: SupplierInvoice = {
         id: `SINV-${new Date().getTime()}`,
         date: new Date().toISOString(),
         totalAmount,
         ...invoiceData,
+        amountPaid: amountPaid,
         isPayment: false,
     };
     invoices.push(newInvoice);
@@ -295,7 +298,7 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
     // Update supplier balance
     const supplier = suppliers.find(s => s.id === invoiceData.supplierId);
     if (supplier) {
-        supplier.balance += totalAmount;
+        supplier.balance = (supplier.balance || 0) + (totalAmount - amountPaid);
     }
     
     await Promise.all([

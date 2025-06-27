@@ -55,14 +55,19 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
             balance: balanceAfterTransaction
         });
       } else {
-        // This was an invoice, so to get the balance *before*, we subtract the amount.
-        balanceBeforeTransaction -= tx.totalAmount;
+        // This was an invoice.
+        const amountPaid = tx.amountPaid || 0;
+        const balanceIncrease = tx.totalAmount - amountPaid;
+
+        // to get the balance *before*, we subtract the balance increase.
+        balanceBeforeTransaction -= balanceIncrease;
+        
         statement.unshift({
             id: tx.id,
             date: tx.date,
             description: `${t.suppliers.invoice} #${tx.id.split('-')[1]}`,
             debit: tx.totalAmount,
-            credit: 0,
+            credit: amountPaid,
             balance: balanceAfterTransaction
         });
       }
@@ -83,7 +88,7 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
           <DialogDescription>{supplier.name}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto p-1">
-          {transactionHistory.length > 0 ? (
+          {transactionHistory.length > 0 || startingBalance !== 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
