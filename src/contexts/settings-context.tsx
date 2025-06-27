@@ -56,7 +56,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       email: 'contact@mercuriopos.com',
     },
     currency: '$',
-    theme: 'dark',
+    theme: 'light',
     colorPreset: 'Teal',
     paymentTermsDays: 30,
   });
