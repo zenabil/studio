@@ -211,7 +211,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         render={({ field }) => (
                           <FormItem>
                             {index === 0 && <FormLabel>{t.products.boxPrice}</FormLabel>}
-                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                            <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -224,7 +224,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         render={({ field }) => (
                           <FormItem>
                             {index === 0 && <FormLabel>{t.products.quantityPerBox}</FormLabel>}
-                            <FormControl><Input type="number" step="1" {...field} /></FormControl>
+                            <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -256,7 +256,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                       <FormItem className="flex items-center gap-2">
                         <FormLabel className="text-base">{t.pos.amountPaid}:</FormLabel>
                         <FormControl>
-                            <Input className="w-32 text-base" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                            <Input className="w-32 text-base" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
