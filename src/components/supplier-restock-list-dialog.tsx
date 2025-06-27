@@ -53,14 +53,26 @@ export function SupplierRestockListDialog({ isOpen, onClose, supplier, products 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell className="text-center font-bold text-destructive">{product.stock}</TableCell>
-                      <TableCell className="text-center">{product.minStock}</TableCell>
-                      <TableCell className="text-right h-12 border-b"></TableCell>
-                    </TableRow>
-                  ))}
+                  {products.map((product) => {
+                    const neededQuantity = (product.minStock || 0) - product.stock;
+                    let quantityToOrder = neededQuantity > 0 ? neededQuantity : 0;
+                    let orderDescription = `${quantityToOrder}`;
+
+                    if (product.quantityPerBox && product.quantityPerBox > 0 && neededQuantity > 0) {
+                        const numberOfBoxes = Math.ceil(neededQuantity / product.quantityPerBox);
+                        quantityToOrder = numberOfBoxes * product.quantityPerBox;
+                        orderDescription = `${quantityToOrder} (${numberOfBoxes} ${t.suppliers.boxes})`;
+                    }
+                    
+                    return (
+                        <TableRow key={product.id}>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell className="text-center font-bold text-destructive">{product.stock}</TableCell>
+                            <TableCell className="text-center">{product.minStock || 0}</TableCell>
+                            <TableCell className="text-right font-bold">{orderDescription}</TableCell>
+                        </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : (

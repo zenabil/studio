@@ -199,6 +199,7 @@ export const translations = {
         noLowStockProducts: "Aucun produit en stock faible pour ce fournisseur.",
         quantityToOrder: "Quantité à Commander",
         printList: "Imprimer la liste",
+        boxes: "cartons"
     },
     reports: {
       title: "Rapports et Analyses",
@@ -527,6 +528,7 @@ export const translations = {
         noLowStockProducts: "لا توجد منتجات ذات مخزون منخفض لهذا المورد.",
         quantityToOrder: "الكمية المطلوبة",
         printList: "طباعة القائمة",
+        boxes: "كراتين"
     },
     reports: {
       title: "التقارير والتحليلات",
