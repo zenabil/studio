@@ -383,6 +383,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                  if (invoiceItem.quantityPerBox !== undefined) {
                     newProductData.quantityPerBox = invoiceItem.quantityPerBox;
                 }
+                if (invoiceItem.barcode !== undefined) {
+                    newProductData.barcode = invoiceItem.barcode;
+                }
                 return newProductData;
             }
             return product;

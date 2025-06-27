@@ -50,6 +50,7 @@ const invoiceItemSchema = z.object({
   purchasePrice: z.coerce.number().min(0),
   boxPrice: z.coerce.number().min(0).optional(),
   quantityPerBox: z.coerce.number().int().min(0).optional(),
+  barcode: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -103,7 +104,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
     if (isOpen) {
       form.reset({
         supplierId: supplier.id,
-        items: [{ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined }],
+        items: [{ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' }],
       });
     }
   }, [isOpen, supplier, form]);
@@ -114,7 +115,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle>{t.suppliers.newInvoice}</DialogTitle>
           <DialogDescription>{t.suppliers.invoiceFor}: {supplier.name}</DialogDescription>
@@ -140,6 +141,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                                 form.setValue(`items.${index}.purchasePrice`, product?.purchasePrice || 0);
                                 form.setValue(`items.${index}.boxPrice`, product?.boxPrice || 0);
                                 form.setValue(`items.${index}.quantityPerBox`, product?.quantityPerBox || 0);
+                                form.setValue(`items.${index}.barcode`, product?.barcode || '');
                               }}
                               defaultValue={field.value}
                             >
@@ -159,7 +161,20 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         )}
                       />
                     </div>
-                    <div className="col-span-2">
+                     <div className="col-span-2">
+                       <FormField
+                        control={form.control}
+                        name={`items.${index}.barcode`}
+                        render={({ field }) => (
+                          <FormItem>
+                            {index === 0 && <FormLabel>{t.products.barcode}</FormLabel>}
+                            <FormControl><Input type="text" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="col-span-1">
                       <FormField
                         control={form.control}
                         name={`items.${index}.quantity`}
@@ -198,7 +213,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         )}
                       />
                     </div>
-                     <div className="col-span-2">
+                     <div className="col-span-1">
                        <FormField
                         control={form.control}
                         name={`items.${index}.quantityPerBox`}
@@ -224,7 +239,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                 variant="outline"
                 size="sm"
                 className="mt-2"
-                onClick={() => append({ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined })}
+                onClick={() => append({ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' })}
               >
                 {t.suppliers.addItem}
               </Button>

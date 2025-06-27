@@ -46,6 +46,7 @@ export interface SupplierInvoiceItem {
   purchasePrice: number;
   boxPrice?: number;
   quantityPerBox?: number;
+  barcode?: string;
 }
 
 export interface SupplierInvoice {
