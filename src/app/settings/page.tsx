@@ -16,7 +16,7 @@ import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SettingsPage() {
-  const { settings, setSettings, colorPresets, backgroundThemes } = useSettings();
+  const { settings, setSettings, colorPresets } = useSettings();
   const { t } = useLanguage();
   const { restoreData } = useData();
   const { toast } = useToast();
@@ -186,22 +186,6 @@ export default function SettingsPage() {
                          <Label className="flex items-center gap-2 cursor-pointer">
                           <RadioGroupItem value="system" /> System
                         </Label>
-                      </RadioGroup>
-                    )}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t.settings.background}</Label>
-                  <Controller
-                    name="backgroundTheme"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
-                        {backgroundThemes.map((theme) => (
-                          <Label key={theme.name} className="flex items-center gap-2 cursor-pointer">
-                            <RadioGroupItem value={theme.name} /> {t.settings.themes[theme.name]}
-                          </Label>
-                        ))}
                       </RadioGroup>
                     )}
                   />

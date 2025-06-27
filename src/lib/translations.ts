@@ -248,7 +248,6 @@ export const translations = {
       companyEmail: "Email",
       appearance: "Apparence",
       theme: "Thème",
-      background: "Arrière-plan",
       colors: "Couleurs",
       currency: "Devise",
       dataManagement: "Gestion des données",
@@ -268,11 +267,6 @@ export const translations = {
       paymentTermsDescription: "Le nombre de jours avant qu'une facture ne soit considérée comme due.",
       lateFeePercentage: "Pourcentage de pénalité de retard (par jour)",
       lateFeePercentageDescription: "Le pourcentage du solde dû appliqué comme pénalité pour chaque jour de retard.",
-      themes: {
-        neutral: "Défaut",
-        mint: "Menthe",
-        lavender: "Lavande",
-      }
     },
     bakeryOrders: {
       title: "Commandes Boulangerie",
@@ -564,7 +558,6 @@ export const translations = {
       companyEmail: "البريد الإلكتروني",
       appearance: "المظهر",
       theme: "السمة",
-      background: "الخلفية",
       colors: "الألوان",
       currency: "العملة",
       dataManagement: "إدارة البيانات",
@@ -584,11 +577,6 @@ export const translations = {
       paymentTermsDescription: "عدد الأيام قبل اعتبار الفاتورة مستحقة.",
       lateFeePercentage: "نسبة غرامة التأخير (لكل يوم)",
       lateFeePercentageDescription: "النسبة المئوية من الرصيد المستحق التي تطبق كغرامة عن كل يوم تأخير.",
-      themes: {
-        neutral: "افتراضي",
-        mint: "نعناعي",
-        lavender: "خزامى",
-      }
     },
     bakeryOrders: {
       title: "طلبات المخبز",

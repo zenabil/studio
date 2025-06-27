@@ -22,7 +22,6 @@ export interface Settings {
   currency: string;
   theme: Theme;
   colorPreset: string; // name of the preset
-  backgroundTheme: string; // name of the background theme
   paymentTermsDays: number;
 }
 
@@ -31,16 +30,9 @@ interface SettingsContextType {
   settings: Settings;
   setSettings: (newSettings: Partial<Settings>) => void;
   colorPresets: ColorPreset[];
-  backgroundThemes: { name: string }[];
 }
 
 const SETTINGS_KEY = 'mercurio-pos-settings';
-
-export const backgroundThemes = [
-    { name: 'neutral' },
-    { name: 'mint' },
-    { name: 'lavender' },
-];
 
 const colorPresets: ColorPreset[] = [
   { name: 'Teal', primary: { light: '180 100% 25.1%', dark: '180 100% 30%' }, accent: { light: '39 100% 50%', dark: '39 100% 50%' } },
@@ -66,7 +58,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     currency: '$',
     theme: 'light',
     colorPreset: 'Teal',
-    backgroundTheme: 'neutral',
     paymentTermsDays: 30,
   });
   
@@ -102,24 +93,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
     const root = document.documentElement;
 
-    // 1. Apply background theme class
-    backgroundThemes.forEach(t => {
-      if (t.name !== 'neutral') {
-        root.classList.remove(`theme-${t.name}`);
-      }
-    });
-    if (settings.backgroundTheme && settings.backgroundTheme !== 'neutral') {
-      root.classList.add(`theme-${settings.backgroundTheme}`);
-    }
-
-    // 2. Define a function to apply color preset based on light/dark
+    // Define a function to apply color preset based on light/dark
     const applyColorPreset = (effectiveTheme: 'light' | 'dark') => {
       const preset = colorPresets.find(p => p.name === settings.colorPreset) || colorPresets[0];
       root.style.setProperty('--primary', preset.primary[effectiveTheme]);
       root.style.setProperty('--accent', preset.accent[effectiveTheme]);
     };
 
-    // 3. Handle theme (light/dark/system)
+    // Handle theme (light/dark/system)
     if (settings.theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       
@@ -168,7 +149,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const value = { settings, setSettings, colorPresets, backgroundThemes };
+  const value = { settings, setSettings, colorPresets };
 
   return (
     <SettingsContext.Provider value={value}>
