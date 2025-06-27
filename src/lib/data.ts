@@ -58,13 +58,6 @@ export interface SupplierInvoice {
   totalAmount: number;
 }
 
-export type Sale = {
-  productId: string;
-  productName: string;
-  unitsSold: number;
-  revenue: number;
-};
-
 export interface CartItem extends Product {
     quantity: number;
 }
@@ -105,15 +98,6 @@ export const bakeryOrders: BakeryOrder[] = [
     { id: '1', date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), name: 'Boulangerie Al-Amal', quantity: 50, paid: true, received: true, isRecurring: true },
     { id: '2', date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), name: 'Patisserie Dupont', quantity: 75, paid: false, received: true, isRecurring: false },
     { id: '3', date: new Date().toISOString(), name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false, isRecurring: false },
-];
-
-
-export const salesData: Sale[] = [
-  { productId: 'prod-01', productName: 'Café Espresso', unitsSold: 120, revenue: 300.00 },
-  { productId: 'prod-02', productName: 'Croissant', unitsSold: 85, revenue: 153.00 },
-  { productId: 'prod-04', productName: 'Sandwich Poulet', unitsSold: 60, revenue: 330.00 },
-  { productId: 'prod-05', productName: 'Salade César', unitsSold: 40, revenue: 288.00 },
-  { productId: 'prod-06', productName: 'Tarte Citron', unitsSold: 55, revenue: 192.50 },
 ];
 
 export const salesHistory: SaleRecord[] = [
