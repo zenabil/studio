@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -23,7 +23,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { AddBakeryOrderDialog } from '@/components/add-bakery-order-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 export interface BakeryOrder {
   id: string;
@@ -44,6 +44,10 @@ export default function BakeryOrdersPage() {
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
+
+  useEffect(() => {
+    setOrders(prevOrders => prevOrders.filter(order => isToday(new Date(order.date))));
+  }, []);
 
   const totalBreadRequired = useMemo(() => {
     return orders
