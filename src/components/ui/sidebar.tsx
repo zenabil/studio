@@ -180,6 +180,19 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const [isMounted, setIsMounted] = React.useState(false)
+
+    React.useEffect(() => {
+      setIsMounted(true)
+    }, [])
+
+    if (!isMounted) {
+      // On the server and initial client render, we don't know the screen size,
+      // so we can't render the correct responsive layout.
+      // Returning null prevents a hydration mismatch.
+      return null
+    }
+
 
     if (collapsible === "none") {
       return (
