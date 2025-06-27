@@ -19,6 +19,7 @@ import {
   Package,
   TriangleAlert,
   Settings,
+  Bread,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -83,6 +84,7 @@ export function SidebarNav() {
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
     { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
+    { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Bread },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ];
 

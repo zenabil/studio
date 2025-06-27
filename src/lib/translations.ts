@@ -11,6 +11,7 @@ export const translations = {
       customers: "Clients",
       reports: "Rapports",
       alerts: "Alertes",
+      bakeryOrders: "Commandes Boulangerie",
       settings: "Paramètres",
     },
     pos: {
@@ -212,6 +213,10 @@ export const translations = {
         lavender: "Lavande",
       }
     },
+    bakeryOrders: {
+      title: "Commandes Boulangerie",
+      description: "Gérez les commandes de pain et de pâtisseries ici.",
+    },
     errors: {
       title: "Erreur",
       emptyCart: "Le panier est vide.",
@@ -229,6 +234,7 @@ export const translations = {
       customers: "العملاء",
       reports: "التقارير",
       alerts: "التنبيهات",
+      bakeryOrders: "طلبات الخبز",
       settings: "الإعدادات",
     },
     pos: {
@@ -429,6 +435,10 @@ export const translations = {
         mint: "نعناعي",
         lavender: "خزامى",
       }
+    },
+    bakeryOrders: {
+      title: "طلبات الخبز",
+      description: "إدارة طلبات الخبز والمعجنات من هنا.",
     },
     errors: {
       title: "خطأ",

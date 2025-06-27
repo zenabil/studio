@@ -1,35 +1,5 @@
-[
-  {
-    "id": "cust-01",
-    "name": "Jean Dupont",
-    "email": "jean.dupont@example.com",
-    "phone": "0612345678",
-    "spent": 150.75,
-    "balance": 0
-  },
-  {
-    "id": "cust-02",
-    "name": "Marie Curie",
-    "email": "marie.curie@example.com",
-    "phone": "0687654321",
-    "spent": 275.5,
-    "balance": 25.5,
-    "settlementDay": 16
-  },
-  {
-    "id": "cust-03",
-    "name": "Pierre Martin",
-    "email": "pierre.martin@example.com",
-    "phone": "0611223344",
-    "spent": 89.2,
-    "balance": 0
-  },
-  {
-    "id": "cust-04",
-    "name": "Sophie Bernard",
-    "email": "sophie.bernard@example.com",
-    "phone": "0655667788",
-    "spent": 412,
-    "balance": -10
-  }
-]
+{
+  "iv": "d28102bb02546d0d4198063c",
+  "authTag": "4a8e4a86bf62623af3ad8c53e4635041",
+  "encryptedData": "1b58f3609646ac31eb0f9b5a8e27c62c9d7a0add304930fe5909e6f059a241e63bb5a41a5cf05788ab739b8ea24a1e510c85c6463233d994da0b0b6ddabdbcf4cb0b5128082f71a472a95409e6a25dca3d976ca14e653ee2cd6029ab0186da92b1819dd8b10bee766e56941a204644a4ac326577a70a87d3a87e4b00418789714c239a39da03c85d699b7f10c00446967e2cd0f0aa5d96dc784814f3ece99da7eeb86c96d0b584363c4ad0f266ed42565c364bd80d07bc9d9dfaa34cb6e451a11088cccb15bf46ace5e4e10503c63ec7a8d0a650501702e5d870ba6672fed1b646e3b5f3a07d495e0d839cb944e4b82e5762b739d38a719b886befd4ce22a81a9b5b34ee8569e12a8060dc99216732fd2b630468a5f00a9c6a837626893dd44ca09106b9ce1dd0a0245bab8fc507c9e164ebc945c185711d8a7a36a4c143b7c6897d7b6cbc96a0ca82abfc964a0adefcffd79a0687fda5d1b94f38c076253bf7ce2768cde9f454e5199b43f2bc248593e61ecba890e058ab7ed051caa1c4013a9bf6b3eeddd466ca07ab2491d4431ff59aee2407362ba147a831c0952b209734292080e4f8eb657324544ecde714ba3438eb75b605b1b7f6708c91d5dc21c14147945bb5e9ff8334c97f2cde13f8600025cb15ff7cac318d2a1a1e8e773014ecfe08718b94b7061f8bd4a3e9d3bee05c5562f230ace294ef242edc97b3fb85d4ec8eee39c966d06da4a66847043247e2648decb61779a4bc982eb9fa939a93fe632785700946280352f02c3254b11f86a65b237f96625b0b887da1da35c87ad679870e277bf994212b8741a8550e20ebec1326a0fc96dca13229285c3a8ea12e8e44a814069497a625d00483de8d15f7ffbfbc947a933875e7a32a215846fc76b44889f9a51d43edc3f3e67bddadd9bcb426724c45cc32235978bc15b5a716da6e705df122bb3da022715a91"
+}
