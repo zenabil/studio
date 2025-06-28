@@ -44,6 +44,7 @@ import {
   LayoutGrid,
   List,
   LoaderCircle,
+  Box,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -410,7 +411,7 @@ export function PosView() {
   }, [activeSession?.cart.length]);
 
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, quantityToAdd: number = 1) => {
     if (!activeSession) return;
     
     const newCart = [...activeSession.cart];
@@ -418,7 +419,7 @@ export function PosView() {
   
     if (existingItemIndex > -1) {
       const existingItem = newCart[existingItemIndex];
-      if (existingItem.quantity >= product.stock) {
+      if (existingItem.quantity + quantityToAdd > product.stock) {
           toast({
               variant: 'destructive',
               title: t.errors.title,
@@ -426,9 +427,9 @@ export function PosView() {
           });
           return;
       }
-      newCart[existingItemIndex].quantity += 1;
+      newCart[existingItemIndex].quantity += quantityToAdd;
     } else {
-      if (product.stock <= 0) {
+      if (product.stock < quantityToAdd) {
           toast({
               variant: 'destructive',
               title: t.errors.title,
@@ -436,7 +437,7 @@ export function PosView() {
           });
           return;
       }
-      newCart.push({ ...product, quantity: 1 });
+      newCart.push({ ...product, quantity: quantityToAdd });
     }
     updateActiveSession({ cart: newCart });
   }, [activeSession, updateActiveSession, t, toast]);
@@ -538,7 +539,7 @@ export function PosView() {
   const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p && p.barcodes.includes(barcode));
     if (product) {
-        addToCart(product);
+        addToCart(product, 1);
         toast({
             title: t.pos.productAdded,
             description: `${product.name} ${t.pos.addedToCart}`,
@@ -570,7 +571,7 @@ export function PosView() {
 
     toast({ title: t.products.productAdded });
     
-    addToCart(newProduct);
+    addToCart(newProduct, 1);
   };
   
   const handleSaveNewCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
@@ -775,6 +776,7 @@ export function PosView() {
                           <TableBody>
                               {filteredProducts.map((product) => {
                                   const isOutOfStock = product.stock <= 0;
+                                  const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
                                   return (
                                   <TableRow key={product.id} className={cn(isOutOfStock && "opacity-60")}>
                                       <TableCell className="font-medium">{product.name}</TableCell>
@@ -782,15 +784,28 @@ export function PosView() {
                                       <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
                                       <TableCell className="text-right">{product.stock}</TableCell>
                                       <TableCell className="text-right">
-                                          <Button
-                                              size="sm"
-                                              onClick={() => addToCart(product)}
-                                              disabled={isOutOfStock}
-                                              variant="outline"
-                                          >
-                                              <PlusCircle className="mr-2 h-4 w-4" />
-                                              {t.pos.addToCart}
-                                          </Button>
+                                          <div className="flex justify-end items-center gap-2">
+                                              {canSellByBox && (
+                                                  <Button
+                                                      size="icon"
+                                                      variant="outline"
+                                                      onClick={() => addToCart(product, product.quantityPerBox!)}
+                                                      disabled={isOutOfStock || product.stock < product.quantityPerBox!}
+                                                      title={`${t.pos.addBox} (${product.quantityPerBox})`}
+                                                  >
+                                                      <Box className="h-4 w-4" />
+                                                  </Button>
+                                              )}
+                                              <Button
+                                                  size="sm"
+                                                  onClick={() => addToCart(product, 1)}
+                                                  disabled={isOutOfStock}
+                                                  variant="outline"
+                                              >
+                                                  <PlusCircle className="mr-2 h-4 w-4" />
+                                                  {t.pos.addToCart}
+                                              </Button>
+                                          </div>
                                       </TableCell>
                                   </TableRow>
                                   )

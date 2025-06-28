@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { Product } from '@/lib/data';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, WandSparkles, LoaderCircle } from 'lucide-react';
+import { PlusCircle, WandSparkles, LoaderCircle, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PosProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, quantity: number) => void;
   currency: string;
   t: any;
 }
@@ -28,6 +28,8 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
   const [imageUrl, setImageUrl] = useState<string>(PLACEHOLDER_IMG);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [hasCachedImage, setHasCachedImage] = useState<boolean>(false);
+
+  const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
 
   useEffect(() => {
     // This effect runs once on mount to check for a cached image in localStorage.
@@ -80,7 +82,7 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
           ? "opacity-60 grayscale cursor-not-allowed" 
           : "hover:shadow-xl hover:-translate-y-1 cursor-pointer"
       )}
-      onClick={() => !isOutOfStock && onAddToCart(product)}
+      onClick={() => !isOutOfStock && onAddToCart(product, 1)}
     >
       <div className="aspect-video w-full overflow-hidden relative bg-muted">
           <Image
@@ -121,15 +123,29 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
          <p className="text-xs text-muted-foreground mt-1">{product.category}</p>
       </div>
       <CardFooter className="p-2 mt-auto">
-        <Button
-          size="sm"
-          className="w-full h-9"
-          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-          disabled={isOutOfStock}
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t.pos.addToCart}
-        </Button>
+        <div className="w-full flex items-center gap-2">
+            <Button
+                size="sm"
+                className="h-9 flex-grow"
+                onClick={(e) => { e.stopPropagation(); onAddToCart(product, 1); }}
+                disabled={isOutOfStock}
+            >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                {t.pos.addToCart}
+            </Button>
+            {canSellByBox && (
+                <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-9 w-9 flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); onAddToCart(product, product.quantityPerBox!); }}
+                    disabled={isOutOfStock || product.stock < product.quantityPerBox!}
+                    title={`${t.pos.addBox} (${product.quantityPerBox})`}
+                >
+                    <Box className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
       </CardFooter>
     </Card>
   );

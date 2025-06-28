@@ -64,6 +64,7 @@ export const translations = {
       addProductButton: "Ajouter '{productName}' comme nouveau produit",
       gridView: "Vue en grille",
       listView: "Vue en liste",
+      addBox: "Ajouter Carton",
     },
     products: {
       title: "Gestion des Produits",
@@ -443,6 +444,7 @@ export const translations = {
       addProductButton: "إضافة '{productName}' كمنتج جديد",
       gridView: "عرض شبكي",
       listView: "عرض قائمة",
+      addBox: "إضافة كرتون",
     },
     products: {
       title: "إدارة المنتجات",
