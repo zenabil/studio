@@ -119,10 +119,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [syncData]);
 
     const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
-        if (productData.barcode && productData.barcode.trim() !== '') {
-            const isBarcodeDuplicate = products.some(p => p.barcode === productData.barcode);
-            if (isBarcodeDuplicate) {
-                const errorMsg = t.products.barcodeExists;
+        if (productData.barcodes && productData.barcodes.length > 0) {
+            const allBarcodes = new Set(products.flatMap(p => p.barcodes));
+            const duplicate = productData.barcodes.find(b => allBarcodes.has(b));
+            if (duplicate) {
+                const errorMsg = t.products.barcodeExists.replace('{barcode}', duplicate);
                 toast({ variant: 'destructive', title: t.errors.title, description: errorMsg });
                 throw new Error(errorMsg);
             }
@@ -138,10 +139,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
-        if (productData.barcode && productData.barcode.trim() !== '') {
-            const isBarcodeDuplicate = products.some(p => p.id !== productId && p.barcode === productData.barcode);
-            if (isBarcodeDuplicate) {
-                const errorMsg = t.products.barcodeExists;
+        if (productData.barcodes && productData.barcodes.length > 0) {
+            const allOtherBarcodes = new Set(products.filter(p => p.id !== productId).flatMap(p => p.barcodes));
+            const duplicate = productData.barcodes.find(b => allOtherBarcodes.has(b));
+            if (duplicate) {
+                const errorMsg = t.products.barcodeExists.replace('{barcode}', duplicate);
                 toast({ variant: 'destructive', title: t.errors.title, description: errorMsg });
                 throw new Error(errorMsg);
             }

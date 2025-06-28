@@ -324,7 +324,7 @@ export function PosView() {
   }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t.errors.emptyCart, t.errors.title, t.pos.saleSuccessMessage, t.pos.saleSuccessTitle, toast, closeSession]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
-    const product = products.find(p => p.barcode === barcode);
+    const product = products.find(p => p.barcodes.includes(barcode));
     if (product) {
         addToCart(product);
         toast({
@@ -351,7 +351,7 @@ export function PosView() {
     }
   };
 
-  const handleSaveProduct = async (productData: Omit<Product, 'id' | 'imageUrl'>) => {
+  const handleSaveProduct = async (productData: Omit<Product, 'id'>) => {
     const newProduct = await addProduct(productData);
     if (newProduct) {
       addToCart(newProduct);
@@ -421,8 +421,8 @@ export function PosView() {
           p.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
-        const aHasBarcode = !!a.barcode && a.barcode.trim() !== '';
-        const bHasBarcode = !!b.barcode && b.barcode.trim() !== '';
+        const aHasBarcode = a.barcodes && a.barcodes.length > 0;
+        const bHasBarcode = b.barcodes && b.barcodes.length > 0;
         if (aHasBarcode === bHasBarcode) {
           return 0;
         }

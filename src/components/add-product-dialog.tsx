@@ -42,7 +42,7 @@ const formSchema = z.object({
   minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
   quantityPerBox: z.coerce.number().int().min(0, { message: 'Quantity per box must be a positive integer.' }),
   boxPrice: z.coerce.number().min(0, { message: 'Box price must be a positive number.' }),
-  barcode: z.string().min(1, { message: 'Barcode cannot be empty.' }),
+  barcodes: z.string().min(1, { message: 'Barcode cannot be empty.' }),
 });
 
 export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode }: AddProductDialogProps) {
@@ -59,7 +59,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       minStock: 0,
       quantityPerBox: 0,
       boxPrice: 0,
-      barcode: '',
+      barcodes: '',
     },
   });
   
@@ -75,7 +75,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           minStock: productToEdit.minStock || 0,
           quantityPerBox: productToEdit.quantityPerBox || 0,
           boxPrice: productToEdit.boxPrice || 0,
-          barcode: productToEdit.barcode,
+          barcodes: productToEdit.barcodes.join(', '),
         });
       } else {
         form.reset({
@@ -87,7 +87,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           minStock: 0,
           quantityPerBox: 0,
           boxPrice: 0,
-          barcode: initialBarcode || '',
+          barcodes: initialBarcode || '',
         });
       }
     }
@@ -95,7 +95,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await onSave(values, productToEdit?.id);
+      const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
+      await onSave({ ...values, barcodes: barcodesArray }, productToEdit?.id);
       form.reset();
       onClose();
     } catch (error) {
@@ -224,10 +225,10 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
             </div>
             <FormField
               control={form.control}
-              name="barcode"
+              name="barcodes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.products.barcode}</FormLabel>
+                  <FormLabel>{t.products.barcodes}</FormLabel>
                   <FormControl>
                     <Input placeholder={t.products.barcodePlaceholder} {...field} />
                   </FormControl>

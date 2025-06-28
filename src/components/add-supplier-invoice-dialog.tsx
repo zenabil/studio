@@ -145,7 +145,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                                 form.setValue(`items.${index}.purchasePrice`, product?.purchasePrice || 0);
                                 form.setValue(`items.${index}.boxPrice`, product?.boxPrice);
                                 form.setValue(`items.${index}.quantityPerBox`, product?.quantityPerBox);
-                                form.setValue(`items.${index}.barcode`, product?.barcode || '');
+                                form.setValue(`items.${index}.barcode`, product?.barcodes?.[0] || '');
                               }}
                               defaultValue={field.value}
                             >
@@ -171,7 +171,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         name={`items.${index}.barcode`}
                         render={({ field }) => (
                           <FormItem>
-                            {index === 0 && <FormLabel>{t.products.barcode}</FormLabel>}
+                            {index === 0 && <FormLabel>{t.products.barcodes}</FormLabel>}
                             <FormControl><Input type="text" {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
