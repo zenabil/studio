@@ -25,12 +25,10 @@ export default function SettingsPage() {
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
   const [isActivating, setIsActivating] = useState(false);
 
-  const { control, handleSubmit, reset, watch } = useForm({
+  const { control, handleSubmit, reset } = useForm({
     defaultValues: settings,
   });
   
-  const watchedSettings = watch();
-
   useEffect(() => {
     reset(settings);
   }, [settings, reset]);
@@ -42,12 +40,10 @@ export default function SettingsPage() {
   
   const handleBackup = async () => {
     try {
-      const { products, customers, salesHistory } = await getBackupData();
+      const backupData = await getBackupData();
       const dataToBackup = {
-        products,
-        customers,
-        salesHistory,
-        settings: watchedSettings,
+        ...backupData,
+        settings: settings, // Use the saved settings, not the watched form state
       };
       const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
         JSON.stringify(dataToBackup, null, 2)
@@ -80,12 +76,11 @@ export default function SettingsPage() {
         }
         const data = JSON.parse(text);
 
+        // Basic validation: check for at least one key data type
         if (data.products && data.customers && data.salesHistory) {
-          await restoreData({
-            products: data.products,
-            customers: data.customers,
-            salesHistory: data.salesHistory,
-          });
+          // Pass the entire data object to restoreData
+          await restoreData(data);
+          
           if (data.settings) {
             setSettings(data.settings);
             reset(data.settings);
