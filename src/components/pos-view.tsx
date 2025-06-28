@@ -337,7 +337,7 @@ export function PosView() {
   }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, total, t, toast, closeSession]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
-    const product = products.find(p => p.barcodes.includes(barcode));
+    const product = products.find(p => p && p.barcodes.includes(barcode));
     if (product) {
         addToCart(product);
         toast({
@@ -421,12 +421,13 @@ export function PosView() {
   }, [isInvoiceOpen, sessionToDelete, isAddProductDialogOpen, resetSale, activeSession, handleSaleCompletion]);
 
 
-  const categories = useMemo(() => ['all', ...Array.from(new Set(products.map((p) => p.category)))], [products]);
+  const categories = useMemo(() => ['all', ...Array.from(new Set(products.filter(p => !!p).map((p) => p.category)))], [products]);
   
   const filteredProducts = useMemo(() => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
     return products
+      .filter(p => !!p)
       .filter(
         (p) => {
           const categoryFilter = selectedCategory === 'all' || p.category === selectedCategory;
@@ -444,7 +445,7 @@ export function PosView() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [products, selectedCategory, searchTerm]);
   
-  const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
+  const selectedCustomer = customers.find(c => c && c.id === activeSession?.selectedCustomerId);
 
   if (isLoading) return <Loading />;
   if (!activeSessionId || !activeSession) return <Loading />;
