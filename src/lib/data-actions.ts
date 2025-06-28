@@ -292,36 +292,40 @@ export async function processSupplierInvoice(data: { invoice: SupplierInvoice, u
     invoice.items.forEach(item => {
         const product = products.find(p => p.id === item.productId);
         if (product) {
-            const oldStock = product.stock;
-            const newQuantity = item.quantity;
+            // Store the stock level *before* this invoice is added.
+            const stockBeforeInvoice = product.stock;
+            const quantityFromInvoice = item.quantity;
             
-            // Update stock always
-            product.stock += newQuantity;
+            // 1. Update stock always
+            product.stock += quantityFromInvoice;
 
-            // Calculate and update weighted average purchase price ALWAYS
-            const oldPurchasePrice = product.purchasePrice || 0;
-            const newPurchasePrice = item.purchasePrice;
-            
-            // Robust weighted average calculation
-            const oldPositiveStock = Math.max(0, oldStock);
-            const totalPositiveStockAfterInvoice = oldPositiveStock + newQuantity;
-
-            if (totalPositiveStockAfterInvoice > 0) {
-                const totalOldValue = oldPositiveStock * oldPurchasePrice;
-                const totalNewValue = newQuantity * newPurchasePrice;
-                const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalPositiveStockAfterInvoice;
-                product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
-            } else {
-                // Fallback: This case is unlikely if newQuantity > 0, but safe to have.
-                // If stock was negative and the new quantity doesn't make it positive,
-                // the new purchase price is the most relevant.
-                product.purchasePrice = newPurchasePrice;
-            }
-
-            // ONLY update master box prices if requested
+            // 2. Update prices based on user's choice
             if (updateMasterPrices) {
+                // If user wants to update master prices, set the invoice price as the new master price.
+                product.purchasePrice = item.purchasePrice;
                 if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
                 if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
+            } else {
+                // Otherwise, calculate the new weighted average purchase price.
+                const oldPurchasePrice = product.purchasePrice || 0;
+                const newPurchasePrice = item.purchasePrice;
+                
+                // Use the stock level from *before* this transaction for the calculation.
+                // Treat any negative stock as 0 for a stable average calculation.
+                const oldPositiveStock = Math.max(0, stockBeforeInvoice);
+                
+                const totalStockAfterInvoice = oldPositiveStock + quantityFromInvoice;
+
+                if (totalStockAfterInvoice > 0) {
+                    const totalOldValue = oldPositiveStock * oldPurchasePrice;
+                    const totalNewValue = quantityFromInvoice * newPurchasePrice;
+                    const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalStockAfterInvoice;
+                    product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+                } else {
+                    // Fallback: This case is unlikely if quantityFromInvoice > 0, but safe to have.
+                    // If both old and new quantities are zero or less, the new price is most relevant.
+                    product.purchasePrice = newPurchasePrice;
+                }
             }
         }
     });
