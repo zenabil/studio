@@ -125,7 +125,6 @@ export function PosView() {
 
   // Synchronize cart data with the master product list from context
   useEffect(() => {
-    // Don't run if there are no sessions to sync.
     if (sessions.length === 0) {
       return;
     }
@@ -145,19 +144,24 @@ export function PosView() {
               return null; // Will be filtered out later.
             }
 
-            // Case 2: Product data is stale (name, price, or stock has changed).
+            // Case 2: Product data is stale (name or stock has changed). Price changes should not affect an active cart.
             const isStale =
               productFromDb.name !== cartItem.name ||
-              productFromDb.price !== cartItem.price ||
-              productFromDb.stock !== cartItem.stock ||
-              productFromDb.category !== cartItem.category;
+              productFromDb.category !== cartItem.category ||
+              productFromDb.stock !== cartItem.stock;
 
             if (isStale) {
               sessionCartChanged = true;
               // If stock was reduced externally, cap the cart quantity.
               const newQuantity = Math.min(cartItem.quantity, productFromDb.stock);
-              // Return the updated product data, but with the (potentially capped) quantity from the cart.
-              return { ...productFromDb, quantity: newQuantity };
+              // Return a merged item that preserves the original cart price,
+              // but takes updated info like name, category, and available stock.
+              return { 
+                  ...productFromDb, // Get latest data like name, category, barcodes, etc.
+                  price: cartItem.price, // CRITICAL: Preserve the price from when it was added to the cart.
+                  stock: productFromDb.stock, // Update to the latest available stock.
+                  quantity: newQuantity, // Cap the quantity to the new available stock.
+              };
             }
 
             // Case 3: Product is up-to-date.
@@ -185,7 +189,7 @@ export function PosView() {
 
       return currentSessions;
     });
-  }, [products]); // The effect should only depend on the source of truth: the products list.
+  }, [products]);
 
   const activeSession = useMemo(() => {
     if (!activeSessionId) return undefined;
@@ -523,7 +527,12 @@ export function PosView() {
       }
       if (event.key === 'F8') { event.preventDefault(); discountInputRef.current?.select(); }
       if (event.key === 'F9') { event.preventDefault(); amountPaidInputRef.current?.select(); }
-      if (event.key === 'F10') { event.preventDefault(); handleSaleCompletion(); }
+      if (event.key === 'F10') {
+        event.preventDefault();
+        if (activeSession && activeSession.cart.length > 0) {
+          handleSaleCompletion();
+        }
+      }
 
       if (event.ctrlKey && event.key.toLowerCase() === 'p') {
           event.preventDefault();
