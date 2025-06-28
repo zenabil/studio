@@ -256,6 +256,39 @@ export function PosView() {
       }
   };
 
+  const handleQuantityKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
+    const cart = activeSession?.cart;
+    if (!cart) return;
+
+    const commitChange = () => {
+        handleQuantityInputBlur(cart[currentIndex].id);
+    };
+
+    if (event.key === 'Enter' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        commitChange();
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < cart.length) {
+            quantityInputRefs.current[nextIndex]?.focus();
+            quantityInputRefs.current[nextIndex]?.select();
+        } else {
+            discountInputRef.current?.focus();
+            discountInputRef.current?.select();
+        }
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        commitChange();
+        const prevIndex = currentIndex - 1;
+        if (prevIndex >= 0) {
+            quantityInputRefs.current[prevIndex]?.focus();
+            quantityInputRefs.current[prevIndex]?.select();
+        } else {
+            barcodeInputRef.current?.focus();
+            barcodeInputRef.current?.select();
+        }
+    }
+  };
+
   const handleIncrementQuantity = (productId: string) => {
     const item = activeSession?.cart.find(i => i.id === productId);
     if (item) {
@@ -681,12 +714,7 @@ export function PosView() {
                                     value={cartQuantities[item.id] || ''}
                                     onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
                                     onBlur={() => handleQuantityInputBlur(item.id)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleQuantityInputBlur(item.id);
-                                            (e.target as HTMLInputElement).blur();
-                                        }
-                                    }}
+                                    onKeyDown={(e) => handleQuantityKeyDown(e, index)}
                                     className="h-8 text-center w-full px-1 text-sm bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary"
                                 />
                                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleIncrementQuantity(item.id)}>
@@ -718,7 +746,23 @@ export function PosView() {
                         <span>{t.pos.discount}</span>
                         <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
                     </div>
-                    <Input ref={discountInputRef} type="number" value={activeSession.discount || ''} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} className="h-8 w-24 text-right" />
+                    <Input 
+                        ref={discountInputRef} 
+                        type="number" 
+                        value={activeSession.discount || ''} 
+                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                        className="h-8 w-24 text-right" 
+                        onKeyDown={(e) => {
+                           if (e.key === 'ArrowUp') {
+                               e.preventDefault();
+                               const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
+                               if (lastCartItemIndex >= 0) {
+                                   quantityInputRefs.current[lastCartItemIndex]?.focus();
+                                   quantityInputRefs.current[lastCartItemIndex]?.select();
+                               }
+                           }
+                        }}
+                    />
                 </div>
             </div>
             <Separator className="my-4" />
@@ -740,7 +784,21 @@ export function PosView() {
                     <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
                 </div>
                 <div className="relative">
-                    <Input ref={amountPaidInputRef} type="number" placeholder={t.pos.amountPaid} value={activeSession.amountPaid || ''} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} className="pr-9" />
+                    <Input 
+                        ref={amountPaidInputRef} 
+                        type="number" 
+                        placeholder={t.pos.amountPaid} 
+                        value={activeSession.amountPaid || ''} 
+                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                        className="pr-9"
+                        onKeyDown={(e) => {
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                discountInputRef.current?.focus();
+                                discountInputRef.current?.select();
+                            }
+                        }}
+                    />
                     <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F9</kbd>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
