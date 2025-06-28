@@ -52,6 +52,7 @@ export const translations = {
       addedToCart: "a été ajouté au panier.",
       confirmCloseSaleTitle: "Fermer la vente ?",
       confirmCloseSaleMessage: "Cette vente a des articles dans le panier. Êtes-vous sûr de vouloir la fermer ? Cette action est irréversible.",
+      closeButton: "Fermer",
       noProductsFound: "Aucun produit trouvé.",
       tryDifferentKeywords: "Essayez de rechercher avec d'autres mots-clés.",
       outOfStock: "En rupture de stock",
@@ -337,6 +338,7 @@ export const translations = {
       editRecurringNameInfo: "Pour changer le nom d'une commande récurrente, veuillez d'abord la désépingler.",
       unpinConfirmationTitle: "Arrêter la commande récurrente ?",
       unpinConfirmationMessage: "Cela empêchera la commande d'être créée automatiquement chaque jour. Êtes-vous sûr de vouloir continuer ?",
+      unpinButton: "Désépingler",
     },
     errors: {
       title: "Erreur",
@@ -400,6 +402,7 @@ export const translations = {
       addedToCart: "تمت إضافته إلى السلة.",
       confirmCloseSaleTitle: "إغلاق البيع؟",
       confirmCloseSaleMessage: "هذه البيعة تحتوي على منتجات في السلة. هل أنت متأكد من رغبتك في إغلاقها؟ لا يمكن التراجع عن هذا الإجراء.",
+      closeButton: "إغلاق",
       noProductsFound: "لم يتم العثور على منتجات.",
       tryDifferentKeywords: "حاول البحث بكلمات مفتاحية مختلفة.",
       outOfStock: "نفذ من المخزون",
@@ -684,7 +687,8 @@ export const translations = {
       orderExists: "يوجد طلب بهذا الاسم لهذا اليوم بالفعل.",
       editRecurringNameInfo: "لتغيير اسم طلب متكرر، يرجى إلغاء تثبيته أولاً.",
       unpinConfirmationTitle: "إيقاف الطلب المتكرر؟",
-      unpinConfirmationMessage: "سيؤدي هذا إلى إيقاف إنشاء الطلب تلقائيًا كل يوم. هل أنت متأكد من رغبتك في المتابعة؟"
+      unpinConfirmationMessage: "سيؤدي هذا إلى إيقاف إنشاء الطلب تلقائيًا كل يوم. هل أنت متأكد من رغبتك في المتابعة؟",
+      unpinButton: "إلغاء التثبيت",
     },
     errors: {
       title: "خطأ",

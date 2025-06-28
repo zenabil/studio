@@ -344,6 +344,8 @@ export default function BakeryOrdersPage() {
         onConfirm={handleConfirmUnpin}
         title={t.bakeryOrders.unpinConfirmationTitle}
         description={t.bakeryOrders.unpinConfirmationMessage}
+        confirmText={t.bakeryOrders.unpinButton}
+        confirmVariant="default"
       />
       <ConfirmDialog
         isOpen={!!orderToDelete}

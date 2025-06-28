@@ -11,6 +11,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/contexts/language-context';
+import type { ButtonProps } from './ui/button';
+import { buttonVariants } from './ui/button';
+import { cn } from '@/lib/utils';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -18,6 +21,8 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  confirmText?: string;
+  confirmVariant?: ButtonProps['variant'];
 }
 
 export function ConfirmDialog({
@@ -26,6 +31,8 @@ export function ConfirmDialog({
   onConfirm,
   title,
   description,
+  confirmText,
+  confirmVariant = 'destructive',
 }: ConfirmDialogProps) {
   const { t } = useLanguage();
 
@@ -45,9 +52,9 @@ export function ConfirmDialog({
           <AlertDialogCancel onClick={onClose}>{t.customers.cancel}</AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className={cn(buttonVariants({ variant: confirmVariant }))}
           >
-            {t.products.delete}
+            {confirmText || t.products.delete}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
