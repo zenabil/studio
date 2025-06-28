@@ -417,20 +417,24 @@ export function PosView() {
   const categories = useMemo(() => ['all', ...Array.from(new Set(products.map((p) => p.category)))], [products]);
   
   const filteredProducts = useMemo(() => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
     return products
       .filter(
-        (p) =>
-          (selectedCategory === 'all' || p.category === selectedCategory) &&
-          p.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => {
-        const aHasBarcode = a.barcodes && a.barcodes.length > 0;
-        const bHasBarcode = b.barcodes && b.barcodes.length > 0;
-        if (aHasBarcode === bHasBarcode) {
-          return 0;
+        (p) => {
+          const categoryFilter = selectedCategory === 'all' || p.category === selectedCategory;
+          if (!categoryFilter) return false;
+
+          if (!lowerCaseSearchTerm) return true;
+
+          const nameMatch = p.name.toLowerCase().includes(lowerCaseSearchTerm);
+          const categoryMatch = p.category.toLowerCase().includes(lowerCaseSearchTerm);
+          const barcodeMatch = p.barcodes.some(b => b.toLowerCase().includes(lowerCaseSearchTerm));
+          
+          return nameMatch || categoryMatch || barcodeMatch;
         }
-        return aHasBarcode ? 1 : -1;
-      });
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [products, selectedCategory, searchTerm]);
   
   const selectedCustomer = customers.find(c => c.id === activeSession?.selectedCustomerId);
