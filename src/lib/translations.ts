@@ -94,6 +94,8 @@ export const translations = {
       boxPricePlaceholder: "Saisir le prix du carton",
       noResultsFound: "Aucun produit ne correspond à votre recherche.",
       noProductsYet: "Vous n'avez encore ajouté aucun produit.",
+      barcodeExists: "Ce code-barres est déjà utilisé par un autre produit.",
+      deleteErrorInUse: "Ce produit ne peut pas être supprimé car il est présent dans l'historique des ventes.",
     },
     customers: {
       title: "Gestion des Clients",
@@ -440,6 +442,8 @@ export const translations = {
       boxPricePlaceholder: "أدخل سعر الكرتون",
       noResultsFound: "لا توجد منتجات تطابق بحثك.",
       noProductsYet: "لم تقم بإضافة أي منتجات بعد.",
+      barcodeExists: "هذا الباركود مستخدم بالفعل لمنتج آخر.",
+      deleteErrorInUse: "لا يمكن حذف هذا المنتج لأنه موجود في سجل المبيعات.",
     },
     customers: {
       title: "إدارة العملاء",

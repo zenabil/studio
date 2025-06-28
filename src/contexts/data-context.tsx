@@ -119,6 +119,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [syncData]);
 
     const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
+        if (productData.barcode && productData.barcode.trim() !== '') {
+            const isBarcodeDuplicate = products.some(p => p.barcode === productData.barcode);
+            if (isBarcodeDuplicate) {
+                const errorMsg = t.products.barcodeExists;
+                toast({ variant: 'destructive', title: t.errors.title, description: errorMsg });
+                throw new Error(errorMsg);
+            }
+        }
+
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
             ...productData,
@@ -129,12 +138,30 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
+        if (productData.barcode && productData.barcode.trim() !== '') {
+            const isBarcodeDuplicate = products.some(p => p.id !== productId && p.barcode === productData.barcode);
+            if (isBarcodeDuplicate) {
+                const errorMsg = t.products.barcodeExists;
+                toast({ variant: 'destructive', title: t.errors.title, description: errorMsg });
+                throw new Error(errorMsg);
+            }
+        }
         await updateProductInDB(productId, productData);
         await syncData();
     };
 
     const deleteProduct = async (productId: string) => {
+        const isProductInSales = salesHistory.some(sale => sale.items.some(item => item.id === productId));
+        if (isProductInSales) {
+            toast({
+                variant: 'destructive',
+                title: t.errors.title,
+                description: t.products.deleteErrorInUse,
+            });
+            return;
+        }
         await deleteProductInDB(productId);
+        toast({ title: t.products.productDeleted });
         await syncData();
     };
 

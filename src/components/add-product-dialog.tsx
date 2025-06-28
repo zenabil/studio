@@ -28,7 +28,7 @@ import { useEffect } from 'react';
 interface AddProductDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: Omit<Product, 'id'>, id?:string) => void;
+  onSave: (product: Omit<Product, 'id'>, id?:string) => Promise<void>;
   productToEdit?: Product | null;
   initialBarcode?: string;
 }
@@ -93,10 +93,15 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     }
   }, [productToEdit, form, isOpen, initialBarcode]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values, productToEdit?.id);
-    form.reset();
-    onClose();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await onSave(values, productToEdit?.id);
+      form.reset();
+      onClose();
+    } catch (error) {
+      // Error is handled in context/page, just prevent dialog from closing
+      console.error("Failed to save product:", error);
+    }
   }
 
   return (

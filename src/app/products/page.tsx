@@ -52,17 +52,23 @@ export default function ProductsPage() {
     setEditingProduct(null);
   }
 
-  const handleSaveProduct = (productData: Omit<Product, 'id'>, productId?: string) => {
-    if (productId) {
-      updateProduct(productId, productData);
-      toast({
-        title: t.products.productUpdated,
-      });
-    } else {
-      addProduct(productData);
-      toast({
-        title: t.products.productAdded,
-      });
+  const handleSaveProduct = async (productData: Omit<Product, 'id'>, productId?: string) => {
+    try {
+      if (productId) {
+        await updateProduct(productId, productData);
+        toast({
+          title: t.products.productUpdated,
+        });
+      } else {
+        await addProduct(productData);
+        toast({
+          title: t.products.productAdded,
+        });
+      }
+    } catch (error) {
+      // The context shows the error toast.
+      // We just need to re-throw so the dialog can catch it and not close.
+      throw error;
     }
   };
 
@@ -77,9 +83,7 @@ export default function ProductsPage() {
   const handleDeleteProduct = () => {
       if (!productToDelete) return;
       deleteProduct(productToDelete.id);
-      toast({
-          title: t.products.productDeleted,
-      });
+      // Toast is shown in context if deletion is blocked
       handleCloseDeleteDialog();
   };
 
