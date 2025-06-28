@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface AddProductDialogProps {
   isOpen: boolean;
@@ -31,26 +31,50 @@ interface AddProductDialogProps {
   onSave: (product: Omit<Product, 'id'>, id?:string) => Promise<void>;
   productToEdit?: Product | null;
   initialBarcode?: string;
+  products: Product[];
 }
 
-const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  category: z.string().min(2, { message: 'Category must be at least 2 characters.' }),
-  purchasePrice: z.coerce.number().min(0, { message: 'Purchase price must be a positive number.' }),
-  price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
-  stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
-  minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
-  quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  barcodes: z.string(),
-});
-
-export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode }: AddProductDialogProps) {
+export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode, products }: AddProductDialogProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
 
+  const formSchema = useMemo(() => {
+    return z.object({
+      name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+      category: z.string().min(2, { message: 'Category must be at least 2 characters.' }),
+      purchasePrice: z.coerce.number().min(0, { message: 'Purchase price must be a positive number.' }),
+      price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
+      stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
+      minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
+      quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+      boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+      barcodes: z.string(),
+    }).superRefine((data, ctx) => {
+        const barcodes = data.barcodes.split(',').map(b => b.trim()).filter(Boolean);
+        if (barcodes.length === 0) return;
+
+        const allOtherBarcodes = new Set(
+          products
+            .filter(p => p.id !== productToEdit?.id)
+            .flatMap(p => p.barcodes)
+        );
+
+        for (const barcode of barcodes) {
+          if (allOtherBarcodes.has(barcode)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t.products.barcodeExists.replace('{barcode}', barcode),
+              path: ['barcodes'],
+            });
+            return; // Stop after first error
+          }
+        }
+    });
+  }, [products, productToEdit, t]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       category: '',
@@ -67,6 +91,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
   useEffect(() => {
     if(isOpen) {
       setIsSaving(false);
+      form.trigger(); // Trigger validation on open
       if (productToEdit) {
         form.reset({
           name: productToEdit.name,

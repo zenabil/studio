@@ -168,6 +168,7 @@ export default function ProductsPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveProduct}
         productToEdit={editingProduct}
+        products={products}
       />
       <ConfirmDialog
         isOpen={!!productToDelete}

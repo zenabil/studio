@@ -795,6 +795,7 @@ export function PosView() {
         onSave={handleSaveProduct}
         productToEdit={null}
         initialBarcode={newProductBarcode}
+        products={products}
       />
        <BarcodeScannerDialog
         isOpen={isScannerOpen}
