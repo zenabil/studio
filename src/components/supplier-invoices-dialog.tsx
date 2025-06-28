@@ -28,57 +28,58 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
   const { settings } = useSettings();
   const { supplierInvoices: allInvoices } = useData();
 
-  const transactions = useMemo(() => {
-    if (!supplier) return { transactions: [], startingBalance: 0 };
+  const { transactions: transactionHistory, startingBalance } = useMemo(() => {
+    if (!supplier) {
+      return { transactions: [], startingBalance: 0 };
+    }
 
     const supplierTransactions = allInvoices
       .filter(inv => inv.supplierId === supplier.id)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const statement: { id: string; date: string; description: string; debit: number; credit: number; balance: number; }[] = [];
-    let balanceBeforeTransaction = supplier.balance || 0;
+    // Calculate the total change in balance from all recorded transactions for this supplier
+    const totalBalanceChange = supplierTransactions.reduce((acc, tx) => {
+        const balanceChangeForTx = tx.isPayment 
+            ? -(tx.amountPaid || 0) // Payments decrease the balance
+            : tx.totalAmount - (tx.amountPaid || 0); // Invoices increase balance by the unpaid amount
+        return acc + balanceChangeForTx;
+    }, 0);
 
-    // Iterate backwards from the most recent transaction to calculate historical balances
-    for (let i = supplierTransactions.length - 1; i >= 0; i--) {
-      const tx = supplierTransactions[i];
-      const balanceAfterTransaction = balanceBeforeTransaction;
-      
+    // Calculate the balance before any of these transactions took place
+    const startBalance = (supplier.balance || 0) - totalBalanceChange;
+    let runningBalance = startBalance;
+
+    const statement = supplierTransactions.map(tx => {
+      let debit = 0;
+      let credit = 0;
+      let description = '';
+
       if (tx.isPayment) {
-        // This was a payment, so to get the balance *before*, we add the amount back.
-        balanceBeforeTransaction += tx.totalAmount;
-        statement.unshift({
-            id: tx.id,
-            date: tx.date,
-            description: t.suppliers.payment,
-            debit: 0,
-            credit: tx.amountPaid || 0,
-            balance: balanceAfterTransaction
-        });
+        description = t.suppliers.payment;
+        credit = tx.amountPaid || 0;
+        debit = 0;
       } else {
-        // This was an invoice.
-        const amountPaid = tx.amountPaid || 0;
-        const balanceIncrease = tx.totalAmount - amountPaid;
-
-        // to get the balance *before*, we subtract the balance increase.
-        balanceBeforeTransaction -= balanceIncrease;
-        
-        statement.unshift({
-            id: tx.id,
-            date: tx.date,
-            description: `${t.suppliers.invoice} #${tx.id.split('-')[1]}`,
-            debit: tx.totalAmount,
-            credit: amountPaid,
-            balance: balanceAfterTransaction
-        });
+        description = `${t.suppliers.invoice} #${tx.id.split('-')[1]}`;
+        debit = tx.totalAmount;
+        credit = tx.amountPaid || 0;
       }
-    }
-    
-    return { transactions: statement, startingBalance: balanceBeforeTransaction };
+      
+      runningBalance += (debit - credit);
+
+      return {
+        id: tx.id,
+        date: tx.date,
+        description,
+        debit,
+        credit,
+        balance: runningBalance,
+      };
+    });
+
+    return { transactions: statement, startingBalance: startBalance };
   }, [supplier, allInvoices, t]);
 
   if (!supplier) return null;
-
-  const { transactions: transactionHistory, startingBalance } = transactions;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
