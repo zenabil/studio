@@ -70,13 +70,14 @@ export function PosView() {
   const { products, customers, addSaleRecord, addProduct, isLoading } = useData();
   const { settings } = useSettings();
   
+  const [sessions, setSessions] = useState<SaleSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
-  const [sessions, setSessions] = useState<SaleSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [cartQuantities, setCartQuantities] = useState<{ [key: string]: string }>({});
 
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
@@ -119,6 +120,70 @@ export function PosView() {
       setActiveSessionId(initialSession.id);
     }
   }, [createNewSession, sessions.length]);
+
+  // Synchronize cart data with the master product list from context
+  useEffect(() => {
+    // Don't run if there are no sessions to sync.
+    if (sessions.length === 0) {
+      return;
+    }
+
+    setSessions(currentSessions => {
+      let overallChanges = false;
+      const newSyncedSessions = currentSessions.map(session => {
+        let sessionCartChanged = false;
+
+        const newCart = session.cart
+          .map(cartItem => {
+            const productFromDb = products.find(p => p.id === cartItem.id);
+
+            // Case 1: Product has been deleted.
+            if (!productFromDb) {
+              sessionCartChanged = true;
+              return null; // Will be filtered out later.
+            }
+
+            // Case 2: Product data is stale (name, price, or stock has changed).
+            const isStale =
+              productFromDb.name !== cartItem.name ||
+              productFromDb.price !== cartItem.price ||
+              productFromDb.stock !== cartItem.stock ||
+              productFromDb.category !== cartItem.category;
+
+            if (isStale) {
+              sessionCartChanged = true;
+              // If stock was reduced externally, cap the cart quantity.
+              const newQuantity = Math.min(cartItem.quantity, productFromDb.stock);
+              // Return the updated product data, but with the (potentially capped) quantity from the cart.
+              return { ...productFromDb, quantity: newQuantity };
+            }
+
+            // Case 3: Product is up-to-date.
+            return cartItem;
+          })
+          .filter((item): item is CartItem => item !== null);
+
+        // Check if the cart has materially changed.
+        if (newCart.length !== session.cart.length) {
+            sessionCartChanged = true;
+        }
+
+        if (sessionCartChanged) {
+            overallChanges = true;
+            return { ...session, cart: newCart };
+        }
+        
+        return session;
+      });
+
+      // Only trigger a re-render if any of the sessions were actually modified.
+      if (overallChanges) {
+        return newSyncedSessions;
+      }
+
+      return currentSessions;
+    });
+  }, [products]); // The effect should only depend on the source of truth: the products list.
 
   const activeSession = useMemo(() => {
     if (!activeSessionId) return undefined;
