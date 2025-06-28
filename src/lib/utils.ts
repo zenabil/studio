@@ -107,24 +107,34 @@ export const calculateUpdatedProductsForInvoice = (
   invoiceItems: SupplierInvoiceItem[],
   updateMasterPrices: boolean
 ): Product[] => {
+  // Create a deep copy to avoid modifying the original array in memory.
   const updatedProducts = JSON.parse(JSON.stringify(currentProducts)) as Product[];
 
   invoiceItems.forEach(item => {
-    const product = updatedProducts.find(p => p.id === item.productId);
-    if (product) {
-      const stockBeforeInvoice = product.stock;
+    // Find the product to update in our new array.
+    const productToUpdate = updatedProducts.find(p => p.id === item.productId);
+    // Find the original, unmodified product state for accurate calculations.
+    const originalProduct = currentProducts.find(p => p.id === item.productId);
+
+    if (productToUpdate && originalProduct) {
+      const stockBeforeInvoice = originalProduct.stock;
       const quantityFromInvoice = item.quantity;
       
-      product.stock += quantityFromInvoice;
+      // 1. Update stock using the original stock value.
+      productToUpdate.stock = stockBeforeInvoice + quantityFromInvoice;
 
+      // 2. Update prices.
       if (updateMasterPrices) {
-        product.purchasePrice = item.purchasePrice;
-        if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
-        if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
+        // Directly overwrite the prices with the new ones from the invoice.
+        productToUpdate.purchasePrice = item.purchasePrice;
+        if (item.boxPrice !== undefined) productToUpdate.boxPrice = item.boxPrice;
+        if (item.quantityPerBox !== undefined) productToUpdate.quantityPerBox = item.quantityPerBox;
       } else {
-        const oldPurchasePrice = product.purchasePrice || 0;
+        // Calculate the new weighted average purchase price.
+        const oldPurchasePrice = originalProduct.purchasePrice || 0;
         const newPurchasePrice = item.purchasePrice;
         
+        // Use non-negative stock for weighted average calculation to avoid issues with negative stock values.
         const oldPositiveStock = Math.max(0, stockBeforeInvoice);
         const totalStockAfterInvoice = oldPositiveStock + quantityFromInvoice;
 
@@ -132,9 +142,11 @@ export const calculateUpdatedProductsForInvoice = (
           const totalOldValue = oldPositiveStock * oldPurchasePrice;
           const totalNewValue = quantityFromInvoice * newPurchasePrice;
           const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalStockAfterInvoice;
-          product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+          // Round to 2 decimal places to avoid floating point inaccuracies.
+          productToUpdate.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
         } else {
-          product.purchasePrice = newPurchasePrice;
+          // If total stock is zero or less, just take the new price.
+          productToUpdate.purchasePrice = newPurchasePrice;
         }
       }
     }
