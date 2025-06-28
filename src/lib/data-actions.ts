@@ -283,7 +283,9 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
             product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
             if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
             if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
-            if (item.barcode !== undefined) product.barcodes = [item.barcode];
+            if (item.barcode !== undefined && !product.barcodes.includes(item.barcode)) {
+                product.barcodes.push(item.barcode);
+            }
         }
     });
 

@@ -58,6 +58,7 @@ export const translations = {
       confirmCloseSaleMessage: "Cette vente a des articles dans le panier. Êtes-vous sûr de vouloir la fermer ? Cette action est irréversible.",
       noProductsFound: "Aucun produit trouvé.",
       tryDifferentKeywords: "Essayez de rechercher avec d'autres mots-clés.",
+      outOfStock: "En rupture de stock",
     },
     products: {
       title: "Gestion des Produits",
@@ -414,6 +415,7 @@ export const translations = {
       confirmCloseSaleMessage: "هذه البيعة تحتوي على منتجات في السلة. هل أنت متأكد من رغبتك في إغلاقها؟ لا يمكن التراجع عن هذا الإجراء.",
       noProductsFound: "لم يتم العثور على منتجات.",
       tryDifferentKeywords: "حاول البحث بكلمات مفتاحية مختلفة.",
+      outOfStock: "نفذ من المخزون",
     },
     products: {
       title: "إدارة المنتجات",

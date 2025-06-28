@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer, Wallet, ChevronsUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddSupplierDialog } from '@/components/add-supplier-dialog';
-import { AddSupplierInvoiceDialog } from '@/add-supplier-invoice-dialog';
+import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
 import { SupplierInvoicesDialog } from '@/components/supplier-invoices-dialog';
 import { SupplierRestockListDialog } from '@/components/supplier-restock-list-dialog';
 import Loading from '@/app/loading';
