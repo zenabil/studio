@@ -231,6 +231,7 @@ export const translations = {
         calculateAverage: "Calculer le coût moyen pondéré",
         doNotUpdate: "Ne pas mettre à jour le prix",
         noItemsAdded: "Aucun article n'a encore été ajouté. Cliquez sur 'Ajouter un article' pour commencer.",
+        addNewProduct: "Ajouter un nouveau produit",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -590,6 +591,7 @@ export const translations = {
         calculateAverage: "حساب متوسط التكلفة المرجح",
         doNotUpdate: "عدم تحديث السعر",
         noItemsAdded: "لم تتم إضافة أي عناصر بعد. انقر فوق 'إضافة عنصر' للبدء.",
+        addNewProduct: "إضافة منتج جديد",
     },
     reports: {
       title: "التقارير والتحليلات",
