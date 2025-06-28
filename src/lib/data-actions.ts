@@ -108,7 +108,8 @@ export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
 }
 export async function getLicenseKeys(): Promise<string[]> {
     try {
-        return readData(LICENSE_KEYS_FILE, initialLicenseKeys);
+        const fileContent = await fs.readFile(LICENSE_KEYS_FILE, 'utf-8');
+        return JSON.parse(fileContent);
     } catch(e) {
         return initialLicenseKeys;
     }
@@ -287,16 +288,22 @@ export async function processSupplierInvoice(data: { supplierId: string; items: 
                 // Calculate and update weighted average purchase price
                 const oldPurchasePrice = product.purchasePrice || 0;
                 const newPurchasePrice = item.purchasePrice;
-                const totalNewStock = oldStock + newQuantity;
-
-                let newWeightedAveragePrice = newPurchasePrice;
-                if (oldStock > 0 && totalNewStock > 0) {
-                    const totalOldValue = oldStock * oldPurchasePrice;
-                    const totalNewValue = newQuantity * newPurchasePrice;
-                    newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalNewStock;
-                }
                 
-                product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+                // Robust weighted average calculation
+                const oldPositiveStock = Math.max(0, oldStock);
+                const totalPositiveStockAfterInvoice = oldPositiveStock + newQuantity;
+
+                if (totalPositiveStockAfterInvoice > 0) {
+                    const totalOldValue = oldPositiveStock * oldPurchasePrice;
+                    const totalNewValue = newQuantity * newPurchasePrice;
+                    const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalPositiveStockAfterInvoice;
+                    product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+                } else {
+                    // Fallback: This case is unlikely if newQuantity > 0, but safe to have.
+                    // If stock was negative and the new quantity doesn't make it positive,
+                    // the new purchase price is the most relevant.
+                    product.purchasePrice = newPurchasePrice;
+                }
             }
         }
     });
@@ -390,7 +397,9 @@ export async function saveSupplierInvoices(invoices: SupplierInvoice[]): Promise
     return writeData(SUPPLIER_INVOICES_FILE, invoices);
 }
 export async function saveLicenseKeys(keys: string[]): Promise<void> {
-    return writeData(LICENSE_KEYS_FILE, keys);
+    const dataToWrite = JSON.stringify(keys, null, 2);
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(LICENSE_KEYS_FILE, dataToWrite);
 }
 
 export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[] }) {
