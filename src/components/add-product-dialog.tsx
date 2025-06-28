@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -31,10 +32,11 @@ interface AddProductDialogProps {
   onSave: (product: Omit<Product, 'id'>, id?:string) => Promise<void>;
   productToEdit?: Product | null;
   initialBarcode?: string;
+  initialName?: string;
   products: Product[];
 }
 
-export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode, products }: AddProductDialogProps) {
+export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode, initialName, products }: AddProductDialogProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -127,7 +129,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
         });
       } else {
         form.reset({
-          name: '',
+          name: initialName || '',
           category: '',
           purchasePrice: 0,
           price: 0,
@@ -139,7 +141,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
         });
       }
     }
-  }, [productToEdit, form, isOpen, initialBarcode]);
+  }, [productToEdit, form, isOpen, initialBarcode, initialName]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSaving(true);

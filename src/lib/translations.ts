@@ -1,3 +1,4 @@
+
 export type Translation = {
   [key: string]: any;
 };
@@ -60,6 +61,7 @@ export const translations = {
       stockAdjustedMessage: "La quantité pour {productName} a été ajustée à {newQty} en raison de changements de stock.",
       productRemovedTitle: "Produit supprimé",
       productRemovedMessage: "{productName} a été retiré du panier car il n'existe plus.",
+      addProductButton: "Ajouter '{productName}' comme nouveau produit",
     },
     products: {
       title: "Gestion des Produits",
@@ -434,6 +436,7 @@ export const translations = {
       stockAdjustedMessage: "تم تعديل كمية {productName} إلى {newQty} بسبب تغيرات في المخزون.",
       productRemovedTitle: "تمت إزالة المنتج",
       productRemovedMessage: "تمت إزالة {productName} من السلة لأنه لم يعد موجودًا.",
+      addProductButton: "إضافة '{productName}' كمنتج جديد",
     },
     products: {
       title: "إدارة المنتجات",

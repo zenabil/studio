@@ -87,13 +87,14 @@ export function PosView() {
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
   const [newProductBarcode, setNewProductBarcode] = useState('');
+  const [newProductName, setNewProductName] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const customerComboboxRef = useRef<HTMLButtonElement>(null);
   const discountInputRef = useRef<HTMLInputElement>(null);
-  const amountPaidInputRef = useRef<HTMLInputElement>(null);
+  const amountPaidInputRef = useRef<HTMLInputElement | null>(null);
   const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cartEndRef = useRef<HTMLTableRowElement | null>(null);
   
@@ -720,6 +721,19 @@ export function PosView() {
                     <Search className="w-16 h-16 mb-4 opacity-50" />
                     <p className="font-semibold text-lg">{t.pos.noProductsFound}</p>
                     <p className="text-sm">{t.pos.tryDifferentKeywords}</p>
+                    {searchTerm && (
+                        <Button
+                          variant="outline"
+                          className="mt-4"
+                          onClick={() => {
+                            setNewProductName(searchTerm);
+                            setIsAddProductDialogOpen(true);
+                          }}
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          {t.pos.addProductButton.replace('{productName}', searchTerm)}
+                        </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -923,10 +937,12 @@ export function PosView() {
         onClose={() => {
           setIsAddProductDialogOpen(false);
           setNewProductBarcode('');
+          setNewProductName('');
         }}
         onSave={handleSaveProduct}
         productToEdit={null}
         initialBarcode={newProductBarcode}
+        initialName={newProductName}
         products={products}
       />
       <AddCustomerDialog
