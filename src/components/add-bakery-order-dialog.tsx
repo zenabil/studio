@@ -28,10 +28,11 @@ import type { BakeryOrder } from '@/lib/data';
 interface AddBakeryOrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => Promise<void>;
+  onSave: (orderData: { name: string; quantity: number }, orderId?: string) => Promise<void>;
+  orderToEdit?: BakeryOrder | null;
 }
 
-export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrderDialogProps) {
+export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: AddBakeryOrderDialogProps) {
   const { t } = useLanguage();
 
   const formSchema = z.object({
@@ -49,16 +50,23 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrder
 
   useEffect(() => {
     if (isOpen) {
-      form.reset({
-        name: '',
-        quantity: 1,
-      });
+      if (orderToEdit) {
+        form.reset({
+          name: orderToEdit.name,
+          quantity: orderToEdit.quantity,
+        });
+      } else {
+        form.reset({
+          name: '',
+          quantity: 1,
+        });
+      }
     }
-  }, [form, isOpen]);
+  }, [isOpen, orderToEdit, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await onSave(values);
+      await onSave(values, orderToEdit?.id);
       form.reset();
       onClose();
     } catch (error) {
@@ -72,7 +80,7 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave }: AddBakeryOrder
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t.bakeryOrders.newOrder}</DialogTitle>
+          <DialogTitle>{orderToEdit ? t.bakeryOrders.editOrder : t.bakeryOrders.newOrder}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

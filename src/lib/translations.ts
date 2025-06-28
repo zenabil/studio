@@ -309,10 +309,11 @@ export const translations = {
       invalidKey: "La clé de licence fournie n'est pas valide. Veuillez réessayer."
     },
     bakeryOrders: {
-      title: "Commandes Mخبز",
+      title: "Commandes Boulangerie",
       description: "Gérez les commandes de pain et de pâtisseries du jour ici.",
       todaysOrders: "Commandes du jour",
       addOrder: "Ajouter une commande",
+      editOrder: "Modifier la commande",
       date: "Date",
       name: "Nom",
       quantity: "Quantité",
@@ -665,6 +666,7 @@ export const translations = {
       description: "إدارة طلبات الخبز والمعجنات اليومية من هنا.",
       todaysOrders: "طلبات اليوم",
       addOrder: "إضافة طلب",
+      editOrder: "تعديل الطلب",
       date: "التاريخ",
       name: "الاسم",
       quantity: "الكمية",

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, CheckCircle, XCircle, Package, PackageCheck, Star } from 'lucide-react';
+import { PlusCircle, Trash2, CheckCircle, XCircle, Package, PackageCheck, Star, Pencil } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { AddBakeryOrderDialog } from '@/components/add-bakery-order-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -60,6 +60,7 @@ export default function BakeryOrdersPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
+  const [orderToEdit, setOrderToEdit] = useState<BakeryOrder | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -128,9 +129,26 @@ export default function BakeryOrdersPage() {
     });
   }, [todaysOrders]);
 
-  const handleSaveOrder = async (orderData: Omit<BakeryOrder, 'id' | 'paid' | 'received' | 'date' | 'isRecurring'>) => {
+  const handleOpenAddDialog = () => {
+    setOrderToEdit(null);
+    setIsDialogOpen(true);
+  };
+  
+  const handleOpenEditDialog = (order: BakeryOrder) => {
+    setOrderToEdit(order);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setOrderToEdit(null);
+  }
+
+  const handleSaveOrder = async (orderData: { name: string; quantity: number }, orderId?: string) => {
     const orderNameLower = orderData.name.toLowerCase();
-    const orderExists = todaysOrders.some(order => order.name.toLowerCase() === orderNameLower);
+    const orderExists = todaysOrders.some(
+        order => order.name.toLowerCase() === orderNameLower && order.id !== orderId
+    );
 
     if (orderExists) {
         toast({
@@ -140,18 +158,21 @@ export default function BakeryOrdersPage() {
         });
         throw new Error(t.bakeryOrders.orderExists);
     }
-
-    const newOrderData = {
-      ...orderData,
-      date: new Date().toISOString(),
-      paid: false,
-      received: false,
-      isRecurring: false,
-    };
-    await addBakeryOrder(newOrderData);
-    toast({
-      title: t.bakeryOrders.orderAdded,
-    });
+    
+    if (orderId) {
+        await updateBakeryOrder(orderId, orderData);
+        toast({ title: t.bakeryOrders.orderUpdated });
+    } else {
+        const newOrderData = {
+          ...orderData,
+          date: new Date().toISOString(),
+          paid: false,
+          received: false,
+          isRecurring: false,
+        };
+        await addBakeryOrder(newOrderData);
+        toast({ title: t.bakeryOrders.orderAdded });
+    }
   };
 
   const handleToggleStatus = (orderId: string, field: 'paid' | 'received') => {
@@ -206,7 +227,7 @@ export default function BakeryOrdersPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold font-headline">{t.bakeryOrders.title}</h1>
-          <Button onClick={() => setIsDialogOpen(true)}>
+          <Button onClick={handleOpenAddDialog}>
             <PlusCircle className="mr-2 h-4 w-4" />
             {t.bakeryOrders.addOrder}
           </Button>
@@ -273,6 +294,9 @@ export default function BakeryOrdersPage() {
                        >
                         {order.received ? <Package className="h-4 w-4" /> : <PackageCheck className="h-4 w-4 text-success" />}
                        </Button>
+                       <Button variant="ghost" size="icon" title={t.bakeryOrders.editOrder} onClick={() => handleOpenEditDialog(order)}>
+                        <Pencil className="h-4 w-4" />
+                       </Button>
                        <Button 
                          variant="ghost" 
                          size="icon" 
@@ -297,8 +321,9 @@ export default function BakeryOrdersPage() {
       </div>
       <AddBakeryOrderDialog
         isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
+        onClose={handleCloseDialog}
         onSave={handleSaveOrder}
+        orderToEdit={orderToEdit}
       />
       <ConfirmDialog
         isOpen={!!orderToDelete}
