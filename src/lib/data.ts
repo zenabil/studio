@@ -93,7 +93,7 @@ export const customers: Customer[] = [
   { id: 'cust-01', name: 'Jean Dupont', email: 'jean.dupont@example.com', phone: '0612345678', spent: 150.75, balance: 0 },
   { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 275.50, balance: 25.50, settlementDay: 15 },
   { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 89.20, balance: 0 },
-  { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00, balance: -10.00 },
+  { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00, balance: 0 },
 ];
 
 export const bakeryOrders: BakeryOrder[] = [
@@ -105,6 +105,7 @@ export const bakeryOrders: BakeryOrder[] = [
 // To ensure data integrity, we find products by their static ID instead of relying on array index.
 const espresso = products.find(p => p.id === 'prod-01')!;
 const croissant = products.find(p => p.id === 'prod-02')!;
+const sandwich = products.find(p => p.id === 'prod-04')!;
 const caesarSalad = products.find(p => p.id === 'prod-05')!;
 
 export const salesHistory: SaleRecord[] = [
@@ -112,8 +113,24 @@ export const salesHistory: SaleRecord[] = [
         id: 'SALE-001',
         customerId: 'cust-02',
         items: [
-            { ...espresso, quantity: 2 },
-            { ...croissant, quantity: 1 }
+            { ...sandwich, quantity: 2 }, // 11.00
+            { ...caesarSalad, quantity: 1 }  // 7.20
+        ],
+        totals: {
+            subtotal: 18.20,
+            discount: 0.70,
+            total: 17.50,
+            amountPaid: 0,
+            balance: 17.50,
+        },
+        date: new Date('2023-10-25T09:15:00Z').toISOString()
+    },
+    {
+        id: 'SALE-002',
+        customerId: 'cust-02',
+        items: [
+            { ...espresso, quantity: 2 }, // 5.00
+            { ...croissant, quantity: 1 } // 1.80
         ],
         totals: {
             subtotal: 6.80,
@@ -125,7 +142,7 @@ export const salesHistory: SaleRecord[] = [
         date: new Date('2023-10-26T10:00:00Z').toISOString()
     },
     {
-        id: 'SALE-002',
+        id: 'SALE-003',
         customerId: 'cust-02',
         items: [
             { ...caesarSalad, quantity: 1 }
