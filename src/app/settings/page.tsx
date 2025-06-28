@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getBackupData } from '@/lib/data-actions';
@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const { restoreData } = useData();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activationCode, setActivationCode] = useState('');
 
   const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
     defaultValues: {
@@ -120,6 +121,24 @@ export default function SettingsPage() {
     };
     reader.readAsText(file);
   };
+  
+  const handleActivation = () => {
+    const PRO_KEY = 'PRO-LICENSE-2024';
+    if (activationCode === PRO_KEY) {
+      setSettings({ isActivated: true });
+      toast({
+        title: t.settings.activationSuccess,
+        description: t.settings.activationSuccessDesc,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: t.errors.title,
+        description: t.settings.activationError,
+      });
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -128,9 +147,10 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general">{t.settings.companyInfo}</TabsTrigger>
           <TabsTrigger value="appearance">{t.settings.appearance}</TabsTrigger>
+          <TabsTrigger value="license">{t.settings.license}</TabsTrigger>
           <TabsTrigger value="data">{t.settings.dataManagement}</TabsTrigger>
         </TabsList>
         
@@ -234,6 +254,44 @@ export default function SettingsPage() {
                       ))}
                       </div>
                 </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="license" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.settings.licenseActivation}</CardTitle>
+              <CardDescription>{t.settings.enterActivationCode}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="flex items-center gap-4 rounded-lg border p-4">
+                  {settings.isActivated ? (
+                      <ShieldCheck className="h-8 w-8 text-success" />
+                  ) : (
+                      <ShieldAlert className="h-8 w-8 text-destructive" />
+                  )}
+                  <div>
+                      <h3 className="font-semibold">{t.settings.licenseStatus}</h3>
+                      <p className="text-sm text-muted-foreground">
+                          {settings.isActivated ? t.settings.proVersion : t.settings.trialVersion}
+                      </p>
+                  </div>
+              </div>
+              {!settings.isActivated && (
+                <div className="space-y-2">
+                    <Label htmlFor="activationCode">{t.settings.activationCode}</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                          id="activationCode" 
+                          value={activationCode}
+                          onChange={(e) => setActivationCode(e.target.value)}
+                          placeholder="XXXX-XXXX-XXXX-XXXX"
+                        />
+                        <Button onClick={handleActivation}>{t.settings.activate}</Button>
+                    </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
