@@ -691,7 +691,10 @@ export function PosView() {
       />
       <AddProductDialog
         isOpen={isAddProductDialogOpen}
-        onClose={() => setIsAddProductDialogOpen(false)}
+        onClose={() => {
+          setIsAddProductDialogOpen(false);
+          setNewProductBarcode('');
+        }}
         onSave={handleSaveProduct}
         productToEdit={null}
         initialBarcode={newProductBarcode}

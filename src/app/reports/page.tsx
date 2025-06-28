@@ -26,7 +26,6 @@ import { useData } from '@/contexts/data-context';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import type { DateRange } from 'react-day-picker';
 import { DollarSign, ShoppingCart, Users, LineChart, Package, Crown } from 'lucide-react';
-import type { Customer } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
 import { calculateItemTotal } from '@/lib/utils';
@@ -54,7 +53,7 @@ export default function ReportsPage() {
     });
   }, [salesHistory, dateRange]);
   
-  const { totalProfits, totalSales, customersInPeriod, bestSellers, totalProductsSold } = useMemo(() => {
+  const { totalProfits, totalSales, uniqueCustomerCount, customersForChart, bestSellers, totalProductsSold } = useMemo(() => {
       let profit = 0;
       let sales = 0;
       let productsSoldCount = 0;
@@ -82,13 +81,34 @@ export default function ReportsPage() {
               productQuantities[item.id] += item.quantity;
           });
       });
+      
+      const uniqueCustomersInPeriod = Object.keys(customerSpending);
 
-      const customers: Customer[] = allCustomers
+      const customersWithSpending = allCustomers
+          .filter(c => uniqueCustomersInPeriod.includes(c.id))
           .map(c => ({
-              ...c,
+              name: c.name,
               spent: customerSpending[c.id] || 0,
           }))
-          .filter(c => c.spent > 0);
+          .sort((a,b) => b.spent - a.spent);
+
+      const topN = 5;
+      let chartData: { name: string; spent: number }[] = customersWithSpending;
+
+      if (customersWithSpending.length > topN) {
+          const topPortion = customersWithSpending.slice(0, topN);
+          const otherPortion = customersWithSpending.slice(topN);
+          const otherTotalSpent = otherPortion.reduce((sum, item) => sum + item.spent, 0);
+          
+          if (otherTotalSpent > 0) {
+            chartData = [
+              ...topPortion,
+              { name: t.reports.other, spent: otherTotalSpent }
+            ];
+          } else {
+             chartData = topPortion;
+          }
+      }
 
       const topSellers = Object.keys(productQuantities)
           .map(productId => {
@@ -104,11 +124,12 @@ export default function ReportsPage() {
       return { 
           totalProfits: profit, 
           totalSales: sales, 
-          customersInPeriod: customers,
+          uniqueCustomerCount: uniqueCustomersInPeriod.length,
+          customersForChart: chartData,
           bestSellers: topSellers,
           totalProductsSold: productsSoldCount
       };
-  }, [filteredSales, allCustomers, products]);
+  }, [filteredSales, allCustomers, products, t.reports.other]);
 
   if (isLoading) {
     return <Loading />;
@@ -155,7 +176,7 @@ export default function ReportsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+{customersInPeriod.length}</div>
+              <div className="text-2xl font-bold">+{uniqueCustomerCount}</div>
             </CardContent>
           </Card>
            <Card>
@@ -239,7 +260,7 @@ export default function ReportsPage() {
             <CardTitle>{t.reports.customerSales}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CustomerSalesChart customers={customersInPeriod} />
+            <CustomerSalesChart customers={customersForChart} />
           </CardContent>
         </Card>
       </div>

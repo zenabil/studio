@@ -1,13 +1,12 @@
 'use client';
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend } from 'recharts';
 import { useLanguage } from '@/contexts/language-context';
-import type { Customer } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import { Users } from 'lucide-react';
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
-export function CustomerSalesChart({ customers }: { customers: Customer[] }) {
+export function CustomerSalesChart({ customers }: { customers: { name: string; spent: number }[] }) {
     const { t } = useLanguage();
     const { settings } = useSettings();
 
