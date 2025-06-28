@@ -102,13 +102,18 @@ export const bakeryOrders: BakeryOrder[] = [
     { id: '3', date: new Date().toISOString(), name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false, isRecurring: false },
 ];
 
+// To ensure data integrity, we find products by their static ID instead of relying on array index.
+const espresso = products.find(p => p.id === 'prod-01')!;
+const croissant = products.find(p => p.id === 'prod-02')!;
+const caesarSalad = products.find(p => p.id === 'prod-05')!;
+
 export const salesHistory: SaleRecord[] = [
     {
         id: 'SALE-001',
         customerId: 'cust-02',
         items: [
-            { ...products[0], quantity: 2 },
-            { ...products[1], quantity: 1 }
+            { ...espresso, quantity: 2 },
+            { ...croissant, quantity: 1 }
         ],
         totals: {
             subtotal: 6.80,
@@ -123,7 +128,7 @@ export const salesHistory: SaleRecord[] = [
         id: 'SALE-002',
         customerId: 'cust-02',
         items: [
-            { ...products[4], quantity: 1 }
+            { ...caesarSalad, quantity: 1 }
         ],
         totals: {
             subtotal: 7.20,
