@@ -61,9 +61,9 @@ export default function SuppliersPage() {
     let sortableSuppliers = [...suppliers];
     
     sortableSuppliers = sortableSuppliers.filter(supplier =>
-      supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.productCategory.toLowerCase().includes(searchTerm.toLowerCase())
+      (supplier.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (supplier.phone || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (supplier.productCategory || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     sortableSuppliers.sort((a, b) => {
