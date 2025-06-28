@@ -132,14 +132,10 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
 
       if (!item) return;
 
-      if (fieldName === 'boxPrice' || fieldName === 'quantityPerBox') {
-        if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
-          const newPurchasePrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
-          if (newPurchasePrice !== item.purchasePrice) {
-            form.setValue(`items.${index}.purchasePrice`, newPurchasePrice, { shouldValidate: true });
-          }
-        }
-      } else if (fieldName === 'purchasePrice' && type === 'change') { 
+      // If the user manually changes the unit purchase price,
+      // and a box price was set, we clear the box price to avoid inconsistency,
+      // as the two are no longer linked for this item.
+      if (fieldName === 'purchasePrice' && type === 'change') { 
         if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
           const derivedPrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
           if (item.purchasePrice !== derivedPrice) {
