@@ -117,6 +117,7 @@ export default function ReportsPage() {
           .map(productId => {
               const product = products.find(p => p && p.id === productId);
               return {
+                  id: productId,
                   name: product?.name || 'Unknown Product',
                   quantity: productQuantities[productId],
               };
@@ -240,7 +241,7 @@ export default function ReportsPage() {
                         </TableHeader>
                         <TableBody>
                             {bestSellers.map((item, index) => (
-                                <TableRow key={item.name}>
+                                <TableRow key={item.id}>
                                     <TableCell className="font-medium flex items-center gap-2">
                                         {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
                                         {item.name}

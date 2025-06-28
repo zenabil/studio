@@ -91,6 +91,7 @@ export function PosView() {
   const discountInputRef = useRef<HTMLInputElement>(null);
   const amountPaidInputRef = useRef<HTMLInputElement>(null);
   const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const cartEndRef = useRef<HTMLTableRowElement | null>(null);
   
   const createNewSession = useCallback((): SaleSession => {
     const saleNumbers = sessions
@@ -286,6 +287,15 @@ export function PosView() {
         quantityInputRefs.current = quantityInputRefs.current.slice(0, activeSession.cart.length);
     }
   }, [activeSession]);
+
+  useEffect(() => {
+    // A small delay allows the DOM to update before we try to scroll
+    if (activeSession && activeSession.cart.length > 0) {
+        setTimeout(() => {
+            cartEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 0);
+    }
+  }, [activeSession?.cart.length]);
 
 
   const addToCart = useCallback((product: Product) => {
@@ -660,8 +670,10 @@ export function PosView() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeSession.cart.map((item, index) => (
-                      <TableRow key={item.id}>
+                    {activeSession.cart.map((item, index) => {
+                      const isLastItem = index === activeSession.cart.length - 1;
+                      return (
+                      <TableRow key={item.id} ref={isLastItem ? cartEndRef : null}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>
                            <div className="flex items-center justify-center gap-1 w-28 mx-auto">
@@ -696,7 +708,7 @@ export function PosView() {
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )})}
                   </TableBody>
                 </Table>
               )}
