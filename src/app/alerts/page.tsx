@@ -60,8 +60,11 @@ export default function AlertsPage() {
             }
             alertDueDate = relevantDueDate;
 
-        } else if (settings.paymentTermsDays > 0 && oldestDebtSale) {
-            alertDueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
+        } else if (settings.paymentTermsDays > 0) {
+            // If there's an oldest sale, use its date. Otherwise, use a very old date (epoch)
+            // to consider the debt immediately overdue.
+            const debtOriginDate = oldestDebtSale ? new Date(oldestDebtSale.date) : new Date(0);
+            alertDueDate = addDays(debtOriginDate, settings.paymentTermsDays);
         }
         
         if (alertDueDate) {
