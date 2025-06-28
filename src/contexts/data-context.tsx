@@ -50,7 +50,7 @@ interface DataContextType {
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id'>) => Promise<void>;
+    addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
@@ -114,7 +114,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         syncData();
     }, [syncData]);
 
-    const addProduct = async (productData: Omit<Product, 'id'>): Promise<void> => {
+    const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
         if (productData.barcodes && productData.barcodes.length > 0) {
             const allBarcodes = new Set(products.flatMap(p => p.barcodes));
             const duplicate = productData.barcodes.find(b => allBarcodes.has(b));
@@ -134,6 +134,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setProducts(current => [...current, newProduct]);
         try {
             await addProductInDB(newProduct);
+            return newProduct;
         } catch (e) {
             setProducts(previousProducts);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save product.'});

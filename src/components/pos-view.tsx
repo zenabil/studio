@@ -374,13 +374,19 @@ export function PosView() {
     }
   };
 
-  const handleSaveProduct = async (productData: Omit<Product, 'id'>) => {
-    await addProduct(productData);
-    toast({
-        title: t.products.productAdded,
-    });
-    setIsAddProductDialogOpen(false);
-    setNewProductBarcode('');
+  const handleSaveProduct = async (productData: Omit<Product, 'id'>, productId?: string) => {
+    // This function is called from the AddProductDialog. In this context, we only add
+    // new products, so we ignore the productId, which is for signature compatibility.
+    if (productId) return; 
+    
+    // addProduct throws an error on failure, which is caught by the dialog,
+    // preventing it from closing. On success, we get the new product.
+    const newProduct = await addProduct(productData);
+
+    toast({ title: t.products.productAdded });
+    
+    // Add the newly created product to the cart. The dialog will handle closing itself.
+    addToCart(newProduct);
   };
   
   useEffect(() => {
