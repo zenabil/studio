@@ -69,7 +69,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
   const [isSaving, setIsSaving] = useState(false);
 
   const supplierProducts = useMemo(() => {
-    return products.filter(p => p.category === supplier.productCategory);
+    return products.filter(p => p && p.category === supplier.productCategory);
   }, [products, supplier]);
 
   const form = useForm<z.infer<typeof formSchema>>({

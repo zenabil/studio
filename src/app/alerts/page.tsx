@@ -33,7 +33,7 @@ export default function AlertsPage() {
 
   const lowStockProducts = useMemo(() => {
     return products
-      .filter((product) => product.stock <= (product.minStock || 0))
+      .filter((product) => !!product && product.stock <= (product.minStock || 0))
       .sort((a, b) => a.stock - b.stock);
   }, [products]);
 
@@ -42,7 +42,7 @@ export default function AlertsPage() {
     today.setHours(0, 0, 0, 0);
     const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; isOverdue: boolean; }[] = [];
     
-    const indebtedCustomers = customers.filter(c => c.balance > 0);
+    const indebtedCustomers = customers.filter(c => !!c && c.balance > 0);
     const allSalesSorted = salesHistory.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (const customer of indebtedCustomers) {

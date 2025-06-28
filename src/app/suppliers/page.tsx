@@ -165,7 +165,7 @@ export default function SuppliersPage() {
 
   const handleGenerateRestockList = (supplier: Supplier) => {
     const lowStockProducts = products.filter(p =>
-        p.category === supplier.productCategory && p.stock <= (p.minStock || 0)
+        p && p.category === supplier.productCategory && p.stock <= (p.minStock || 0)
     );
     setLowStockProductsForSupplier(lowStockProducts);
     setSupplierForRestock(supplier);

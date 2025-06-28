@@ -40,7 +40,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
   const [isSaving, setIsSaving] = useState(false);
 
   const productCategories = useMemo(() => {
-    return [...new Set(products.map(p => p.category))];
+    return [...new Set(products.filter(p => !!p).map(p => p.category))];
   }, [products]);
 
   const formSchema = z.object({

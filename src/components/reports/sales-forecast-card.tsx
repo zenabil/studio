@@ -109,7 +109,7 @@ export function SalesForecastCard() {
             <SelectValue placeholder={t.reports.selectProduct} />
           </SelectTrigger>
           <SelectContent>
-            {products.map((product) => (
+            {products.filter(p => !!p).map((product) => (
               <SelectItem key={product.id} value={product.id}>
                 {product.name}
               </SelectItem>

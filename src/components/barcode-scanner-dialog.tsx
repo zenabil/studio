@@ -13,6 +13,7 @@ import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { useData } from '@/contexts/data-context';
 
 interface BarcodeScannerDialogProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface BarcodeScannerDialogProps {
 export function BarcodeScannerDialog({ isOpen, onClose, onScanSuccess }: BarcodeScannerDialogProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { products } = useData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const codeReaderRef = useRef(new BrowserMultiFormatReader());

@@ -54,7 +54,7 @@ export function SidebarNav() {
 
   const lowStockCount = useMemo(() => {
     if (isLoading) return 0;
-    return products.filter(p => p.stock <= (p.minStock || 0)).length;
+    return products.filter(p => p && p.stock <= (p.minStock || 0)).length;
   }, [products, isLoading]);
 
   const debtAlertCount = useMemo(() => {
@@ -63,10 +63,11 @@ export function SidebarNav() {
     today.setHours(0, 0, 0, 0);
     let count = 0;
     
-    const indebtedCustomers = customers.filter(c => c.balance > 0);
+    const indebtedCustomers = customers.filter(c => c && c.balance > 0);
     const allSalesSorted = salesHistory.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (const customer of indebtedCustomers) {
+        if (!customer) continue;
         let debtOriginDate: Date | null = null;
         let balanceTrace = customer.balance;
         

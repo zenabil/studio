@@ -48,6 +48,7 @@ export default function ReportsPage() {
     toDate.setHours(23, 59, 59, 999);
 
     return salesHistory.filter(sale => {
+        if (!sale) return false;
         const saleDate = new Date(sale.date);
         return saleDate >= fromDate && saleDate <= toDate;
     });
@@ -61,6 +62,7 @@ export default function ReportsPage() {
       const productQuantities: { [key: string]: number } = {};
 
       filteredSales.forEach(sale => {
+          if (!sale) return;
           sales += sale.totals.total;
           if (sale.customerId) {
               if (!customerSpending[sale.customerId]) {
@@ -70,6 +72,7 @@ export default function ReportsPage() {
           }
 
           sale.items.forEach(item => {
+              if (!item) return;
               const revenue = calculateItemTotal(item);
               const cost = (item.purchasePrice || 0) * item.quantity;
               profit += revenue - cost;
@@ -85,7 +88,7 @@ export default function ReportsPage() {
       const uniqueCustomersInPeriod = Object.keys(customerSpending);
 
       const customersWithSpending = allCustomers
-          .filter(c => uniqueCustomersInPeriod.includes(c.id))
+          .filter(c => !!c && uniqueCustomersInPeriod.includes(c.id))
           .map(c => ({
               name: c.name,
               spent: customerSpending[c.id] || 0,
@@ -112,7 +115,7 @@ export default function ReportsPage() {
 
       const topSellers = Object.keys(productQuantities)
           .map(productId => {
-              const product = products.find(p => p.id === productId);
+              const product = products.find(p => p && p.id === productId);
               return {
                   name: product?.name || 'Unknown Product',
                   quantity: productQuantities[productId],
