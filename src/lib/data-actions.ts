@@ -101,45 +101,51 @@ function decrypt(data: { iv: string; authTag: string; encryptedData: string }): 
     return decrypted.toString('utf8');
 }
 
-class DecryptionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'DecryptionError';
-  }
-}
 
-// Helper to read, decrypt and parse data, or seed if not present
+// Helper to read, decrypt and parse data, or seed if not present.
+// This function prioritizes data integrity. It will exit the process
+// if it detects a corrupt file or a decryption error, to prevent data loss.
 async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
+  let fileContent: string;
+
   try {
-    await fs.access(filePath); // Check if file exists
-    const fileContent = await fs.readFile(filePath, 'utf-8');
-    if (!fileContent) { // Handle empty file case
-        throw new Error("File is empty");
+    fileContent = await fs.readFile(filePath, 'utf-8');
+  } catch (error: any) {
+    // If the file doesn't exist, it's safe to create it with initial data.
+    if (error.code === 'ENOENT') {
+      console.warn(`File not found: ${filePath}. Seeding with initial data.`);
+      await writeData(filePath, initialData);
+      return initialData;
     }
-    
-    const parsedContent = JSON.parse(fileContent);
+    // Any other file reading error is unrecoverable and should stop the app.
+    console.error('\x1b[31m%s\x1b[0m', `FATAL: Unrecoverable error reading file ${filePath}. Shutting down to prevent data loss.`);
+    console.error(error);
+    process.exit(1);
+  }
 
-    try {
-        const decrypted = decrypt(parsedContent);
-        return JSON.parse(decrypted);
-    } catch (decryptionError) {
-        throw new DecryptionError('Decryption failed. This is likely due to an incorrect or missing ENCRYPTION_KEY.');
-    }
+  // Handle cases where the file exists but is empty.
+  if (!fileContent.trim()) {
+      console.warn(`Data file is empty: ${filePath}. Seeding with initial data.`);
+      await writeData(filePath, initialData);
+      return initialData;
+  }
+
+  let parsedContent;
+  try {
+    parsedContent = JSON.parse(fileContent);
   } catch (error) {
-     if (error instanceof DecryptionError) {
-      console.error('\x1b[31m%s\x1b[0m', 'FATAL ERROR: Failed to decrypt data file.');
-      console.error('\x1b[33m%s\x1b[0m', `File path: ${filePath}`);
-      console.error('\x1b[33m%s\x1b[0m', 'This usually means your ENCRYPTION_KEY in the .env file is incorrect or has changed.');
-      console.error('\x1b[33m%s\x1b[0m', 'To prevent data loss, the application will not overwrite the existing file.');
-      console.error('\x1b[33m%s\x1b[0m', 'Please restore your original ENCRYPTION_KEY and restart the application.');
-      // Safely exit to prevent data corruption.
-      process.exit(1); 
-    }
-
-    // For other errors (file not found, empty file, JSON parsing error), seed with initial data.
-    console.warn(`Could not read file ${filePath} or it was invalid. Seeding with initial data. Error: ${(error as Error).message}`);
-    await writeData(filePath, initialData);
-    return initialData;
+    console.error('\x1b[31m%s\x1b[0m', `FATAL: Data file is corrupt (invalid JSON): ${filePath}. Shutting down to prevent data loss.`);
+    console.error(error);
+    process.exit(1);
+  }
+  
+  try {
+    const decrypted = decrypt(parsedContent);
+    return JSON.parse(decrypted);
+  } catch (error) {
+    console.error('\x1b[31m%s\x1b[0m', `FATAL: Decryption failed for ${filePath}. This is likely due to an incorrect or missing ENCRYPTION_KEY. Shutting down to prevent data loss.`);
+    console.error(error);
+    process.exit(1);
   }
 }
 
@@ -440,3 +446,5 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
         await Promise.all(writePromises);
     });
 }
+
+    
