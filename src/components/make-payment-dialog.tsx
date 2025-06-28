@@ -24,19 +24,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 
 interface MakePaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (amount: number) => void;
+  onSave: (amount: number) => Promise<void>;
   customer: Customer | null;
 }
 
 export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePaymentDialogProps) {
   const { t } = useLanguage();
   const { settings } = useSettings();
+  const [isSaving, setIsSaving] = useState(false);
 
   const formSchema = z.object({
     amount: z.coerce
@@ -54,14 +55,24 @@ export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePay
   });
 
   useEffect(() => {
-    form.reset({ amount: undefined });
+    if (isOpen) {
+      setIsSaving(false);
+      form.reset({ amount: undefined });
+    }
   }, [isOpen, customer, form]);
 
   if (!customer) return null;
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values.amount);
-    onClose();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSaving(true);
+    try {
+      await onSave(values.amount);
+      onClose();
+    } catch(e) {
+        // Parent context will show toast
+    } finally {
+        setIsSaving(false);
+    }
   }
 
   return (
@@ -83,7 +94,7 @@ export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePay
                 <FormItem>
                   <FormLabel>{t.customers.paymentAmount}</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder={t.customers.amountPlaceholder} {...field} autoFocus onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
+                    <Input type="number" step="0.01" placeholder={t.customers.amountPlaceholder} {...field} autoFocus onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -91,11 +102,13 @@ export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePay
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" disabled={isSaving}>
                   {t.customers.cancel}
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={!form.formState.isValid}>{t.customers.save}</Button>
+              <Button type="submit" disabled={!form.formState.isValid || isSaving}>
+                {isSaving ? t.settings.saving : t.customers.save}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

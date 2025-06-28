@@ -122,12 +122,12 @@ export default function SuppliersPage() {
     setEditingSupplier(null);
   }
 
-  const handleSaveSupplier = (supplierData: Omit<Supplier, 'id' | 'balance'>, supplierId?: string) => {
+  const handleSaveSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>, supplierId?: string) => {
     if (supplierId) {
-      updateSupplier(supplierId, supplierData);
+      await updateSupplier(supplierId, supplierData);
       toast({ title: t.suppliers.supplierUpdated });
     } else {
-      addSupplier(supplierData);
+      await addSupplier(supplierData);
       toast({ title: t.suppliers.supplierAdded });
     }
   };
@@ -151,8 +151,8 @@ export default function SuppliersPage() {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handleSaveInvoice = (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
-    addSupplierInvoice(invoiceData);
+  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
+    await addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);
     setSupplierForInvoice(null);
@@ -171,9 +171,9 @@ export default function SuppliersPage() {
     setSupplierForRestock(supplier);
   };
   
-  const handleMakePayment = (amount: number) => {
+  const handleMakePayment = async (amount: number) => {
     if (!payingSupplier) return;
-    makePaymentToSupplier(payingSupplier.id, amount);
+    await makePaymentToSupplier(payingSupplier.id, amount);
     toast({ title: t.suppliers.paymentSuccess });
     setPayingSupplier(null);
   };

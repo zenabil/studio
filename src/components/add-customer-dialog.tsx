@@ -23,17 +23,18 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface AddCustomerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (customer: Omit<Customer, 'id' | 'spent' | 'balance'>, id?: string) => void;
+  onSave: (customer: Omit<Customer, 'id' | 'spent' | 'balance'>, id?: string) => Promise<void>;
   customerToEdit?: Customer | null;
 }
 
 export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: AddCustomerDialogProps) {
   const { t } = useLanguage();
+  const [isSaving, setIsSaving] = useState(false);
 
   const formSchema = z.object({
     name: z.string().min(2, { message: t.customers.nameMinLength }),
@@ -61,6 +62,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
 
   useEffect(() => {
     if (isOpen) {
+      setIsSaving(false);
       if (customerToEdit) {
         form.reset({
           name: customerToEdit.name,
@@ -79,10 +81,17 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
     }
   }, [customerToEdit, form, isOpen]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values, customerToEdit?.id);
-    form.reset();
-    onClose();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSaving(true);
+    try {
+      await onSave(values, customerToEdit?.id);
+      form.reset();
+      onClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -100,7 +109,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                 <FormItem>
                   <FormLabel>{t.customers.name}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.customers.namePlaceholder} {...field} />
+                    <Input placeholder={t.customers.namePlaceholder} {...field} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -113,7 +122,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                 <FormItem>
                   <FormLabel>{t.customers.email}</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder={t.customers.emailPlaceholder} {...field} />
+                    <Input type="email" placeholder={t.customers.emailPlaceholder} {...field} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -126,7 +135,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                 <FormItem>
                   <FormLabel>{t.customers.phone}</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder={t.customers.phonePlaceholder} {...field} />
+                    <Input type="tel" placeholder={t.customers.phonePlaceholder} {...field} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -139,7 +148,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
                 <FormItem>
                   <FormLabel>{t.customers.settlementDay}</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" max="31" placeholder={t.customers.settlementDayPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                    <Input type="number" min="1" max="31" placeholder={t.customers.settlementDayPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,11 +156,13 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: A
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" disabled={isSaving}>
                   {t.customers.cancel}
                 </Button>
               </DialogClose>
-              <Button type="submit">{t.customers.save}</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? t.settings.saving : t.customers.save}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

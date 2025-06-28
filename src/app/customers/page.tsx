@@ -111,14 +111,14 @@ export default function CustomersPage() {
     setEditingCustomer(null);
   }
 
-  const handleSaveCustomer = (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>, customerId?: string) => {
+  const handleSaveCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>, customerId?: string) => {
     if (customerId) {
-      updateCustomer(customerId, customerData);
+      await updateCustomer(customerId, customerData);
       toast({
         title: t.customers.customerUpdated,
       });
     } else {
-      addCustomer(customerData);
+      await addCustomer(customerData);
       toast({
         title: t.customers.customerAdded,
       });
@@ -139,10 +139,10 @@ export default function CustomersPage() {
     handleCloseDeleteDialog();
   };
   
-  const handleMakePayment = (amount: number) => {
+  const handleMakePayment = async (amount: number) => {
     if (!payingCustomer) return;
 
-    makePayment(payingCustomer.id, amount);
+    await makePayment(payingCustomer.id, amount);
     
     toast({
         title: t.customers.paymentSuccess,

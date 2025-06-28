@@ -223,7 +223,8 @@ export const translations = {
         noSuppliersYet: "Vous n'avez encore ajouté aucun fournisseur.",
         deleteErrorInUse: "Ce fournisseur ne peut pas être supprimé car il est lié à des factures existantes.",
         updateMasterPrices: "Mettre à jour les prix des produits",
-        updateMasterPricesDescription: "Sauvegarde les prix de cette facture comme nouveaux prix par défaut."
+        updateMasterPricesDescription: "Sauvegarde les prix de cette facture comme nouveaux prix par défaut.",
+        noItemsAdded: "Aucun article n'a encore été ajouté. Cliquez sur 'Ajouter un article' pour commencer.",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -290,6 +291,7 @@ export const translations = {
       licenseKey: "Clé de licence",
       activate: "Activer",
       save: "Enregistrer",
+      saving: "Enregistrement...",
       restoreSuccess: "Données restaurées avec succès.",
       restoreErrorTitle: "Erreur de Restauration",
       restoreErrorGeneric: "Impossible de lire le fichier.",
@@ -587,7 +589,8 @@ export const translations = {
         noSuppliersYet: "لم تقم بإضافة أي موردين بعد.",
         deleteErrorInUse: "لا يمكن حذف هذا المورد لأنه مرتبط بفواتير حالية.",
         updateMasterPrices: "تحديث أسعار المنتجات الرئيسية",
-        updateMasterPricesDescription: "حفظ أسعار هذه الفاتورة كالأسعار الافتراضية الجديدة."
+        updateMasterPricesDescription: "حفظ أسعار هذه الفاتورة كالأسعار الافتراضية الجديدة.",
+        noItemsAdded: "لم تتم إضافة أي عناصر بعد. انقر فوق 'إضافة عنصر' للبدء.",
     },
     reports: {
       title: "التقارير والتحليلات",
@@ -654,6 +657,7 @@ export const translations = {
       licenseKey: "مفتاح الترخيص",
       activate: "تفعيل",
       save: "حفظ",
+      saving: "جاري الحفظ...",
       restoreSuccess: "تم استعادة البيانات بنجاح.",
       restoreErrorTitle: "خطأ في الاستعادة",
       restoreErrorGeneric: "لا يمكن قراءة الملف.",

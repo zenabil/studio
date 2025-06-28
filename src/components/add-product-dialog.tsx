@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface AddProductDialogProps {
   isOpen: boolean;
@@ -47,6 +47,7 @@ const formSchema = z.object({
 
 export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode }: AddProductDialogProps) {
   const { t } = useLanguage();
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,6 +66,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
   
   useEffect(() => {
     if(isOpen) {
+      setIsSaving(false);
       if (productToEdit) {
         form.reset({
           name: productToEdit.name,
@@ -94,6 +96,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
   }, [productToEdit, form, isOpen, initialBarcode]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSaving(true);
     try {
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
       await onSave({ ...values, barcodes: barcodesArray }, productToEdit?.id);
@@ -102,6 +105,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     } catch (error) {
       // Error is handled in context/page, just prevent dialog from closing
       console.error("Failed to save product:", error);
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -120,7 +125,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                 <FormItem>
                   <FormLabel>{t.products.name}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.products.namePlaceholder} {...field} />
+                    <Input placeholder={t.products.namePlaceholder} {...field} disabled={isSaving}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,7 +138,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                 <FormItem>
                   <FormLabel>{t.products.category}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.products.categoryPlaceholder} {...field} />
+                    <Input placeholder={t.products.categoryPlaceholder} {...field} disabled={isSaving}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,7 +152,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                   <FormItem>
                     <FormLabel>{t.products.purchasePrice}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder={t.products.purchasePricePlaceholder} {...field} />
+                      <Input type="number" step="0.01" placeholder={t.products.purchasePricePlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -160,7 +165,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                   <FormItem>
                     <FormLabel>{t.products.price}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder={t.products.pricePlaceholder} {...field} />
+                      <Input type="number" step="0.01" placeholder={t.products.pricePlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -175,7 +180,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                   <FormItem>
                     <FormLabel>{t.products.stock}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} />
+                      <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -188,7 +193,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                   <FormItem>
                     <FormLabel>{t.products.minStock}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="1" placeholder={t.products.minStockPlaceholder} {...field} />
+                      <Input type="number" step="1" placeholder={t.products.minStockPlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -203,7 +208,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                   <FormItem>
                     <FormLabel>{t.products.quantityPerBox}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} />
+                      <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,7 +221,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                   <FormItem>
                     <FormLabel>{t.products.boxPrice}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder={t.products.boxPricePlaceholder} {...field} />
+                      <Input type="number" step="0.01" placeholder={t.products.boxPricePlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -230,7 +235,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                 <FormItem>
                   <FormLabel>{t.products.barcodes}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.products.barcodePlaceholder} {...field} />
+                    <Input placeholder={t.products.barcodePlaceholder} {...field} disabled={isSaving}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -238,11 +243,11 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" disabled={isSaving}>
                   {t.products.cancel}
                 </Button>
               </DialogClose>
-              <Button type="submit">{t.products.save}</Button>
+              <Button type="submit" disabled={isSaving}>{isSaving ? t.settings.saving : t.products.save}</Button>
             </DialogFooter>
           </form>
         </Form>

@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useData } from '@/contexts/data-context';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -46,7 +46,7 @@ interface AddSupplierInvoiceDialogProps {
 }
 
 const invoiceItemSchema = z.object({
-  productId: z.string().min(1),
+  productId: z.string().min(1, "Please select a product."),
   productName: z.string(),
   quantity: z.coerce.number().min(1),
   purchasePrice: z.coerce.number().min(0),
@@ -57,7 +57,7 @@ const invoiceItemSchema = z.object({
 
 const formSchema = z.object({
   supplierId: z.string(),
-  items: z.array(invoiceItemSchema).min(1),
+  items: z.array(invoiceItemSchema).min(1, "Please add at least one item to the invoice."),
   amountPaid: z.coerce.number().min(0).optional(),
   updateMasterPrices: z.boolean().default(false),
 });
@@ -66,6 +66,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
   const { t } = useLanguage();
   const { products } = useData();
   const { settings } = useSettings();
+  const [isSaving, setIsSaving] = useState(false);
 
   const supplierProducts = useMemo(() => {
     return products.filter(p => p.category === supplier.productCategory);
@@ -73,6 +74,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: {
       supplierId: supplier.id,
       items: [],
@@ -105,21 +107,16 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
       if (!item) return;
 
       if (fieldName === 'boxPrice' || fieldName === 'quantityPerBox') {
-        // If both box price and quantity are present, calculate the unit price
         if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
           const newPurchasePrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
-          // Only set value if it's different to prevent re-renders
           if (newPurchasePrice !== item.purchasePrice) {
             form.setValue(`items.${index}.purchasePrice`, newPurchasePrice, { shouldValidate: true });
           }
         }
-      } else if (fieldName === 'purchasePrice' && type === 'change') { // 'change' likely means user input
-        // When the unit price is changed manually, it should take precedence.
-        // We can verify this by checking if it differs from what the box price would calculate.
+      } else if (fieldName === 'purchasePrice' && type === 'change') { 
         if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
           const derivedPrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
           if (item.purchasePrice !== derivedPrice) {
-            // Since the user typed a new unit price, the box price is no longer the source of truth. Clear it.
             form.setValue(`items.${index}.boxPrice`, undefined, { shouldValidate: true });
           }
         }
@@ -131,9 +128,10 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
 
   useEffect(() => {
     if (isOpen) {
+      setIsSaving(false);
       form.reset({
         supplierId: supplier.id,
-        items: [{ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' }],
+        items: [],
         amountPaid: 0,
         updateMasterPrices: false,
       });
@@ -141,6 +139,9 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
   }, [isOpen, supplier, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSaving(true);
+    // onSave is not async, so we don't need a try/finally here.
+    // The parent component handles the async logic and closes the dialog.
     onSave(values);
   }
 
@@ -154,123 +155,131 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <ScrollArea className="h-72 pr-6">
-              <div className="space-y-4">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
-                    <div className="col-span-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.productId`}
-                        render={({ field }) => (
-                          <FormItem>
-                            {index === 0 && <FormLabel>{t.suppliers.product}</FormLabel>}
-                            <Select
-                              onValueChange={(value) => {
-                                const product = supplierProducts.find(p => p.id === value);
-                                field.onChange(value);
-                                form.setValue(`items.${index}.productName`, product?.name || '');
-                                form.setValue(`items.${index}.purchasePrice`, product?.purchasePrice || 0);
-                                form.setValue(`items.${index}.boxPrice`, product?.boxPrice);
-                                form.setValue(`items.${index}.quantityPerBox`, product?.quantityPerBox);
-                                form.setValue(`items.${index}.barcode`, product?.barcodes?.[0] || '');
-                              }}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t.suppliers.categoryPlaceholder} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {supplierProducts.length > 0 ? supplierProducts.map(p => (
-                                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                )) : <p className="p-2 text-sm text-muted-foreground">{t.suppliers.noProductsInCategory}</p>}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+              {fields.length === 0 ? (
+                 <div className="flex h-full items-center justify-center">
+                    <p className="text-muted-foreground">{t.suppliers.noItemsAdded}</p>
+                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-md">
+                      <div className="col-span-3">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.productId`}
+                          render={({ field }) => (
+                            <FormItem>
+                              {index === 0 && <FormLabel>{t.suppliers.product}</FormLabel>}
+                              <Select
+                                onValueChange={(value) => {
+                                  const product = supplierProducts.find(p => p.id === value);
+                                  field.onChange(value);
+                                  form.setValue(`items.${index}.productName`, product?.name || '');
+                                  form.setValue(`items.${index}.purchasePrice`, product?.purchasePrice || 0);
+                                  form.setValue(`items.${index}.boxPrice`, product?.boxPrice);
+                                  form.setValue(`items.${index}.quantityPerBox`, product?.quantityPerBox);
+                                  form.setValue(`items.${index}.barcode`, product?.barcodes?.[0] || '');
+                                }}
+                                defaultValue={field.value}
+                                disabled={isSaving}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t.suppliers.categoryPlaceholder} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {supplierProducts.length > 0 ? supplierProducts.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                  )) : <p className="p-2 text-sm text-muted-foreground">{t.suppliers.noProductsInCategory}</p>}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.barcode`}
+                          render={({ field }) => (
+                            <FormItem>
+                              {index === 0 && <FormLabel>{t.products.barcodes}</FormLabel>}
+                              <FormControl><Input type="text" {...field} readOnly disabled={isSaving} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              {index === 0 && <FormLabel>{t.suppliers.quantity}</FormLabel>}
+                              <FormControl><Input type="number" {...field} disabled={isSaving} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.purchasePrice`}
+                          render={({ field }) => (
+                            <FormItem>
+                              {index === 0 && <FormLabel>{t.products.purchasePrice}</FormLabel>}
+                              <FormControl><Input type="number" step="0.01" {...field} disabled={isSaving} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.boxPrice`}
+                          render={({ field }) => (
+                            <FormItem>
+                              {index === 0 && <FormLabel>{t.products.boxPrice}</FormLabel>}
+                              <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} disabled={isSaving} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.quantityPerBox`}
+                          render={({ field }) => (
+                            <FormItem>
+                              {index === 0 && <FormLabel>{t.products.quantityPerBox}</FormLabel>}
+                              <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} disabled={isSaving} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-1 flex items-center justify-end">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={isSaving}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
-                     <div className="col-span-2">
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.barcode`}
-                        render={({ field }) => (
-                          <FormItem>
-                            {index === 0 && <FormLabel>{t.products.barcodes}</FormLabel>}
-                            <FormControl><Input type="text" {...field} readOnly /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem>
-                            {index === 0 && <FormLabel>{t.suppliers.quantity}</FormLabel>}
-                            <FormControl><Input type="number" {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.purchasePrice`}
-                        render={({ field }) => (
-                          <FormItem>
-                            {index === 0 && <FormLabel>{t.products.purchasePrice}</FormLabel>}
-                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                     <div className="col-span-2">
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.boxPrice`}
-                        render={({ field }) => (
-                          <FormItem>
-                            {index === 0 && <FormLabel>{t.products.boxPrice}</FormLabel>}
-                            <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                     <div className="col-span-1">
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.quantityPerBox`}
-                        render={({ field }) => (
-                          <FormItem>
-                            {index === 0 && <FormLabel>{t.products.quantityPerBox}</FormLabel>}
-                            <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="col-span-1 flex items-center justify-end">
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="mt-2"
                 onClick={() => append({ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' })}
+                disabled={isSaving}
               >
                 {t.suppliers.addItem}
               </Button>
@@ -285,6 +294,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={field.onChange}
+                          disabled={isSaving}
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
@@ -304,7 +314,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         <FormItem className="flex items-center gap-2">
                             <FormLabel className="text-base">{t.pos.amountPaid}:</FormLabel>
                             <FormControl>
-                                <Input className="w-32 text-base" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                                <Input className="w-32 text-base" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -317,11 +327,13 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
             </div>
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" disabled={isSaving}>
                   {t.suppliers.cancel}
                 </Button>
               </DialogClose>
-              <Button type="submit">{t.suppliers.save}</Button>
+              <Button type="submit" disabled={!form.formState.isValid || isSaving}>
+                {isSaving ? t.settings.saving : t.suppliers.save}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

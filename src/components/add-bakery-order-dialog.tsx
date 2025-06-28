@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { BakeryOrder } from '@/lib/data';
 
 interface AddBakeryOrderDialogProps {
@@ -35,6 +35,7 @@ interface AddBakeryOrderDialogProps {
 
 export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: AddBakeryOrderDialogProps) {
   const { t } = useLanguage();
+  const [isSaving, setIsSaving] = useState(false);
   const isNameDisabled = !!orderToEdit?.isRecurring;
 
   const formSchema = z.object({
@@ -52,6 +53,7 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
 
   useEffect(() => {
     if (isOpen) {
+      setIsSaving(false);
       if (orderToEdit) {
         form.reset({
           name: orderToEdit.name,
@@ -67,6 +69,7 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
   }, [isOpen, orderToEdit, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSaving(true);
     try {
       await onSave(values, orderToEdit?.id);
       form.reset();
@@ -75,6 +78,8 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
       // Error is handled by the parent component (toast message)
       // We catch it here to prevent the dialog from closing on failure
       console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -93,7 +98,7 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
                 <FormItem>
                   <FormLabel>{t.bakeryOrders.name}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.bakeryOrders.namePlaceholder} {...field} disabled={isNameDisabled} />
+                    <Input placeholder={t.bakeryOrders.namePlaceholder} {...field} disabled={isNameDisabled || isSaving} />
                   </FormControl>
                   {isNameDisabled && (
                     <FormDescription>
@@ -111,7 +116,7 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
                 <FormItem>
                   <FormLabel>{t.bakeryOrders.quantity}</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" placeholder={t.bakeryOrders.quantityPlaceholder} {...field} />
+                    <Input type="number" min="1" placeholder={t.bakeryOrders.quantityPlaceholder} {...field} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,11 +124,11 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" disabled={isSaving}>
                   {t.customers.cancel}
                 </Button>
               </DialogClose>
-              <Button type="submit">{t.customers.save}</Button>
+              <Button type="submit" disabled={isSaving}>{isSaving ? t.settings.saving : t.customers.save}</Button>
             </DialogFooter>
           </form>
         </Form>

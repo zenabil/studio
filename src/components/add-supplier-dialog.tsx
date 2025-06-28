@@ -23,20 +23,21 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Checkbox } from './ui/checkbox';
 import { useData } from '@/contexts/data-context';
 
 interface AddSupplierDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (supplier: Omit<Supplier, 'id' | 'balance'>, id?: string) => void;
+  onSave: (supplier: Omit<Supplier, 'id' | 'balance'>, id?: string) => Promise<void>;
   supplierToEdit?: Supplier | null;
 }
 
 export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: AddSupplierDialogProps) {
   const { t } = useLanguage();
   const { products } = useData();
+  const [isSaving, setIsSaving] = useState(false);
 
   const productCategories = useMemo(() => {
     return [...new Set(products.map(p => p.category))];
@@ -71,6 +72,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
 
   useEffect(() => {
     if (isOpen) {
+      setIsSaving(false);
       if (supplierToEdit) {
         form.reset({
           name: supplierToEdit.name,
@@ -89,10 +91,17 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
     }
   }, [supplierToEdit, form, isOpen]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values, supplierToEdit?.id);
-    form.reset();
-    onClose();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSaving(true);
+    try {
+      await onSave(values, supplierToEdit?.id);
+      form.reset();
+      onClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -110,7 +119,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
                 <FormItem>
                   <FormLabel>{t.suppliers.name}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.suppliers.namePlaceholder} {...field} />
+                    <Input placeholder={t.suppliers.namePlaceholder} {...field} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -123,7 +132,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
                 <FormItem>
                   <FormLabel>{t.suppliers.phone}</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder={t.suppliers.phonePlaceholder} {...field} />
+                    <Input type="tel" placeholder={t.suppliers.phonePlaceholder} {...field} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -140,6 +149,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
                       placeholder={t.suppliers.categoryPlaceholder}
                       {...field}
                       list="product-categories"
+                      disabled={isSaving}
                     />
                   </FormControl>
                   <datalist id="product-categories">
@@ -181,6 +191,7 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
                                                                   )
                                                               );
                                                       }}
+                                                      disabled={isSaving}
                                                   />
                                               </FormControl>
                                               <FormLabel className="font-normal cursor-pointer">
@@ -198,11 +209,13 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" disabled={isSaving}>
                   {t.suppliers.cancel}
                 </Button>
               </DialogClose>
-              <Button type="submit">{t.suppliers.save}</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? t.settings.saving : t.suppliers.save}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
