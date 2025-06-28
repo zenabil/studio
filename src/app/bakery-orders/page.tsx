@@ -61,6 +61,7 @@ export default function BakeryOrdersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<BakeryOrder | null>(null);
+  const [orderToUnpin, setOrderToUnpin] = useState<BakeryOrder | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -217,6 +218,12 @@ export default function BakeryOrdersPage() {
     });
     handleCloseDeleteDialog();
   };
+  
+  const handleConfirmUnpin = () => {
+    if (!orderToUnpin) return;
+    handleToggleRecurring(orderToUnpin.id);
+    setOrderToUnpin(null);
+  };
 
   if (isLoading) {
       return <Loading />;
@@ -274,7 +281,13 @@ export default function BakeryOrdersPage() {
                          variant="ghost" 
                          size="icon" 
                          title={order.isRecurring ? t.bakeryOrders.unpin : t.bakeryOrders.pin}
-                         onClick={() => handleToggleRecurring(order.id)}
+                         onClick={() => {
+                            if (order.isRecurring) {
+                                setOrderToUnpin(order);
+                            } else {
+                                handleToggleRecurring(order.id);
+                            }
+                         }}
                        >
                          <Star className={cn("h-4 w-4", order.isRecurring ? "text-yellow-500 fill-current" : "text-muted-foreground")} />
                        </Button>
@@ -324,6 +337,13 @@ export default function BakeryOrdersPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveOrder}
         orderToEdit={orderToEdit}
+      />
+      <ConfirmDialog
+        isOpen={!!orderToUnpin}
+        onClose={() => setOrderToUnpin(null)}
+        onConfirm={handleConfirmUnpin}
+        title={t.bakeryOrders.unpinConfirmationTitle}
+        description={t.bakeryOrders.unpinConfirmationMessage}
       />
       <ConfirmDialog
         isOpen={!!orderToDelete}

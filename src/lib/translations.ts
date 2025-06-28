@@ -350,7 +350,9 @@ export const translations = {
       orderPinned: "Commande épinglée pour les jours suivants.",
       orderUnpinned: "Commande non récurrente.",
       orderExists: "Une commande avec ce nom existe déjà pour aujourd'hui.",
-      editRecurringNameInfo: "Pour changer le nom d'une commande récurrente, veuillez d'abord la désépingler."
+      editRecurringNameInfo: "Pour changer le nom d'une commande récurrente, veuillez d'abord la désépingler.",
+      unpinConfirmationTitle: "Arrêter la commande récurrente ?",
+      unpinConfirmationMessage: "Cela empêchera la commande d'être créée automatiquement chaque jour. Êtes-vous sûr de vouloir continuer ?",
     },
     errors: {
       title: "Erreur",
@@ -711,7 +713,9 @@ export const translations = {
       orderPinned: "تم تثبيت الطلب للأيام القادمة.",
       orderUnpinned: "الطلب غير متكرر.",
       orderExists: "يوجد طلب بهذا الاسم لهذا اليوم بالفعل.",
-      editRecurringNameInfo: "لتغيير اسم طلب متكرر، يرجى إلغاء تثبيته أولاً."
+      editRecurringNameInfo: "لتغيير اسم طلب متكرر، يرجى إلغاء تثبيته أولاً.",
+      unpinConfirmationTitle: "إيقاف الطلب المتكرر؟",
+      unpinConfirmationMessage: "سيؤدي هذا إلى إيقاف إنشاء الطلب تلقائيًا كل يوم. هل أنت متأكد من رغبتك في المتابعة؟"
     },
     errors: {
       title: "خطأ",
