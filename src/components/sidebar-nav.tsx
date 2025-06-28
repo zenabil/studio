@@ -34,7 +34,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
 import { useData } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, set, isBefore, addMonths } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
@@ -45,21 +45,19 @@ export function SidebarNav() {
   const { t, dir } = useLanguage();
   const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
-  const [lowStockCount, setLowStockCount] = useState(0);
-  const [debtAlertCount, setDebtAlertCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (isLoading) return;
-    setLowStockCount(products.filter(p => p.stock <= (p.minStock || 0)).length);
+  const lowStockCount = useMemo(() => {
+    if (isLoading) return 0;
+    return products.filter(p => p.stock <= (p.minStock || 0)).length;
   }, [products, isLoading]);
 
-  useEffect(() => {
-    if (isLoading) return;
+  const debtAlertCount = useMemo(() => {
+    if (isLoading) return 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let count = 0;
@@ -106,7 +104,7 @@ export function SidebarNav() {
           }
         }
     }
-    setDebtAlertCount(count);
+    return count;
   }, [customers, salesHistory, settings.paymentTermsDays, isLoading]);
 
   const totalAlertCount = lowStockCount + debtAlertCount;
