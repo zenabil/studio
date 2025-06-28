@@ -355,9 +355,9 @@ export async function processPayment(data: { customerId: string; amount: number;
     });
 }
 
-export async function processSupplierInvoice(data: { invoice: SupplierInvoice, updateMasterPrices: boolean }): Promise<void> {
+export async function processSupplierInvoice(data: { invoice: SupplierInvoice, priceUpdateStrategy: string }): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
-        const { invoice, updateMasterPrices } = data;
+        const { invoice, priceUpdateStrategy } = data;
         
         let [products, invoices, suppliers] = await Promise.all([
             getProducts(),
@@ -366,7 +366,7 @@ export async function processSupplierInvoice(data: { invoice: SupplierInvoice, u
         ]);
         
         // Update product stock and prices using the centralized utility function
-        products = calculateUpdatedProductsForInvoice(products, invoice.items, updateMasterPrices);
+        products = calculateUpdatedProductsForInvoice(products, invoice.items, priceUpdateStrategy as 'master' | 'average' | 'none');
 
         invoices.push(invoice);
 

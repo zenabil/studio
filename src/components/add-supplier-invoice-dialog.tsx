@@ -23,6 +23,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription as FormDescriptionRadix,
 } from '@/components/ui/form';
 import { useEffect, useMemo, useState } from 'react';
 import { useData } from '@/contexts/data-context';
@@ -38,7 +39,7 @@ import {
 } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
-import { Checkbox } from './ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface AddSupplierInvoiceDialogProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ const formSchema = z.object({
   supplierId: z.string(),
   items: z.array(invoiceItemSchema).min(1, "Please add at least one item to the invoice."),
   amountPaid: z.coerce.number().min(0).optional(),
-  updateMasterPrices: z.boolean().default(false),
+  priceUpdateStrategy: z.string().default('average'),
 });
 
 export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: AddSupplierInvoiceDialogProps) {
@@ -99,7 +100,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
       supplierId: supplier.id,
       items: [],
       amountPaid: 0,
-      updateMasterPrices: false,
+      priceUpdateStrategy: 'average',
     },
   });
 
@@ -153,7 +154,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
         supplierId: supplier.id,
         items: [],
         amountPaid: 0,
-        updateMasterPrices: false,
+        priceUpdateStrategy: 'average',
       });
     }
   }, [isOpen, supplier, form]);
@@ -313,29 +314,54 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                 {t.suppliers.addItem}
               </Button>
             </ScrollArea>
-             <div className="flex justify-between items-center gap-8 pr-6 border-t pt-4">
+             <div className="flex justify-between items-start gap-8 pr-6 border-t pt-4">
                  <FormField
                   control={form.control}
-                  name="updateMasterPrices"
+                  name="priceUpdateStrategy"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                    <FormItem className="space-y-3">
+                      <FormLabel>{t.suppliers.updateMasterPrices}</FormLabel>
+                      <FormDescriptionRadix>
+                        {t.suppliers.updateMasterPricesDescription}
+                      </FormDescriptionRadix>
                       <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-2"
                           disabled={isSaving}
-                        />
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0 rtl:space-x-reverse">
+                            <FormControl>
+                              <RadioGroupItem value="master" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {t.suppliers.updateMaster}
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0 rtl:space-x-reverse">
+                            <FormControl>
+                              <RadioGroupItem value="average" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {t.suppliers.calculateAverage}
+                            </FormLabel>
+                          </FormItem>
+                           <FormItem className="flex items-center space-x-3 space-y-0 rtl:space-x-reverse">
+                            <FormControl>
+                              <RadioGroupItem value="none" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {t.suppliers.doNotUpdate}
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
                       </FormControl>
-                      <div className="space-y-1 leading-none">
-                         <FormLabel className="cursor-pointer">
-                           {t.suppliers.updateMasterPrices}
-                         </FormLabel>
-                         <p className="text-xs text-muted-foreground">{t.suppliers.updateMasterPricesDescription}</p>
-                      </div>
+                      <FormMessage />
                     </FormItem>
                   )}
                  />
-                <div className="flex items-center gap-8">
+                <div className="flex flex-col items-end gap-4">
                     <FormField
                         control={form.control}
                         name="amountPaid"

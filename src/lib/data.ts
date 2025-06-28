@@ -58,6 +58,7 @@ export interface SupplierInvoice {
   totalAmount: number;
   amountPaid?: number;
   isPayment?: boolean;
+  priceUpdateStrategy?: 'master' | 'average' | 'none';
 }
 
 export interface CartItem extends Product {
@@ -136,8 +137,8 @@ export const salesHistory: SaleRecord[] = [
             subtotal: 6.80,
             discount: 0,
             total: 6.80,
-            amountPaid: 5.00,
-            balance: 1.80
+            amountPaid: 0,
+            balance: 6.80
         },
         date: new Date('2023-10-26T10:00:00Z').toISOString()
     },
@@ -151,8 +152,8 @@ export const salesHistory: SaleRecord[] = [
             subtotal: 7.20,
             discount: 1,
             total: 6.20,
-            amountPaid: 0,
-            balance: 6.20
+            amountPaid: 5.00,
+            balance: 1.20
         },
         date: new Date('2023-10-27T12:30:00Z').toISOString()
     }

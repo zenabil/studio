@@ -67,7 +67,7 @@ interface DataContextType {
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
-    addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => Promise<void>;
+    addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
 }
 
@@ -355,7 +355,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
     };
     
-    const addSupplierInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
+    const addSupplierInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
         const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
         const newInvoice: SupplierInvoice = { id: `SINV-${new Date().getTime()}`, date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
         
@@ -366,11 +366,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setSuppliers(current => current.map(s => s.id === invoiceData.supplierId ? { ...s, balance: (s.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0)) } : s));
         
         // Use the centralized utility function for product updates
-        const updatedProducts = calculateUpdatedProductsForInvoice(products, invoiceData.items, invoiceData.updateMasterPrices);
+        const updatedProducts = calculateUpdatedProductsForInvoice(products, invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
         setProducts(updatedProducts);
 
         try {
-            await processSupplierInvoice({ invoice: newInvoice, updateMasterPrices: invoiceData.updateMasterPrices });
+            await processSupplierInvoice({ invoice: newInvoice, priceUpdateStrategy: invoiceData.priceUpdateStrategy });
         } catch (error) {
             setProducts(previousStates.products);
             setSuppliers(previousStates.suppliers);

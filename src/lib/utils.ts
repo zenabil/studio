@@ -129,7 +129,7 @@ export const calculateDebtAlerts = (
 export const calculateUpdatedProductsForInvoice = (
   currentProducts: Product[],
   invoiceItems: SupplierInvoiceItem[],
-  updateMasterPrices: boolean
+  priceUpdateStrategy: 'master' | 'average' | 'none'
 ): Product[] => {
   // Create a deep copy to avoid modifying the original array in memory.
   const updatedProducts = JSON.parse(JSON.stringify(currentProducts)) as Product[];
@@ -147,13 +147,13 @@ export const calculateUpdatedProductsForInvoice = (
       // 1. Update stock using the original stock value.
       productToUpdate.stock = stockBeforeInvoice + quantityFromInvoice;
 
-      // 2. Update prices.
-      if (updateMasterPrices) {
+      // 2. Update prices based on the selected strategy.
+      if (priceUpdateStrategy === 'master') {
         // Directly overwrite the prices with the new ones from the invoice.
         productToUpdate.purchasePrice = item.purchasePrice;
         if (item.boxPrice !== undefined) productToUpdate.boxPrice = item.boxPrice;
         if (item.quantityPerBox !== undefined) productToUpdate.quantityPerBox = item.quantityPerBox;
-      } else {
+      } else if (priceUpdateStrategy === 'average') {
         // Calculate the new weighted average purchase price.
         const oldPurchasePrice = originalProduct.purchasePrice || 0;
         const newPurchasePrice = item.purchasePrice;
@@ -173,6 +173,7 @@ export const calculateUpdatedProductsForInvoice = (
           productToUpdate.purchasePrice = newPurchasePrice;
         }
       }
+      // If strategy is 'none', we do nothing to the price fields.
     }
   });
 
