@@ -65,6 +65,8 @@ interface SaleSession {
   discount: number;
 }
 
+const SESSIONS_STORAGE_KEY = 'frucio-pos-sessions';
+
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -93,8 +95,8 @@ export function PosView() {
   const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cartEndRef = useRef<HTMLTableRowElement | null>(null);
   
-  const createNewSession = useCallback((): SaleSession => {
-    const saleNumbers = sessions
+  const createNewSession = useCallback((currentSessions: SaleSession[]): SaleSession => {
+    const saleNumbers = currentSessions
       .map(s => {
         const saleName = t.pos.sale.replace(/ /g, '\\s'); 
         const regex = new RegExp(`^${saleName}\\s(\\d+)$`, 'i');
@@ -103,7 +105,7 @@ export function PosView() {
       })
       .filter(n => n > 0);
   
-    const nextNumber = saleNumbers.length > 0 ? Math.max(...saleNumbers) + 1 : sessions.length + 1;
+    const nextNumber = saleNumbers.length > 0 ? Math.max(...saleNumbers) + 1 : currentSessions.length + 1;
   
     return {
       id: `session-${new Date().getTime()}-${nextNumber}`,
@@ -113,15 +115,51 @@ export function PosView() {
       amountPaid: 0,
       discount: 0,
     };
-  }, [sessions, t.pos.sale]);
+  }, [t.pos.sale]);
 
+  // This effect runs ONCE on mount to load sessions from localStorage or create a new one.
   useEffect(() => {
-    if (typeof window !== 'undefined' && sessions.length === 0) {
-      const initialSession = createNewSession();
-      setSessions([initialSession]);
-      setActiveSessionId(initialSession.id);
+    if (typeof window !== 'undefined') {
+      try {
+        const savedSessionsRaw = localStorage.getItem(SESSIONS_STORAGE_KEY);
+        if (savedSessionsRaw) {
+          const savedData = JSON.parse(savedSessionsRaw);
+          // Basic validation
+          if (Array.isArray(savedData.sessions) && savedData.sessions.length > 0 && typeof savedData.activeSessionId === 'string') {
+            setSessions(savedData.sessions);
+            setActiveSessionId(savedData.activeSessionId);
+            return; // Exit after successful load
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load sessions from localStorage", error);
+        localStorage.removeItem(SESSIONS_STORAGE_KEY); // Clear corrupted data
+      }
     }
-  }, [createNewSession, sessions.length]);
+    
+    // If no saved data, or if loading failed, create a new initial session.
+    const initialSession = createNewSession([]);
+    setSessions([initialSession]);
+    setActiveSessionId(initialSession.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createNewSession]);
+
+  // This effect runs whenever sessions or the active session ID changes, to save the state.
+  useEffect(() => {
+    // Don't save on the initial empty state before hydration.
+    if (typeof window !== 'undefined' && sessions.length > 0) {
+        try {
+            const dataToSave = {
+                sessions,
+                activeSessionId,
+            };
+            localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(dataToSave));
+        } catch (error) {
+            console.error("Failed to save sessions to localStorage", error);
+        }
+    }
+  }, [sessions, activeSessionId]);
+
 
   // Synchronize cart data with the master product list from context
   useEffect(() => {
@@ -281,7 +319,8 @@ export function PosView() {
     if (!cart) return;
 
     const commitChange = () => {
-        handleQuantityInputBlur(cart[currentIndex].id);
+        const item = cart[currentIndex];
+        if (item) handleQuantityInputBlur(item.id);
     };
 
     if (event.key === 'Enter' || event.key === 'ArrowDown') {
@@ -393,26 +432,28 @@ export function PosView() {
   }, [activeSessionId, updateActiveSession]);
   
   const addNewSession = () => {
-    const newSession = createNewSession();
+    const newSession = createNewSession(sessions);
     setSessions(prev => [...prev, newSession]);
     setActiveSessionId(newSession.id);
   };
   
   const closeSession = useCallback((sessionId: string) => {
-      const updatedSessions = sessions.filter(s => s.id !== sessionId);
+      setSessions(prevSessions => {
+          const updatedSessions = prevSessions.filter(s => s.id !== sessionId);
 
-      if (updatedSessions.length === 0) {
-          const newSession = createNewSession();
-          setSessions([newSession]);
-          setActiveSessionId(newSession.id);
-      } else {
-          setSessions(updatedSessions);
-          if (activeSessionId === sessionId) {
-              setActiveSessionId(updatedSessions[0].id);
+          if (updatedSessions.length === 0) {
+              const newSession = createNewSession(updatedSessions);
+              setActiveSessionId(newSession.id);
+              return [newSession];
+          } else {
+              if (activeSessionId === sessionId) {
+                  setActiveSessionId(updatedSessions[0].id);
+              }
+              return updatedSessions;
           }
-      }
+      });
       setSessionToDelete(null);
-  }, [sessions, activeSessionId, createNewSession]);
+  }, [activeSessionId, createNewSession]);
 
   const handleCloseSession = (sessionId: string) => {
       const session = sessions.find(s => s.id === sessionId);
@@ -779,6 +820,10 @@ export function PosView() {
                                    quantityInputRefs.current[lastCartItemIndex]?.focus();
                                    quantityInputRefs.current[lastCartItemIndex]?.select();
                                }
+                           } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                               e.preventDefault();
+                               amountPaidInputRef.current?.focus();
+                               amountPaidInputRef.current?.select();
                            }
                         }}
                     />
