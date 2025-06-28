@@ -74,10 +74,11 @@ export function SalesForecastCard() {
       setForecast(result);
     } catch (error) {
       console.error("Sales forecast failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "";
       toast({
         variant: 'destructive',
         title: t.errors.title,
-        description: t.errors.forecastError,
+        description: errorMessage.includes('API key') ? t.errors.apiKeyMissing : t.errors.forecastError,
       });
     } finally {
       setIsLoading(false);

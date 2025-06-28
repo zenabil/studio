@@ -41,12 +41,11 @@ const SummarizeSalesOutputSchema = z.object({
 });
 export type SummarizeSalesOutput = z.infer<typeof SummarizeSalesOutputSchema>;
 
-export async function summarizeSalesFlow(input: SummarizeSalesInput): Promise<SummarizeSalesOutput> {
-  const prompt = ai.definePrompt({
-    name: 'summarizeSalesPrompt',
-    input: { schema: SummarizeSalesInputSchema },
-    output: { schema: SummarizeSalesOutputSchema },
-    prompt: `You are a professional business analyst. Your task is to provide a concise summary and analysis of the following sales data for a small business. The summary should be in markdown format.
+const summarizeSalesPrompt = ai.definePrompt({
+  name: 'summarizeSalesPrompt',
+  input: { schema: SummarizeSalesInputSchema },
+  output: { schema: SummarizeSalesOutputSchema },
+  prompt: `You are a professional business analyst. Your task is to provide a concise summary and analysis of the following sales data for a small business. The summary should be in markdown format.
 
 Data for the period from {{dateRange.from}} to {{#if dateRange.to}}{{dateRange.to}}{{else}}{{dateRange.from}}{{/if}}:
 
@@ -75,9 +74,14 @@ Based on the data above, please provide a summary that includes:
 4.  One or two actionable recommendations for the business owner based on this data.
 
 The tone should be professional, encouraging, and easy to understand for a non-expert. Use markdown for formatting (e.g., bolding, bullet points).`,
-  });
+});
 
-  const { output } = await prompt(input);
+export async function summarizeSalesFlow(input: SummarizeSalesInput): Promise<SummarizeSalesOutput> {
+  if (!process.env.GOOGLE_API_KEY) {
+    throw new Error('API key is not configured.');
+  }
+
+  const { output } = await summarizeSalesPrompt(input);
   if (!output) {
       throw new Error('Failed to get a summary from the AI model.');
   }

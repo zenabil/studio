@@ -28,12 +28,11 @@ const SalesForecastOutputSchema = z.object({
 });
 export type SalesForecastOutput = z.infer<typeof SalesForecastOutputSchema>;
 
-export async function salesForecastFlow(input: SalesForecastInput): Promise<SalesForecastOutput> {
-  const prompt = ai.definePrompt({
-    name: 'salesForecastPrompt',
-    input: { schema: SalesForecastInputSchema },
-    output: { schema: SalesForecastOutputSchema },
-    prompt: `You are a data analyst specializing in retail sales forecasting.
+const salesForecastPrompt = ai.definePrompt({
+  name: 'salesForecastPrompt',
+  input: { schema: SalesForecastInputSchema },
+  output: { schema: SalesForecastOutputSchema },
+  prompt: `You are a data analyst specializing in retail sales forecasting.
 Your task is to predict the sales for a specific product for today.
 
 Analyze the following historical daily sales data for the product: {{{productName}}}
@@ -49,9 +48,14 @@ Based on this historical data, identify any trends, seasonality (like day-of-the
 Then, provide a sales forecast for today.
 
 Your output must be a number representing the forecasted quantity and a brief reasoning for your prediction.`,
-  });
+});
 
-  const { output } = await prompt(input);
+export async function salesForecastFlow(input: SalesForecastInput): Promise<SalesForecastOutput> {
+  if (!process.env.GOOGLE_API_KEY) {
+    throw new Error('API key is not configured.');
+  }
+
+  const { output } = await salesForecastPrompt(input);
   if (!output) {
       throw new Error('Failed to get a forecast from the AI model.');
   }

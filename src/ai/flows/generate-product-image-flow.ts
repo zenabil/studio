@@ -7,6 +7,10 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 export async function generateProductImage(productHint: string): Promise<string> {
+  if (!process.env.GOOGLE_API_KEY) {
+    throw new Error('API key is not configured.');
+  }
+
   const { media } = await ai.generate({
     // IMPORTANT: ONLY the googleai/gemini-2.0-flash-preview-image-generation model is able to generate images. You MUST use exactly this model to generate images.
     model: 'googleai/gemini-2.0-flash-preview-image-generation',

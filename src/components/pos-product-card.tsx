@@ -64,15 +64,16 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
       setHasCachedImage(true);
     } catch (error) {
       console.error("Image generation failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "";
       toast({
         variant: 'destructive',
         title: t.errors.title,
-        description: t.errors.imageGenerationError,
+        description: errorMessage.includes('API key') ? t.errors.apiKeyMissing : t.errors.imageGenerationError,
       });
     } finally {
       setIsGenerating(false);
     }
-  }, [isGenerating, product.name, product.id, t.errors.title, t.errors.imageGenerationError, toast]);
+  }, [isGenerating, product.name, product.id, t, toast]);
 
   return (
     <Card 

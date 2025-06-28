@@ -416,7 +416,9 @@ export const translations = {
       outOfStock: "{productName} est en rupture de stock.",
       quantityExceedsStock: "La quantité demandée pour {productName} dépasse le stock disponible ({stock}).",
       unknownError: "Une erreur inconnue est survenue. Veuillez réessayer.",
-      imageGenerationError: "La génération de l'image du produit a échoué."
+      imageGenerationError: "La génération de l'image du produit a échoué.",
+      apiKeyMissing: "La clé API de Google AI n'est pas configurée. Veuillez l'ajouter à vos variables d'environnement pour activer cette fonctionnalité.",
+      aiError: "Une erreur est survenue lors de la communication avec le service d'IA.",
     }
   },
   ar: {
@@ -831,7 +833,9 @@ export const translations = {
       outOfStock: "{productName} غير متوفر في المخزون.",
       quantityExceedsStock: "الكمية المطلوبة من {productName} تتجاوز المخزون المتاح ({stock}).",
       unknownError: "حدث خطأ غير معروف. يرجى المحاولة مرة أخرى.",
-      imageGenerationError: "فشل إنشاء صورة المنتج."
+      imageGenerationError: "فشل إنشاء صورة المنتج.",
+      apiKeyMissing: "مفتاح واجهة برمجة تطبيقات Google AI غير مهيأ. يرجى إضافته إلى متغيرات البيئة الخاصة بك لتفعيل هذه الميزة.",
+      aiError: "حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي.",
     }
   },
 };

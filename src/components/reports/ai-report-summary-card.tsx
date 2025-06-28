@@ -51,15 +51,16 @@ export function AIReportSummaryCard({ reportData, dateRange, currency, isDataLoa
       setSummary(result.summary);
     } catch (error) {
       console.error("AI summary generation failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "";
       toast({
         variant: 'destructive',
         title: t.errors.title,
-        description: t.errors.forecastError, // Using forecastError as a generic AI error message
+        description: errorMessage.includes('API key') ? t.errors.apiKeyMissing : t.errors.aiError,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [reportData, dateRange, currency, toast, t.errors.title, t.errors.forecastError]);
+  }, [reportData, dateRange, currency, toast, t]);
   
   const canGenerate = reportData.totalSales > 0 || reportData.totalExpenses > 0;
 
