@@ -92,7 +92,17 @@ export function MakeSupplierPaymentDialog({ isOpen, onClose, onSave, supplier }:
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.suppliers.paymentAmount}</FormLabel>
+                   <div className="flex justify-between items-center">
+                    <FormLabel>{t.suppliers.paymentAmount}</FormLabel>
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="p-0 h-auto text-xs"
+                        onClick={() => form.setValue('amount', supplier.balance, { shouldValidate: true })}
+                    >
+                      {t.suppliers.payFullAmount}
+                    </Button>
+                  </div>
                   <FormControl>
                     <Input type="number" step="0.01" placeholder={t.customers.amountPlaceholder} {...field} autoFocus onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} disabled={isSaving} />
                   </FormControl>

@@ -155,6 +155,7 @@ export const translations = {
       settlementDayInvalid: "Le jour doit être entre 1 et 31.",
       lateFees: "Pénalités de retard",
       totalDue: "Total Dû",
+      payFullAmount: "Payer le montant total",
     },
     suppliers: {
         title: "Gestion des Fournisseurs",
@@ -232,6 +233,7 @@ export const translations = {
         doNotUpdate: "Ne pas mettre à jour le prix",
         noItemsAdded: "Aucun article n'a encore été ajouté. Cliquez sur 'Ajouter un article' pour commencer.",
         addNewProduct: "Ajouter un nouveau produit",
+        payFullAmount: "Payer le montant total",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -519,6 +521,7 @@ export const translations = {
       settlementDayInvalid: "يجب أن يكون اليوم بين 1 و 31.",
       lateFees: "غرامات التأخير",
       totalDue: "المجموع المستحق",
+      payFullAmount: "دفع المبلغ كاملاً",
     },
      suppliers: {
         title: "إدارة الموردين",
@@ -596,6 +599,7 @@ export const translations = {
         doNotUpdate: "عدم تحديث السعر",
         noItemsAdded: "لم تتم إضافة أي عناصر بعد. انقر فوق 'إضافة عنصر' للبدء.",
         addNewProduct: "إضافة منتج جديد",
+        payFullAmount: "دفع المبلغ كاملاً",
     },
     reports: {
       title: "التقارير والتحليلات",

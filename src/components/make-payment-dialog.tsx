@@ -92,7 +92,17 @@ export function MakePaymentDialog({ isOpen, onClose, onSave, customer }: MakePay
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.customers.paymentAmount}</FormLabel>
+                  <div className="flex justify-between items-center">
+                    <FormLabel>{t.customers.paymentAmount}</FormLabel>
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="p-0 h-auto text-xs"
+                        onClick={() => form.setValue('amount', customer.balance, { shouldValidate: true })}
+                    >
+                      {t.customers.payFullAmount}
+                    </Button>
+                  </div>
                   <FormControl>
                     <Input type="number" step="0.01" placeholder={t.customers.amountPlaceholder} {...field} autoFocus onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} disabled={isSaving} />
                   </FormControl>
