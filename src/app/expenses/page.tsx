@@ -6,7 +6,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardFooter
 } from '@/components/ui/card';
 import {
   Table,
@@ -15,6 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
