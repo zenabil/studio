@@ -50,24 +50,45 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
       barcodes: z.string(),
     }).superRefine((data, ctx) => {
+        // Barcode check
         const barcodes = data.barcodes.split(',').map(b => b.trim()).filter(Boolean);
-        if (barcodes.length === 0) return;
+        if (barcodes.length > 0) {
+            const allOtherBarcodes = new Set(
+              products
+                .filter(p => p.id !== productToEdit?.id)
+                .flatMap(p => p.barcodes)
+            );
 
-        const allOtherBarcodes = new Set(
-          products
-            .filter(p => p.id !== productToEdit?.id)
-            .flatMap(p => p.barcodes)
-        );
+            for (const barcode of barcodes) {
+              if (allOtherBarcodes.has(barcode)) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message: t.products.barcodeExists.replace('{barcode}', barcode),
+                  path: ['barcodes'],
+                });
+                break; // Stop after first barcode error to avoid spamming
+              }
+            }
+        }
+        
+        // Box pricing cross-validation
+        const hasBoxPrice = data.boxPrice !== undefined && data.boxPrice > 0;
+        const hasQuantityPerBox = data.quantityPerBox !== undefined && data.quantityPerBox > 0;
 
-        for (const barcode of barcodes) {
-          if (allOtherBarcodes.has(barcode)) {
+        if (hasBoxPrice && !hasQuantityPerBox) {
             ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: t.products.barcodeExists.replace('{barcode}', barcode),
-              path: ['barcodes'],
+                code: z.ZodIssueCode.custom,
+                message: t.products.quantityPerBoxRequired,
+                path: ['quantityPerBox'],
             });
-            return; // Stop after first error
-          }
+        }
+
+        if (hasQuantityPerBox && !hasBoxPrice) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: t.products.boxPriceRequired,
+                path: ['boxPrice'],
+            });
         }
     });
   }, [products, productToEdit, t]);

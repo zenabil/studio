@@ -98,6 +98,8 @@ export const translations = {
       noProductsYet: "Vous n'avez encore ajouté aucun produit.",
       barcodeExists: "Le code-barres '{barcode}' est déjà utilisé par un autre produit.",
       deleteErrorInUse: "Ce produit ne peut pas être supprimé car il est lié à des transactions existantes (ventes, factures fournisseurs, etc.).",
+      quantityPerBoxRequired: "La quantité par carton est requise et doit être supérieure à 0 si un prix de carton est défini.",
+      boxPriceRequired: "Le prix du carton est requis si une quantité par carton est définie.",
     },
     customers: {
       title: "Gestion des Clients",
@@ -452,6 +454,8 @@ export const translations = {
       noProductsYet: "لم تقم بإضافة أي منتجات بعد.",
       barcodeExists: "الباركود '{barcode}' مستخدم بالفعل لمنتج آخر.",
       deleteErrorInUse: "لا يمكن حذف هذا المنتج لأنه مرتبط بمعاملات حالية (مبيعات، فواتير موردين، إلخ).",
+      quantityPerBoxRequired: "كمية الكرتون مطلوبة ويجب أن تكون أكبر من 0 عند تحديد سعر للكرتون.",
+      boxPriceRequired: "سعر الكرتون مطلوب عند تحديد كمية للكرتون.",
     },
     customers: {
       title: "إدارة العملاء",
@@ -712,5 +716,3 @@ export const translations = {
     }
   },
 };
-
-    
