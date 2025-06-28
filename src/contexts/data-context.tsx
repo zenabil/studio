@@ -102,15 +102,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setSupplierInvoices(loadedSupplierInvoices);
         } catch (error) {
             console.error("Failed to sync data:", error);
-            toast({
-                variant: 'destructive',
-                title: t.errors.title,
-                description: "Could not load application data."
-            });
+            // Don't toast here as it can be triggered by the key error which is handled in data-actions
         } finally {
             setIsLoading(false);
         }
-    }, [toast, t]);
+    }, []);
 
     // Initial data load
     useEffect(() => {
@@ -132,8 +128,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             id: `prod-${new Date().getTime()}`,
             ...productData,
         };
-        await addProductInDB(newProduct);
-        await syncData();
+        
+        const previousProducts = products;
+        setProducts(current => [...current, newProduct]);
+        try {
+            await addProductInDB(newProduct);
+        } catch (e) {
+            setProducts(previousProducts);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save product.'});
+            throw e;
+        }
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
@@ -146,34 +150,33 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 throw new Error(errorMsg);
             }
         }
-        await updateProductInDB(productId, productData);
-        await syncData();
+
+        const previousProducts = products;
+        setProducts(current => current.map(p => p.id === productId ? { ...p, ...productData, id: productId } : p));
+        try {
+            await updateProductInDB(productId, productData);
+        } catch (e) {
+            setProducts(previousProducts);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update product.'});
+            throw e;
+        }
     };
 
     const deleteProduct = async (productId: string) => {
-        const isProductInSales = salesHistory.some(sale => sale.items.some(item => item.id === productId));
-        if (isProductInSales) {
-            toast({
-                variant: 'destructive',
-                title: t.errors.title,
-                description: t.products.deleteErrorInUse,
-            });
+        if (salesHistory.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId))) {
+            toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
         }
 
-        const isProductInSupplierInvoices = supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId));
-        if (isProductInSupplierInvoices) {
-            toast({
-                variant: 'destructive',
-                title: t.errors.title,
-                description: t.products.deleteErrorInUse,
-            });
-            return;
+        const previousProducts = products;
+        setProducts(current => current.filter(p => p.id !== productId));
+        try {
+            await deleteProductInDB(productId);
+            toast({ title: t.products.productDeleted });
+        } catch (e) {
+            setProducts(previousProducts);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete product.'});
         }
-
-        await deleteProductInDB(productId);
-        await syncData();
-        toast({ title: t.products.productDeleted });
     };
 
     const addCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
@@ -183,179 +186,253 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             balance: 0,
             ...customerData,
         };
-        await addCustomerInDB(newCustomer);
-        await syncData();
+        
+        const previousCustomers = customers;
+        setCustomers(current => [...current, newCustomer]);
+        try {
+            await addCustomerInDB(newCustomer);
+        } catch (e) {
+            setCustomers(previousCustomers);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add customer.'});
+            throw e;
+        }
     };
     
     const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
-        await updateCustomerInDB(customerId, customerData);
-        await syncData();
+        const previousCustomers = customers;
+        setCustomers(current => current.map(c => c.id === customerId ? { ...c, ...customerData, id: customerId } : c));
+        try {
+            await updateCustomerInDB(customerId, customerData);
+        } catch (e) {
+            setCustomers(previousCustomers);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update customer.'});
+            throw e;
+        }
     };
 
     const deleteCustomer = async (customerId: string) => {
-        const isCustomerInSales = salesHistory.some(sale => sale.customerId === customerId);
-        if (isCustomerInSales) {
-            toast({
-                variant: 'destructive',
-                title: t.errors.title,
-                description: t.customers.deleteErrorInUse,
-            });
+        if (salesHistory.some(sale => sale.customerId === customerId)) {
+            toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
         }
-        await deleteCustomerInDB(customerId);
-        await syncData();
-        toast({ title: t.customers.customerDeleted });
+
+        const previousCustomers = customers;
+        setCustomers(current => current.filter(c => c.id !== customerId));
+        try {
+            await deleteCustomerInDB(customerId);
+            toast({ title: t.customers.customerDeleted });
+        } catch (e) {
+            setCustomers(previousCustomers);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete customer.'});
+        }
     };
     
     const addSaleRecord = async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
-        const newSale: SaleRecord = {
-            id: `SALE-${new Date().getTime()}`,
-            customerId: customerId,
-            items: cart,
-            totals: totals,
-            date: new Date().toISOString(),
-        };
+        const newSale: SaleRecord = { id: `SALE-${new Date().getTime()}`, customerId, items: cart, totals, date: new Date().toISOString() };
+
+        const previousStates = { products, customers, salesHistory };
         
+        // Optimistic UI updates
+        setProducts(current => current.map(p => {
+            const itemInCart = cart.find(item => item.id === p.id);
+            return itemInCart ? { ...p, stock: p.stock - itemInCart.quantity } : p;
+        }));
+        if (customerId) {
+            setCustomers(current => current.map(c => c.id === customerId ? { ...c, spent: c.spent + totals.total, balance: c.balance + totals.balance } : c));
+        }
+        setSalesHistory(current => [...current, newSale]);
+
         try {
             await processSale({ saleRecord: newSale, cart });
-            await syncData();
         } catch (error) {
+            setProducts(previousStates.products);
+            setCustomers(previousStates.customers);
+            setSalesHistory(previousStates.salesHistory);
             console.error("Sale completion failed:", error);
             throw error; // Re-throw to be handled by the UI component
         }
     };
     
     const makePayment = async (customerId: string, amount: number) => {
-        const paymentRecord: SaleRecord = {
-            id: `PAY-${new Date().getTime()}`,
-            customerId: customerId,
-            items: [],
-            totals: {
-                subtotal: 0,
-                discount: 0,
-                total: amount,
-                amountPaid: amount,
-                balance: -amount,
-            },
-            date: new Date().toISOString(),
-        };
+        const paymentRecord: SaleRecord = { id: `PAY-${new Date().getTime()}`, customerId, items: [], totals: { subtotal: 0, discount: 0, total: amount, amountPaid: amount, balance: -amount }, date: new Date().toISOString() };
+
+        const previousStates = { customers, salesHistory };
+
+        setCustomers(current => current.map(c => c.id === customerId ? { ...c, balance: c.balance - amount } : c));
+        setSalesHistory(current => [...current, paymentRecord]);
 
         try {
             await processPayment({ customerId, amount, paymentRecord });
-            await syncData();
         } catch (error) {
-             console.error("Failed to process payment:", error);
-             toast({
-                variant: 'destructive',
-                title: "Save Error",
-                description: "Could not save payment data.",
-             });
+            setCustomers(previousStates.customers);
+            setSalesHistory(previousStates.salesHistory);
+            console.error("Failed to process payment:", error);
+            toast({ variant: 'destructive', title: "Save Error", description: "Could not save payment data." });
         }
     };
 
     const addBakeryOrder = async (orderData: Omit<BakeryOrder, 'id'>) => {
-        const newOrder: BakeryOrder = {
-            id: `b-order-${new Date().getTime()}`,
-            ...orderData,
-        };
-        await addBakeryOrderInDB(newOrder);
-        await syncData();
+        const newOrder: BakeryOrder = { id: `b-order-${new Date().getTime()}`, ...orderData };
+        const previousOrders = bakeryOrders;
+        setBakeryOrdersState(current => [...current, newOrder]);
+        try {
+            await addBakeryOrderInDB(newOrder);
+        } catch (e) {
+            setBakeryOrdersState(previousOrders);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add bakery order.'});
+            throw e;
+        }
     };
 
     const updateBakeryOrder = async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
-        await updateBakeryOrderInDB(orderId, orderData);
-        await syncData();
+        const previousOrders = bakeryOrders;
+        setBakeryOrdersState(current => current.map(o => o.id === orderId ? { ...o, ...orderData, id: orderId } : o));
+        try {
+            await updateBakeryOrderInDB(orderId, orderData);
+        } catch (e) {
+            setBakeryOrdersState(previousOrders);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update bakery order.'});
+            throw e;
+        }
     };
     
     const deleteBakeryOrder = async (orderId: string) => {
-        await deleteBakeryOrderInDB(orderId);
-        await syncData();
+        const previousOrders = bakeryOrders;
+        setBakeryOrdersState(current => current.filter(o => o.id !== orderId));
+        try {
+            await deleteBakeryOrderInDB(orderId);
+        } catch (e) {
+            setBakeryOrdersState(previousOrders);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete bakery order.'});
+            throw e;
+        }
     };
 
     const setBakeryOrders = async (orders: BakeryOrder[]) => {
-       await saveBakeryOrders(orders);
-       await syncData();
+       const previousOrders = bakeryOrders;
+       setBakeryOrdersState(orders);
+       try {
+           await saveBakeryOrders(orders);
+       } catch (e) {
+           setBakeryOrdersState(previousOrders);
+           toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save bakery orders.'});
+           throw e;
+       }
     }
 
     const setRecurringStatusForOrderName = async (orderName: string, isRecurring: boolean) => {
-        await setRecurringStatusForOrderNameInDB(orderName, isRecurring);
-        await syncData();
+        const previousOrders = bakeryOrders;
+        setBakeryOrdersState(current => current.map(o => o.name === orderName ? { ...o, isRecurring } : o));
+        try {
+            await setRecurringStatusForOrderNameInDB(orderName, isRecurring);
+        } catch (e) {
+            setBakeryOrdersState(previousOrders);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update recurring status.'});
+            throw e;
+        }
     };
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
-        const newSupplier: Supplier = {
-            id: `supp-${new Date().getTime()}`,
-            balance: 0,
-            ...supplierData,
-        };
-        await addSupplierInDB(newSupplier);
-        await syncData();
+        const newSupplier: Supplier = { id: `supp-${new Date().getTime()}`, balance: 0, ...supplierData };
+        const previousSuppliers = suppliers;
+        setSuppliers(current => [...current, newSupplier]);
+        try {
+            await addSupplierInDB(newSupplier);
+        } catch (e) {
+            setSuppliers(previousSuppliers);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add supplier.'});
+            throw e;
+        }
     };
 
     const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
-        await updateSupplierInDB(supplierId, supplierData);
-        await syncData();
+        const previousSuppliers = suppliers;
+        setSuppliers(current => current.map(s => s.id === supplierId ? { ...s, ...supplierData, id: supplierId } : s));
+        try {
+            await updateSupplierInDB(supplierId, supplierData);
+        } catch (e) {
+            setSuppliers(previousSuppliers);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update supplier.'});
+            throw e;
+        }
     };
 
     const deleteSupplier = async (supplierId: string) => {
-        const isSupplierInUse = supplierInvoices.some(invoice => invoice.supplierId === supplierId);
-        if (isSupplierInUse) {
-            toast({
-                variant: 'destructive',
-                title: t.errors.title,
-                description: t.suppliers.deleteErrorInUse,
-            });
+        if (supplierInvoices.some(invoice => invoice.supplierId === supplierId)) {
+            toast({ variant: 'destructive', title: t.errors.title, description: t.suppliers.deleteErrorInUse });
             return;
         }
-
-        await deleteSupplierInDB(supplierId);
-        await syncData();
-        toast({ title: t.suppliers.supplierDeleted });
+        const previousSuppliers = suppliers;
+        setSuppliers(current => current.filter(s => s.id !== supplierId));
+        try {
+            await deleteSupplierInDB(supplierId);
+            toast({ title: t.suppliers.supplierDeleted });
+        } catch (e) {
+            setSuppliers(previousSuppliers);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete supplier.'});
+        }
     };
     
     const addSupplierInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
         const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
-        const newInvoice: SupplierInvoice = {
-            id: `SINV-${new Date().getTime()}`,
-            date: new Date().toISOString(),
-            isPayment: false,
-            totalAmount,
-            ...invoiceData,
-        };
+        const newInvoice: SupplierInvoice = { id: `SINV-${new Date().getTime()}`, date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
+        
+        const previousStates = { products, suppliers, supplierInvoices };
+
+        // Optimistic update
+        setSupplierInvoices(current => [...current, newInvoice]);
+        setSuppliers(current => current.map(s => s.id === invoiceData.supplierId ? { ...s, balance: (s.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0)) } : s));
+        setProducts(currentProducts => {
+            const updatedProducts = JSON.parse(JSON.stringify(currentProducts)); // Deep copy to avoid mutation issues
+            invoiceData.items.forEach(item => {
+                const product = updatedProducts.find((p: Product) => p.id === item.productId);
+                if (product) {
+                    const stockBeforeInvoice = product.stock;
+                    product.stock += item.quantity;
+                    if (invoiceData.updateMasterPrices) {
+                        product.purchasePrice = item.purchasePrice;
+                        if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
+                        if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
+                    } else {
+                        const oldPositiveStock = Math.max(0, stockBeforeInvoice);
+                        const totalStockAfterInvoice = oldPositiveStock + item.quantity;
+                        if (totalStockAfterInvoice > 0) {
+                            product.purchasePrice = parseFloat(((oldPositiveStock * (product.purchasePrice || 0) + item.quantity * item.purchasePrice) / totalStockAfterInvoice).toFixed(2));
+                        } else {
+                            product.purchasePrice = item.purchasePrice;
+                        }
+                    }
+                }
+            });
+            return updatedProducts;
+        });
 
         try {
             await processSupplierInvoice({ invoice: newInvoice, updateMasterPrices: invoiceData.updateMasterPrices });
-            await syncData(); 
         } catch (error) {
+            setProducts(previousStates.products);
+            setSuppliers(previousStates.suppliers);
+            setSupplierInvoices(previousStates.supplierInvoices);
             console.error("Failed to process supplier invoice:", error);
-            toast({
-                variant: 'destructive',
-                title: "Save Error",
-                description: "Could not save supplier invoice.",
-            });
+            toast({ variant: 'destructive', title: "Save Error", description: "Could not save supplier invoice." });
         }
     };
     
     const makePaymentToSupplier = async (supplierId: string, amount: number) => {
-        const paymentRecord: SupplierInvoice = {
-            id: `SPAY-${new Date().getTime()}`,
-            supplierId: supplierId,
-            date: new Date().toISOString(),
-            items: [],
-            totalAmount: amount,
-            isPayment: true,
-            amountPaid: amount,
-        };
+        const paymentRecord: SupplierInvoice = { id: `SPAY-${new Date().getTime()}`, supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
+        
+        const previousStates = { suppliers, supplierInvoices };
+        
+        setSuppliers(current => current.map(s => s.id === supplierId ? { ...s, balance: s.balance - amount } : s));
+        setSupplierInvoices(current => [...current, paymentRecord]);
+
         try {
             await processSupplierPayment({ paymentRecord });
-            await syncData();
         } catch (error) {
+            setSuppliers(previousStates.suppliers);
+            setSupplierInvoices(previousStates.supplierInvoices);
             console.error("Failed to process supplier payment:", error);
-            toast({
-                variant: 'destructive',
-                title: "Save Error",
-                description: "Could not save supplier payment.",
-            });
+            toast({ variant: 'destructive', title: "Save Error", description: "Could not save supplier payment." });
         }
     };
 
