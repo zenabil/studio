@@ -270,17 +270,20 @@ export function PosView() {
   };
   
   const closeSession = useCallback((sessionId: string) => {
-      setSessions(prev => {
-          const newSessions = prev.filter(s => s.id !== sessionId);
-          if (newSessions.length === 0) {
-              const newInitialSession = createNewSession();
-              setActiveSessionId(newInitialSession.id)
-              return [newInitialSession];
+      const updatedSessions = sessions.filter(s => s.id !== sessionId);
+
+      if (updatedSessions.length === 0) {
+          const newSession = createNewSession();
+          setSessions([newSession]);
+          setActiveSessionId(newSession.id);
+      } else {
+          setSessions(updatedSessions);
+          if (activeSessionId === sessionId) {
+              setActiveSessionId(updatedSessions[0].id);
           }
-          return newSessions;
-      });
+      }
       setSessionToDelete(null);
-  }, [createNewSession]);
+  }, [sessions, activeSessionId, createNewSession]);
 
   const handleCloseSession = (sessionId: string) => {
       const session = sessions.find(s => s.id === sessionId);
@@ -321,7 +324,7 @@ export function PosView() {
     });
     
     closeSession(activeSessionId);
-  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t.errors.emptyCart, t.errors.title, t.pos.saleSuccessMessage, t.pos.saleSuccessTitle, toast, closeSession]);
+  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t, toast, closeSession]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p.barcodes.includes(barcode));
