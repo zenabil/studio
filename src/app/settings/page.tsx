@@ -10,23 +10,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Copy, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
+import { generateAndSaveLicenseKey } from '@/lib/actions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
 
 export default function SettingsPage() {
   const { settings, setSettings, colorPresets } = useSettings();
   const { t } = useLanguage();
-  const { restoreData } = useData();
+  const { restoreData, licenseKeys } = useData();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activationCode, setActivationCode] = useState('');
+  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
 
   const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
     defaultValues: {
@@ -123,8 +127,8 @@ export default function SettingsPage() {
   };
   
   const handleActivation = () => {
-    const PRO_KEY = 'PRO-LICENSE-2024';
-    if (activationCode === PRO_KEY) {
+    const isValid = licenseKeys.some(lk => lk.key === activationCode);
+    if (isValid) {
       setSettings({ isActivated: true });
       toast({
         title: t.settings.activationSuccess,
@@ -139,6 +143,28 @@ export default function SettingsPage() {
     }
   };
 
+  const handleGenerateKey = async () => {
+    setIsGeneratingKey(true);
+    const result = await generateAndSaveLicenseKey();
+    if (result.success && result.key) {
+        toast({
+            title: t.settings.keyGenerated,
+            description: result.key,
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: result.error,
+        });
+    }
+    setIsGeneratingKey(false);
+  };
+
+  const handleCopy = (key: string) => {
+    navigator.clipboard.writeText(key);
+    toast({ title: t.settings.keyCopied });
+  };
 
   return (
     <div className="space-y-6">
@@ -294,6 +320,44 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+          {settings.isActivated && (
+            <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>{t.settings.licenseKeyManagement}</CardTitle>
+                  <CardDescription>{t.settings.generateNewKeys}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t.settings.licenseKey}</TableHead>
+                        <TableHead>{t.settings.createdAt}</TableHead>
+                        <TableHead className="text-right">{t.products.actions}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {licenseKeys.map((lk) => (
+                        <TableRow key={lk.key}>
+                          <TableCell className="font-mono">{lk.key}</TableCell>
+                          <TableCell>{format(new Date(lk.createdAt), 'PPpp')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" title={t.settings.keyCopied} onClick={() => handleCopy(lk.key)}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={handleGenerateKey} disabled={isGeneratingKey}>
+                    {isGeneratingKey && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t.settings.generateKey}
+                  </Button>
+                </CardFooter>
+              </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="data" className="mt-4">

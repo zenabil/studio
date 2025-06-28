@@ -10,6 +10,7 @@ import {
     type Supplier,
     type SupplierInvoice,
     type SupplierInvoiceItem,
+    type LicenseKey,
 } from '@/lib/data';
 import {
     getProducts,
@@ -18,6 +19,7 @@ import {
     getBakeryOrders,
     getSuppliers,
     getSupplierInvoices,
+    getLicenseKeys,
     restoreBackupData,
     addProductInDB,
     updateProductInDB,
@@ -48,6 +50,7 @@ interface DataContextType {
     bakeryOrders: BakeryOrder[];
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
+    licenseKeys: LicenseKey[];
     isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
@@ -57,7 +60,7 @@ interface DataContextType {
     deleteCustomer: (customerId: string) => Promise<void>;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
     makePayment: (customerId: string, amount: number) => Promise<void>;
-    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[] }) => Promise<void>;
+    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[]; licenseKeys: LicenseKey[] }) => Promise<void>;
     addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => Promise<void>;
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
@@ -81,6 +84,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [bakeryOrders, setBakeryOrdersState] = useState<BakeryOrder[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([]);
+    const [licenseKeys, setLicenseKeys] = useState<LicenseKey[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const syncData = useCallback(async (isInitialLoad = false) => {
@@ -88,13 +92,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
         }
         try {
-            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices] = await Promise.all([
+            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices, loadedLicenseKeys] = await Promise.all([
                 getProducts(),
                 getCustomers(),
                 getSalesHistory(),
                 getBakeryOrders(),
                 getSuppliers(),
                 getSupplierInvoices(),
+                getLicenseKeys(),
             ]);
             setProducts(loadedProducts);
             setCustomers(loadedCustomers);
@@ -102,6 +107,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setBakeryOrdersState(loadedBakeryOrders);
             setSuppliers(loadedSuppliers);
             setSupplierInvoices(loadedSupplierInvoices);
+            setLicenseKeys(loadedLicenseKeys);
         } catch (error) {
             console.error("Failed to sync data:", error);
             toast({
@@ -225,7 +231,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             await processSale({ saleRecord: newSale, cart });
             await syncData();
         } catch (error) {
-            console.error("Failed to process sale:", error);
+            console.error("Sale completion failed:", error);
             throw error; // Re-throw to be handled by the UI component
         }
     };
@@ -352,6 +358,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         bakeryOrders,
         suppliers,
         supplierInvoices,
+        licenseKeys,
         isLoading,
         addProduct,
         updateProduct,
