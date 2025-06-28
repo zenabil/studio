@@ -21,13 +21,11 @@ import { Textarea } from '@/components/ui/textarea';
 type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
 
 export default function SettingsPage() {
-  const { settings, setSettings, colorPresets, activateLicense } = useSettings();
+  const { settings, setSettings, colorPresets } = useSettings();
   const { t } = useLanguage();
   const { restoreData } = useData();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [licenseKeyInput, setLicenseKeyInput] = useState('');
-  const [isActivating, setIsActivating] = useState(false);
 
   const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
     defaultValues: {
@@ -122,33 +120,6 @@ export default function SettingsPage() {
     };
     reader.readAsText(file);
   };
-  
-  const handleActivate = async () => {
-    if (!licenseKeyInput) return;
-    setIsActivating(true);
-    await activateLicense(licenseKeyInput);
-    setIsActivating(false);
-  };
-
-  const getActivationStatus = () => {
-    if (settings.isActivated) {
-      return (
-        <div className="flex items-center gap-2 text-green-600">
-            <ShieldCheck className="h-5 w-5" />
-            <span className="font-medium">{t.settings.activated}</span>
-        </div>
-      )
-    }
-    const firstLaunch = settings.firstLaunchDate ? new Date(settings.firstLaunchDate) : new Date();
-    const daysSinceFirstLaunch = differenceInCalendarDays(new Date(), firstLaunch);
-    const trialDaysLeft = Math.max(0, 7 - daysSinceFirstLaunch);
-    return (
-        <p className="text-sm text-muted-foreground">
-            {t.settings.trialEnds.replace('{days}', trialDaysLeft)}
-        </p>
-    );
-  }
-
 
   return (
     <div className="space-y-6">
@@ -285,29 +256,6 @@ export default function SettingsPage() {
                   {t.settings.restoreData}
                 </Button>
             </CardContent>
-          </Card>
-           <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>{t.settings.activation}</CardTitle>
-              <CardDescription>{getActivationStatus()}</CardDescription>
-            </CardHeader>
-            {!settings.isActivated && (
-              <CardContent className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-end">
-                  <div className="space-y-2 flex-grow">
-                      <Label htmlFor="licenseKey">{t.settings.licenseKey}</Label>
-                      <Input 
-                        id="licenseKey" 
-                        placeholder={t.activation.placeholder}
-                        value={licenseKeyInput}
-                        onChange={(e) => setLicenseKeyInput(e.target.value)}
-                        disabled={isActivating}
-                      />
-                  </div>
-                  <Button type="button" onClick={handleActivate} disabled={isActivating || !licenseKeyInput}>
-                    {isActivating ? t.activation.activating : t.settings.activate}
-                  </Button>
-              </CardContent>
-            )}
           </Card>
         </TabsContent>
       </Tabs>

@@ -1,9 +1,6 @@
 
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { getLicenseKeys } from '@/lib/data-actions';
-import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from './language-context';
 
 // Define the shape of your settings
 export interface CompanyInfo {
@@ -29,10 +26,6 @@ export interface Settings {
   theme: Theme;
   colorPreset: string; // name of the preset
   paymentTermsDays: number;
-  isActivated: boolean;
-  licenseKey: string | null;
-  firstLaunchDate: string | null;
-  employeePermissions: string[];
 }
 
 // Define the context type
@@ -40,7 +33,6 @@ interface SettingsContextType {
   settings: Settings;
   setSettings: (newSettings: Partial<Settings>) => void;
   colorPresets: ColorPreset[];
-  activateLicense: (key: string) => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -62,8 +54,6 @@ const colorPresets: ColorPreset[] = [
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const { toast } = useToast();
-  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
 
   const [settings, setSettingsState] = useState<Settings>({
@@ -79,10 +69,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     theme: 'light',
     colorPreset: 'Teal',
     paymentTermsDays: 30,
-    isActivated: false,
-    licenseKey: null,
-    firstLaunchDate: null,
-    employeePermissions: ['/', '/products', '/customers', '/suppliers', '/bakery-orders'],
   });
   
   // Load settings from localStorage on initial client render
@@ -100,9 +86,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         }
         setSettingsState(newSettings);
       } else {
-        // First ever launch for this user
-        initialSettings.firstLaunchDate = new Date().toISOString();
-        setSettingsState(initialSettings);
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(initialSettings));
       }
     } catch (error) {
@@ -169,25 +152,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const activateLicense = useCallback(async (key: string): Promise<boolean> => {
-    try {
-        const validKeys = await getLicenseKeys();
-        if (validKeys.includes(key.trim())) {
-            setSettings({ isActivated: true, licenseKey: key.trim() });
-            toast({ title: t.settings.activateSuccess });
-            return true;
-        } else {
-            toast({ variant: 'destructive', title: t.errors.title, description: t.settings.activateError });
-            return false;
-        }
-    } catch (error) {
-        console.error("Failed to validate license key:", error);
-        toast({ variant: 'destructive', title: t.errors.title, description: t.errors.forecastError });
-        return false;
-    }
-  }, [setSettings, toast, t]);
-
-  const value = { settings, setSettings, colorPresets, activateLicense, isLoading };
+  const value = { settings, setSettings, colorPresets, isLoading };
 
   return (
     <SettingsContext.Provider value={value}>

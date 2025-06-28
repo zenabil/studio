@@ -39,23 +39,18 @@ import { useSettings } from '@/contexts/settings-context';
 import { addDays, differenceInCalendarDays, set, isBefore, addMonths } from 'date-fns';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { useAuth } from '@/contexts/auth-context';
-import { UserProfile } from './user-profile';
 import { Separator } from './ui/separator';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, dir } = useLanguage();
-  const { products, customers, salesHistory, isLoading: isDataLoading } = useData();
+  const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
-  const { user, isLoading: isAuthLoading } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const isLoading = isDataLoading || isAuthLoading;
 
   const lowStockCount = useMemo(() => {
     if (isLoading) return 0;
@@ -115,7 +110,7 @@ export function SidebarNav() {
 
   const totalAlertCount = lowStockCount + debtAlertCount;
   
-  const allNavItems = useMemo(() => [
+  const navItems = useMemo(() => [
     { href: '/', label: t.nav.pos, icon: CircleDollarSign },
     { href: '/products', label: t.nav.products, icon: Package },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
@@ -125,15 +120,6 @@ export function SidebarNav() {
     { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ], [t, totalAlertCount]);
-
-  const navItems = useMemo(() => {
-    if (!user || !settings) return [];
-    if (user.role === 'admin') {
-      return allNavItems;
-    }
-    return allNavItems.filter(item => settings.employeePermissions.includes(item.href));
-  }, [user, settings, allNavItems]);
-
 
   if (!isMounted) {
     return (
@@ -188,15 +174,9 @@ export function SidebarNav() {
                         <div className="group-data-[collapsible=icon]:hidden">
                             <div className="flex flex-col">
                                 <span className="font-headline text-lg font-bold leading-tight">{t.appName}</span>
-                                {settings.isActivated ? (
-                                    <Badge variant="success" className="w-fit px-1.5 text-[10px] leading-none">
-                                        {t.appStatus.pro}
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="accent" className="w-fit px-1.5 text-[10px] leading-none">
-                                        {t.appStatus.trial}
-                                    </Badge>
-                                )}
+                                <Badge variant="success" className="w-fit px-1.5 text-[10px] leading-none">
+                                    {t.appStatus.pro}
+                                </Badge>
                             </div>
                         </div>
                         </div>
@@ -224,8 +204,6 @@ export function SidebarNav() {
                         </SidebarMenu>
                     </SidebarContent>
                     <SidebarFooter>
-                        <UserProfile />
-                        <Separator />
                         <LanguageSwitcher />
                     </SidebarFooter>
                 </div>
@@ -255,15 +233,9 @@ export function SidebarNav() {
             {isMounted ? (
                 <div className="flex flex-col">
                     <span className="font-headline text-lg font-bold leading-tight">{t.appName}</span>
-                    {settings.isActivated ? (
-                        <Badge variant="success" className="w-fit px-1.5 text-[10px] leading-none">
-                            {t.appStatus.pro}
-                        </Badge>
-                    ) : (
-                        <Badge variant="accent" className="w-fit px-1.5 text-[10px] leading-none">
-                            {t.appStatus.trial}
-                        </Badge>
-                    )}
+                    <Badge variant="success" className="w-fit px-1.5 text-[10px] leading-none">
+                        {t.appStatus.pro}
+                    </Badge>
                 </div>
               ) : (
                 <div className="flex flex-col gap-1">
@@ -300,9 +272,7 @@ export function SidebarNav() {
       <SidebarFooter className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
          <div className="group-data-[collapsible=icon]:hidden w-full">
             <LanguageSwitcher />
-            <Separator className="my-2" />
         </div>
-        <UserProfile />
       </SidebarFooter>
     </Sidebar>
     </>

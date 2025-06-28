@@ -8,8 +8,6 @@ import {
     bakeryOrders as initialBakeryOrders,
     suppliers as initialSuppliers,
     supplierInvoices as initialSupplierInvoices,
-    users as initialUsers,
-    licenseKeys as initialLicenseKeys,
     type Product,
     type Customer,
     type SaleRecord,
@@ -18,14 +16,12 @@ import {
     type SupplierInvoice,
     type SupplierInvoiceItem,
     type CartItem,
-    type User,
 } from '@/lib/data';
 
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
@@ -34,17 +30,20 @@ const SALES_HISTORY_FILE = path.join(DATA_DIR, 'salesHistory.json');
 const BAKERY_ORDERS_FILE = path.join(DATA_DIR, 'bakeryOrders.json');
 const SUPPLIERS_FILE = path.join(DATA_DIR, 'suppliers.json');
 const SUPPLIER_INVOICES_FILE = path.join(DATA_DIR, 'supplierInvoices.json');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const LICENSE_KEYS_FILE = path.join(DATA_DIR, 'licenseKeys.json');
 
 const ALGORITHM = 'aes-256-gcm';
 
 // Validate and load the encryption key
 const ENCRYPTION_KEY_STRING = process.env.ENCRYPTION_KEY;
 if (!ENCRYPTION_KEY_STRING || Buffer.from(ENCRYPTION_KEY_STRING, 'hex').length !== 32) {
-    throw new Error('ENCRYPTION_KEY is not defined in your .env file or is invalid. Please provide a 32-byte key (64 hex characters).');
+    // Generate a new key if not present, and warn the user.
+    const newKey = crypto.randomBytes(32).toString('hex');
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: ENCRYPTION_KEY is not defined or invalid in your .env file.');
+    console.warn('\x1b[33m%s\x1b[0m', `A new key has been generated for you: ${newKey}`);
+    console.warn('\x1b[33m%s\x1b[0m', 'Please add this key to your .env file to ensure your data is persistently encrypted.');
+    process.env.ENCRYPTION_KEY = newKey;
 }
-const KEY = Buffer.from(ENCRYPTION_KEY_STRING, 'hex');
+const KEY = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
 
 
 // Encryption function
@@ -74,28 +73,15 @@ function decrypt(data: { iv: string; authTag: string; encryptedData: string }): 
 // Helper to read, decrypt and parse data, or seed if not present
 async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
   try {
+    await fs.access(filePath); // Check if file exists
     const fileContent = await fs.readFile(filePath, 'utf-8');
+    if (!fileContent) { // Handle empty file case
+        throw new Error("File is empty");
+    }
     const decrypted = decrypt(JSON.parse(fileContent));
     return JSON.parse(decrypted);
   } catch (error) {
     console.warn(`Could not read or decrypt ${filePath}. Seeding with initial data.`);
-    
-    // Special handling for users file to hash passwords on first seed
-    if (filePath === USERS_FILE) {
-        const usersToSeed = initialData as unknown as User[];
-        const hashedUsers = await Promise.all(usersToSeed.map(async (user) => {
-            if (user.passwordHash === '__TO_BE_HASHED_ADMIN__') {
-                return { ...user, passwordHash: await bcrypt.hash('admin', 10) };
-            }
-            if (user.passwordHash === '__TO_BE_HASHED_EMPLOYEE__') {
-                return { ...user, passwordHash: await bcrypt.hash('employee', 10) };
-            }
-            return user;
-        }));
-        await writeData(filePath, hashedUsers as unknown as T[]);
-        return hashedUsers as unknown as T[];
-    }
-
     await writeData(filePath, initialData);
     return initialData;
   }
@@ -127,17 +113,6 @@ export async function getSuppliers(): Promise<Supplier[]> {
 }
 export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
     return readData(SUPPLIER_INVOICES_FILE, initialSupplierInvoices);
-}
-export async function getUsers(): Promise<User[]> {
-    return readData(USERS_FILE, initialUsers);
-}
-export async function getLicenseKeys(): Promise<string[]> {
-    try {
-        const fileContent = await fs.readFile(LICENSE_KEYS_FILE, 'utf-8');
-        return JSON.parse(fileContent);
-    } catch(e) {
-        return initialLicenseKeys;
-    }
 }
 
 // Granular write operations
@@ -431,11 +406,6 @@ export async function saveSuppliers(suppliers: Supplier[]): Promise<void> {
 export async function saveSupplierInvoices(invoices: SupplierInvoice[]): Promise<void> {
     return writeData(SUPPLIER_INVOICES_FILE, invoices);
 }
-export async function saveLicenseKeys(keys: string[]): Promise<void> {
-    const dataToWrite = JSON.stringify(keys, null, 2);
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(LICENSE_KEYS_FILE, dataToWrite);
-}
 
 export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[] }) {
     if (data.products) await saveProducts(data.products);
@@ -445,22 +415,3 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
     if (data.suppliers) await saveSuppliers(data.suppliers);
     if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
 }
-
-export async function authenticateUser(username: string, password: string): Promise<User | null> {
-    const users = await getUsers();
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-
-    if (!user) {
-        return null;
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isPasswordValid) {
-        return null;
-    }
-
-    return user;
-}
-    
-    
