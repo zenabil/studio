@@ -13,7 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import type { Customer, SaleRecord } from '@/lib/data';
 import { format } from 'date-fns';
 import { useSettings } from '@/contexts/settings-context';
-import { useMemo } from 'react';
+import { useMemo, useState, Fragment } from 'react';
+import { calculateItemTotal } from '@/lib/utils';
+import { ChevronRight, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 interface CustomerInvoicesDialogProps {
   isOpen: boolean;
@@ -25,6 +29,13 @@ interface CustomerInvoicesDialogProps {
 export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory }: CustomerInvoicesDialogProps) {
   const { t } = useLanguage();
   const { settings } = useSettings();
+  const [expandedRows, setExpandedRows] = useState<string[]>([]);
+
+  const toggleRow = (id: string) => {
+    setExpandedRows(current =>
+      current.includes(id) ? current.filter(rowId => rowId !== id) : [...current, id]
+    );
+  };
 
   const { transactions, startingBalance } = useMemo(() => {
     if (!customer) {
@@ -62,7 +73,8 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
         description,
         debit,
         credit,
-        balance: runningBalance
+        balance: runningBalance,
+        hasItems: tx.items.length > 0,
       };
     });
 
@@ -92,23 +104,75 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell colSpan={4} className="font-medium">{t.customers.startingBalance}</TableCell>
-                  <TableCell className="text-right font-medium">{settings.currency}{startingBalance.toFixed(2)}</TableCell>
-                </TableRow>
-                {transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell>{format(new Date(tx.date), 'PP')}</TableCell>
-                    <TableCell>{tx.description}</TableCell>
-                    <TableCell className={`text-right ${tx.debit > 0 ? 'text-destructive' : ''}`}>
-                      {tx.debit > 0 ? `${settings.currency}${tx.debit.toFixed(2)}` : '-'}
-                    </TableCell>
-                    <TableCell className={`text-right ${tx.credit > 0 ? 'text-green-500' : ''}`}>
-                      {tx.credit > 0 ? `${settings.currency}${tx.credit.toFixed(2)}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">{settings.currency}{tx.balance.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
+                {startingBalance !== 0 && (
+                    <TableRow>
+                        <TableCell colSpan={4} className="font-medium">{t.customers.startingBalance}</TableCell>
+                        <TableCell className="text-right font-medium">{settings.currency}{startingBalance.toFixed(2)}</TableCell>
+                    </TableRow>
+                )}
+                {transactions.map((tx) => {
+                    const isExpanded = expandedRows.includes(tx.id);
+                    const saleRecord = tx.hasItems ? salesHistory.find(s => s.id === tx.id) : undefined;
+
+                    return (
+                        <Fragment key={tx.id}>
+                            <TableRow>
+                                <TableCell>{format(new Date(tx.date), 'PP')}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                    {tx.hasItems ? (
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleRow(tx.id)}>
+                                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                        </Button>
+                                    ) : (
+                                        <div className="w-10" /> 
+                                    )}
+                                    <span>{tx.description}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className={cn("text-right", tx.debit > 0 && 'text-destructive')}>
+                                {tx.debit > 0 ? `${settings.currency}${tx.debit.toFixed(2)}` : '-'}
+                                </TableCell>
+                                <TableCell className={cn("text-right", tx.credit > 0 && tx.hasItems && 'text-green-600', !tx.hasItems && 'text-green-500')}>
+                                {tx.credit > 0 ? `${settings.currency}${tx.credit.toFixed(2)}` : '-'}
+                                </TableCell>
+                                <TableCell className="text-right font-semibold">{settings.currency}{tx.balance.toFixed(2)}</TableCell>
+                            </TableRow>
+                            {isExpanded && saleRecord && (
+                                <TableRow key={`${tx.id}-details`}>
+                                    <TableCell colSpan={5} className="p-0">
+                                        <div className="p-4 bg-muted/50">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>{t.pos.description}</TableHead>
+                                                        <TableHead className="text-center">{t.pos.quantity}</TableHead>
+                                                        <TableHead className="text-right">{t.pos.unitPrice}</TableHead>
+                                                        <TableHead className="text-right">{t.pos.lineTotal}</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {saleRecord.items.map(item => {
+                                                        const lineTotal = calculateItemTotal(item);
+                                                        const unitPrice = item.quantity > 0 ? lineTotal / item.quantity : 0;
+                                                        return (
+                                                            <TableRow key={item.id} className="bg-muted/50 hover:bg-muted">
+                                                                <TableCell>{item.name}</TableCell>
+                                                                <TableCell className="text-center">{item.quantity}</TableCell>
+                                                                <TableCell className="text-right">{settings.currency}{unitPrice.toFixed(2)}</TableCell>
+                                                                <TableCell className="text-right">{settings.currency}{lineTotal.toFixed(2)}</TableCell>
+                                                            </TableRow>
+                                                        )
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </Fragment>
+                    )
+                })}
               </TableBody>
               <TableFooter>
                 <TableRow className="text-lg">
