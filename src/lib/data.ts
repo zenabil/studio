@@ -151,8 +151,8 @@ export const suppliers: Supplier[] = [
 export const supplierInvoices: SupplierInvoice[] = [];
 
 export const users: User[] = [
-    { id: 'user-01', username: 'admin', passwordHash: '$2a$10$vCGiR9G4T9N1tJdC3wV6O.D.b5eXGWmrvcLz2K9sf9iytcRGA8yry', role: 'admin' },
-    { id: 'user-02', username: 'employee', passwordHash: '$2a$10$Fz.qP.L2M5t.b.zEwV8Nq.3j6q9R5UfS1a/6n1t1Y.w0E.c0S8wzK', role: 'employee' }
+    { id: 'user-01', username: 'admin', passwordHash: '$2a$10$T8.HiyB10kprHl/h52tEa.h4a2A0.y.Gq64oYfA2z2I.p3B4o5jIu', role: 'admin' },
+    { id: 'user-02', username: 'employee', passwordHash: '$2a$10$a1w.e.xU2gY/iRjZ0wzLNuGg.g6z9S.zK/f.O.C5S4.J8p.o.Q/i2', role: 'employee' }
 ];
 
 export const licenseKeys: string[] = [
