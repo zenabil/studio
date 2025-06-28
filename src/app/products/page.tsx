@@ -19,22 +19,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, ChevronsUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, ChevronsUpDown, ArrowDown, ArrowUp, LineChart } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
+import { ProductSalesHistoryDialog } from '@/components/product-sales-history-dialog';
 
 type SortableKeys = keyof Pick<Product, 'name' | 'category' | 'purchasePrice' | 'price' | 'stock' | 'minStock' | 'quantityPerBox' | 'boxPrice'>;
 
 export default function ProductsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, addProduct, updateProduct, deleteProduct, isLoading } = useData();
+  const { products, salesHistory, addProduct, updateProduct, deleteProduct, isLoading } = useData();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [viewingProductHistory, setViewingProductHistory] = useState<Product | null>(null);
   
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({
     key: 'name',
@@ -194,10 +196,13 @@ export default function ProductsPage() {
                     <TableCell className="text-right">{product.quantityPerBox || 0}</TableCell>
                     <TableCell className="text-right">{settings.currency}{(product.boxPrice || 0).toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(product)}>
+                       <Button variant="ghost" size="icon" title={t.products.viewSalesHistory} onClick={() => setViewingProductHistory(product)}>
+                          <LineChart className="h-4 w-4" />
+                       </Button>
+                      <Button variant="ghost" size="icon" title={t.products.editProduct} onClick={() => handleOpenDialog(product)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(product)}>
+                      <Button variant="ghost" size="icon" title={t.products.delete} onClick={() => handleOpenDeleteDialog(product)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -227,6 +232,12 @@ export default function ProductsPage() {
         onConfirm={handleDeleteProduct}
         title={t.products.deleteConfirmationTitle}
         description={t.products.deleteConfirmationMessage}
+      />
+      <ProductSalesHistoryDialog
+        isOpen={!!viewingProductHistory}
+        onClose={() => setViewingProductHistory(null)}
+        product={viewingProductHistory}
+        salesHistory={salesHistory}
       />
     </>
   );

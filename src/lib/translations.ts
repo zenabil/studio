@@ -100,6 +100,11 @@ export const translations = {
       deleteErrorInUse: "Ce produit ne peut pas être supprimé car il est lié à des transactions existantes (ventes, factures fournisseurs, etc.).",
       quantityPerBoxRequired: "La quantité par carton est requise et doit être supérieure à 0 si un prix de carton est défini.",
       boxPriceRequired: "Le prix du carton est requis si une quantité par carton est définie.",
+      viewSalesHistory: "Voir l'historique des ventes",
+      salesHistoryFor: "Historique des ventes pour {productName}",
+      totalRevenue: "Revenu Total",
+      totalUnitsSold: "Unités Vendues au Total",
+      noSalesData: "Aucune donnée de vente disponible pour ce produit.",
     },
     customers: {
       title: "Gestion des Clients",
@@ -469,6 +474,11 @@ export const translations = {
       deleteErrorInUse: "لا يمكن حذف هذا المنتج لأنه مرتبط بمعاملات حالية (مبيعات، فواتير موردين، إلخ).",
       quantityPerBoxRequired: "كمية الكرتون مطلوبة ويجب أن تكون أكبر من 0 عند تحديد سعر للكرتون.",
       boxPriceRequired: "سعر الكرتون مطلوب عند تحديد كمية للكرتون.",
+      viewSalesHistory: "عرض سجل المبيعات",
+      salesHistoryFor: "سجل المبيعات لـ {productName}",
+      totalRevenue: "إجمالي الإيرادات",
+      totalUnitsSold: "إجمالي الوحدات المباعة",
+      noSalesData: "لا توجد بيانات مبيعات متاحة لهذا المنتج.",
     },
     customers: {
       title: "إدارة العملاء",
