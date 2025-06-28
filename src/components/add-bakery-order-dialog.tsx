@@ -17,6 +17,7 @@ import { z } from 'zod';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -34,6 +35,7 @@ interface AddBakeryOrderDialogProps {
 
 export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: AddBakeryOrderDialogProps) {
   const { t } = useLanguage();
+  const isNameDisabled = !!orderToEdit?.isRecurring;
 
   const formSchema = z.object({
     name: z.string().min(2, { message: t.customers.nameMinLength }),
@@ -91,8 +93,13 @@ export function AddBakeryOrderDialog({ isOpen, onClose, onSave, orderToEdit }: A
                 <FormItem>
                   <FormLabel>{t.bakeryOrders.name}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.bakeryOrders.namePlaceholder} {...field} />
+                    <Input placeholder={t.bakeryOrders.namePlaceholder} {...field} disabled={isNameDisabled} />
                   </FormControl>
+                  {isNameDisabled && (
+                    <FormDescription>
+                      {t.bakeryOrders.editRecurringNameInfo}
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

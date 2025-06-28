@@ -349,7 +349,8 @@ export const translations = {
       unpin: "Désépingler la commande",
       orderPinned: "Commande épinglée pour les jours suivants.",
       orderUnpinned: "Commande non récurrente.",
-      orderExists: "Une commande avec ce nom existe déjà pour aujourd'hui."
+      orderExists: "Une commande avec ce nom existe déjà pour aujourd'hui.",
+      editRecurringNameInfo: "Pour changer le nom d'une commande récurrente, veuillez d'abord la désépingler."
     },
     errors: {
       title: "Erreur",
@@ -709,7 +710,8 @@ export const translations = {
       unpin: "إلغاء تثبيت الطلب",
       orderPinned: "تم تثبيت الطلب للأيام القادمة.",
       orderUnpinned: "الطلب غير متكرر.",
-      orderExists: "يوجد طلب بهذا الاسم لهذا اليوم بالفعل."
+      orderExists: "يوجد طلب بهذا الاسم لهذا اليوم بالفعل.",
+      editRecurringNameInfo: "لتغيير اسم طلب متكرر، يرجى إلغاء تثبيته أولاً."
     },
     errors: {
       title: "خطأ",
