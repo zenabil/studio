@@ -42,7 +42,7 @@ const formSchema = z.object({
   minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
   quantityPerBox: z.coerce.number().int().min(0, { message: 'Quantity per box must be a positive integer.' }),
   boxPrice: z.coerce.number().min(0, { message: 'Box price must be a positive number.' }),
-  barcodes: z.string().min(1, { message: 'Barcode cannot be empty.' }),
+  barcodes: z.string(),
 });
 
 export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode }: AddProductDialogProps) {
