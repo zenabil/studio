@@ -44,63 +44,87 @@ export interface DebtAlert {
 export const calculateDebtAlerts = (
   customers: Customer[],
   salesHistory: SaleRecord[],
-  paymentTermsDays: number
+  globalPaymentTermsDays: number
 ): DebtAlert[] => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const alerts: DebtAlert[] = [];
+  const allAlerts: { [customerId: string]: DebtAlert } = {};
 
-  const indebtedCustomers = customers.filter(c => !!c && c.balance > 0);
-  const allSalesSorted = salesHistory.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const indebtedCustomers = customers.filter(c => c && c.balance > 0);
 
   for (const customer of indebtedCustomers) {
-    let debtOriginDate: Date | null = null;
-    let balanceTrace = customer.balance;
+    const customerHistory = salesHistory
+      .filter(s => s.customerId === customer.id)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const customerHistory = allSalesSorted.filter(s => s.customerId === customer.id);
-    for (let i = customerHistory.length - 1; i >= 0; i--) {
-      const tx = customerHistory[i];
-      if (balanceTrace <= 0) break;
+    let unpaidInvoices: { date: Date; balance: number }[] = [];
+    let paymentsToApply: { amount: number }[] = [];
 
-      debtOriginDate = new Date(tx.date);
-
-      if (tx.items.length > 0) { // It's a Sale
-        balanceTrace -= tx.totals.balance;
-      } else { // It's a Payment
-        balanceTrace += tx.totals.amountPaid;
-      }
-    }
-
-    if (!debtOriginDate) continue;
-
-    let alertDueDate: Date | null = null;
-
-    if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-      let relevantDueDate = set(debtOriginDate, { date: customer.settlementDay });
-      if (isBefore(relevantDueDate, debtOriginDate)) {
-        relevantDueDate = addMonths(relevantDueDate, 1);
-      }
-      alertDueDate = relevantDueDate;
-    } else if (paymentTermsDays > 0) {
-      alertDueDate = addDays(debtOriginDate, paymentTermsDays);
-    }
-
-    if (alertDueDate) {
-      const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
-      if (daysUntilDue <= 1) { // Alert for overdue, today, or tomorrow
-        alerts.push({
-          customerName: customer.name,
-          balance: customer.balance,
-          dueDate: alertDueDate,
-          phone: customer.phone,
-          isOverdue: daysUntilDue < 0,
+    // Separate invoices and payments
+    customerHistory.forEach(tx => {
+      if (tx.items.length > 0) { // It's an invoice
+        unpaidInvoices.push({
+          date: new Date(tx.date),
+          balance: tx.totals.balance,
         });
+      } else if (tx.totals.amountPaid > 0) { // It's a payment
+        paymentsToApply.push({ amount: tx.totals.amountPaid });
+      }
+    });
+
+    // Apply payments to oldest invoices first (First-In, First-Out)
+    for (const payment of paymentsToApply) {
+      let paymentAmountLeft = payment.amount;
+      for (const invoice of unpaidInvoices) {
+        if (paymentAmountLeft <= 0) break;
+        if (invoice.balance > 0) {
+          const amountToPay = Math.min(paymentAmountLeft, invoice.balance);
+          invoice.balance -= amountToPay;
+          paymentAmountLeft -= amountToPay;
+        }
+      }
+    }
+    
+    // Find the oldest outstanding invoice for the alert
+    const firstOutstandingInvoice = unpaidInvoices.find(inv => inv.balance > 0);
+
+    if (firstOutstandingInvoice) {
+      const debtOriginDate = firstOutstandingInvoice.date;
+      let alertDueDate: Date | null = null;
+      
+      if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
+        // Due date is the customer's settlement day of the month of the invoice, or the next month if that day has passed.
+        let relevantDueDate = set(debtOriginDate, { date: customer.settlementDay });
+        if (isBefore(relevantDueDate, debtOriginDate)) {
+          relevantDueDate = addMonths(relevantDueDate, 1);
+        }
+        alertDueDate = relevantDueDate;
+      } else if (globalPaymentTermsDays > 0) {
+        // Due date is a number of days after the invoice date.
+        alertDueDate = addDays(debtOriginDate, globalPaymentTermsDays);
+      }
+      
+      if (alertDueDate) {
+          const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
+          // Alert if overdue, due today, or due tomorrow.
+          if (daysUntilDue <= 1) { 
+              if (!allAlerts[customer.id]) {
+                  allAlerts[customer.id] = {
+                      customerName: customer.name,
+                      balance: customer.balance, // The total balance is still what we show
+                      dueDate: alertDueDate,
+                      phone: customer.phone,
+                      isOverdue: daysUntilDue < 0,
+                  };
+              }
+          }
       }
     }
   }
 
-  return alerts.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  return Object.values(allAlerts).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 };
+
 
 export const calculateUpdatedProductsForInvoice = (
   currentProducts: Product[],
