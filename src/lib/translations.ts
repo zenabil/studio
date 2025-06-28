@@ -242,6 +242,7 @@ export const translations = {
         noItemsAdded: "Aucun article n'a encore été ajouté. Cliquez sur 'Ajouter un article' pour commencer.",
         addNewProduct: "Ajouter un nouveau produit",
         payFullAmount: "Payer le montant total",
+        createPurchaseOrder: "Créer une Facture",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -618,6 +619,7 @@ export const translations = {
         noItemsAdded: "لم تتم إضافة أي عناصر بعد. انقر فوق 'إضافة عنصر' للبدء.",
         addNewProduct: "إضافة منتج جديد",
         payFullAmount: "دفع المبلغ كاملاً",
+        createPurchaseOrder: "إنشاء فاتورة",
     },
     reports: {
       title: "التقارير والتحليلات",

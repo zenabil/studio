@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import type { Supplier, Product } from '@/lib/data';
 import { format } from 'date-fns';
-import { Printer, Package } from 'lucide-react';
+import { Printer, Package, FilePlus } from 'lucide-react';
 import Image from 'next/image';
 import { useSettings } from '@/contexts/settings-context';
 
@@ -24,11 +24,19 @@ interface SupplierRestockListDialogProps {
   onClose: () => void;
   supplier: Supplier | null;
   products: Product[];
+  onCreateInvoice: (productsToOrder: Product[]) => void;
 }
 
-export function SupplierRestockListDialog({ isOpen, onClose, supplier, products }: SupplierRestockListDialogProps) {
+export function SupplierRestockListDialog({ isOpen, onClose, supplier, products, onCreateInvoice }: SupplierRestockListDialogProps) {
   const { t } = useLanguage();
   const { settings } = useSettings();
+
+  const productsToOrder = products.filter(p => (p.minStock || 0) - p.stock > 0);
+
+  const handleCreateInvoice = () => {
+    onCreateInvoice(productsToOrder);
+    onClose();
+  }
 
   if (!supplier) return null;
 
@@ -107,6 +115,10 @@ export function SupplierRestockListDialog({ isOpen, onClose, supplier, products 
           <Button variant="outline" onClick={() => window.print()} disabled={products.length === 0}>
               <Printer className="mr-2 h-4 w-4" />
               {t.suppliers.printList}
+          </Button>
+          <Button onClick={handleCreateInvoice} disabled={productsToOrder.length === 0}>
+            <FilePlus className="mr-2 h-4 w-4" />
+            {t.suppliers.createPurchaseOrder}
           </Button>
         </DialogFooter>
       </DialogContent>

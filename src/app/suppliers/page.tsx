@@ -43,6 +43,7 @@ export default function SuppliersPage() {
   
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [supplierForInvoice, setSupplierForInvoice] = useState<Supplier | null>(null);
+  const [initialInvoiceItems, setInitialInvoiceItems] = useState<SupplierInvoiceItem[]>([]);
 
   const [isViewInvoicesOpen, setIsViewInvoicesOpen] = useState(false);
   const [supplierToView, setSupplierToView] = useState<Supplier | null>(null);
@@ -148,6 +149,7 @@ export default function SuppliersPage() {
 
   const handleOpenInvoiceDialog = (supplier: Supplier) => {
     setSupplierForInvoice(supplier);
+    setInitialInvoiceItems([]);
     setIsInvoiceDialogOpen(true);
   };
 
@@ -171,6 +173,34 @@ export default function SuppliersPage() {
     setSupplierForRestock(supplier);
   };
   
+  const handleCreatePurchaseOrderFromRestock = (productsToOrder: Product[]) => {
+      if (!supplierForRestock) return;
+  
+      const items: SupplierInvoiceItem[] = productsToOrder.map(product => {
+        const neededQuantity = (product.minStock || 0) - product.stock;
+        let quantityToOrder = neededQuantity > 0 ? neededQuantity : 0;
+  
+        if (product.quantityPerBox && product.quantityPerBox > 0 && quantityToOrder > 0) {
+          const numberOfBoxes = Math.ceil(quantityToOrder / product.quantityPerBox);
+          quantityToOrder = numberOfBoxes * product.quantityPerBox;
+        }
+  
+        return {
+          productId: product.id,
+          productName: product.name,
+          quantity: quantityToOrder,
+          purchasePrice: product.purchasePrice || 0,
+          boxPrice: product.boxPrice,
+          quantityPerBox: product.quantityPerBox,
+          barcode: (product.barcodes || []).join(', '),
+        };
+      });
+  
+      setSupplierForInvoice(supplierForRestock);
+      setInitialInvoiceItems(items);
+      setIsInvoiceDialogOpen(true);
+  };
+
   const handleMakePayment = async (amount: number) => {
     if (!payingSupplier) return;
     await makePaymentToSupplier(payingSupplier.id, amount);
@@ -289,6 +319,7 @@ export default function SuppliersPage() {
           onClose={() => setIsInvoiceDialogOpen(false)}
           onSave={handleSaveInvoice}
           supplier={supplierForInvoice}
+          initialItems={initialInvoiceItems}
         />
       )}
       
@@ -305,6 +336,7 @@ export default function SuppliersPage() {
         onClose={() => setSupplierForRestock(null)}
         supplier={supplierForRestock}
         products={lowStockProductsForSupplier}
+        onCreateInvoice={handleCreatePurchaseOrderFromRestock}
       />
       
       <MakeSupplierPaymentDialog
