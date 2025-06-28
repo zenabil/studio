@@ -32,7 +32,7 @@ import Loading from '@/app/loading';
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading } = useData();
+  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading, setRecurringStatusForOrderName } = useData();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
@@ -95,7 +95,7 @@ export default function BakeryOrdersPage() {
         if (a.isRecurring !== b.isRecurring) {
             return Number(b.isRecurring) - Number(a.isRecurring);
         }
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return a.name.localeCompare(b.name);
     });
   }, [todaysOrders]);
 
@@ -140,13 +140,7 @@ export default function BakeryOrdersPage() {
     const orderName = orderToToggle.name;
     const isNowRecurring = !orderToToggle.isRecurring;
     
-    const ordersToUpdate = bakeryOrders
-      .filter(o => o.name === orderName)
-      .map(o => ({...o, isRecurring: isNowRecurring}));
-
-    ordersToUpdate.forEach(order => {
-        updateBakeryOrder(order.id, { isRecurring: isNowRecurring });
-    });
+    setRecurringStatusForOrderName(orderName, isNowRecurring);
     
     toast({ title: isNowRecurring ? t.bakeryOrders.orderPinned : t.bakeryOrders.orderUnpinned });
   };

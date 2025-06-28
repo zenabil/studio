@@ -35,6 +35,7 @@ import {
     deleteSupplierInDB,
     processSupplierInvoice,
     processSupplierPayment,
+    setRecurringStatusForOrderNameInDB,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
@@ -60,6 +61,7 @@ interface DataContextType {
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
     setBakeryOrders: (orders: BakeryOrder[]) => Promise<void>;
+    setRecurringStatusForOrderName: (orderName: string, isRecurring: boolean) => Promise<void>;
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
@@ -269,6 +271,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
        await syncData();
     }
 
+    const setRecurringStatusForOrderName = async (orderName: string, isRecurring: boolean) => {
+        await setRecurringStatusForOrderNameInDB(orderName, isRecurring);
+        await syncData();
+    };
+
     const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
         const newSupplier: Supplier = {
             id: `supp-${new Date().getTime()}`,
@@ -362,6 +369,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updateBakeryOrder,
         deleteBakeryOrder,
         setBakeryOrders,
+        setRecurringStatusForOrderName,
         addSupplier,
         updateSupplier,
         deleteSupplier,

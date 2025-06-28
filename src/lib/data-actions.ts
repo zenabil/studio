@@ -158,6 +158,12 @@ export async function deleteBakeryOrderInDB(orderId: string): Promise<void> {
     await writeData(BAKERY_ORDERS_FILE, orders);
 }
 
+export async function setRecurringStatusForOrderNameInDB(orderName: string, isRecurring: boolean): Promise<void> {
+    let orders = await getBakeryOrders();
+    orders = orders.map(o => o.name === orderName ? { ...o, isRecurring } : o);
+    await writeData(BAKERY_ORDERS_FILE, orders);
+}
+
 export async function addSupplierInDB(supplier: Supplier): Promise<void> {
     const suppliers = await getSuppliers();
     suppliers.push(supplier);
@@ -277,7 +283,7 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
             product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
             if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
             if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
-            if (item.barcode !== undefined) product.barcode = item.barcode;
+            if (item.barcode !== undefined) product.barcodes = [item.barcode];
         }
     });
 
