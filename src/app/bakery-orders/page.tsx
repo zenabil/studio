@@ -330,7 +330,11 @@ export default function BakeryOrdersPage() {
         onClose={handleCloseDeleteDialog}
         onConfirm={handleDeleteOrder}
         title={t.bakeryOrders.deleteConfirmationTitle}
-        description={t.bakeryOrders.deleteConfirmationMessage}
+        description={
+            orderToDelete?.isRecurring
+            ? t.bakeryOrders.deleteRecurringConfirmationMessage
+            : t.bakeryOrders.deleteConfirmationMessage
+        }
       />
     </>
   );
