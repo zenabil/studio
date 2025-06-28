@@ -273,6 +273,11 @@ export const translations = {
       predictedSales: "Ventes prévues pour aujourd'hui",
       notEnoughData: "Données de vente insuffisantes pour faire une prévision.",
       other: "Autres",
+      aiSummaryTitle: "Résumé par IA",
+      aiSummaryDescription: "Obtenez une analyse instantanée de vos données de vente par notre assistant IA.",
+      generateSummary: "Générer le résumé",
+      getInsights: "Cliquez pour obtenir des informations sur vos données.",
+      noDataForSummary: "Pas de données de vente ou de dépenses dans cette période pour générer un résumé.",
     },
     alerts: {
       title: "Alertes",
@@ -683,6 +688,11 @@ export const translations = {
       predictedSales: "المبيعات المتوقعة لليوم",
       notEnoughData: "بيانات المبيعات غير كافية لعمل توقع.",
       other: "أخرى",
+      aiSummaryTitle: "ملخص بالذكاء الاصطناعي",
+      aiSummaryDescription: "احصل على تحليل فوري لبيانات مبيعاتك بواسطة مساعدنا الذكي.",
+      generateSummary: "إنشاء الملخص",
+      getInsights: "انقر للحصول على رؤى حول بياناتك.",
+      noDataForSummary: "لا توجد بيانات مبيعات أو مصروفات في هذه الفترة لإنشاء ملخص.",
     },
     alerts: {
       title: "التنبيهات",

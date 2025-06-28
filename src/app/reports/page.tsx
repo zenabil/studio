@@ -22,6 +22,7 @@ import { ProfitsChart } from '@/components/reports/profits-chart';
 import { SalesOverTimeChart } from '@/components/reports/sales-over-time-chart';
 import { CategorySalesChart } from '@/components/reports/category-sales-chart';
 import { SalesForecastCard } from '@/components/reports/sales-forecast-card';
+import { AIReportSummaryCard } from '@/components/reports/ai-report-summary-card';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -30,6 +31,7 @@ import { DollarSign, ShoppingCart, Users, LineChart, Package, Crown, Receipt } f
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
 import { calculateItemTotal } from '@/lib/utils';
+import { format } from 'date-fns';
 
 export default function ReportsPage() {
   const { t } = useLanguage();
@@ -148,6 +150,34 @@ export default function ReportsPage() {
           totalExpenses: expenseTotal
       };
   }, [filteredSales, allCustomers, products, expenses, dateRange, t.reports.other]);
+  
+  const salesDataForAI = useMemo(() => {
+    const dailySales: { [key: string]: number } = {};
+    filteredSales.forEach(sale => {
+        const day = format(new Date(sale.date), 'yyyy-MM-dd');
+        if (!dailySales[day]) {
+            dailySales[day] = 0;
+        }
+        dailySales[day] += sale.totals.total;
+    });
+
+    return Object.keys(dailySales)
+        .sort()
+        .map(day => ({
+            date: day,
+            sales: dailySales[day],
+        }));
+  }, [filteredSales]);
+
+  const reportDataForAI = {
+    totalSales,
+    totalProfits,
+    totalExpenses,
+    uniqueCustomerCount,
+    totalProductsSold,
+    bestSellers: bestSellers.map(b => ({ name: b.name, quantity: b.quantity })),
+    salesOverTime: salesDataForAI,
+  };
 
   if (isLoading) {
     return <Loading />;
@@ -217,7 +247,15 @@ export default function ReportsPage() {
           </Card>
       </div>
       
-      <SalesForecastCard />
+      <div className="grid gap-6 md:grid-cols-2">
+          <SalesForecastCard />
+          <AIReportSummaryCard
+            reportData={reportDataForAI}
+            dateRange={dateRange}
+            currency={settings.currency}
+            isDataLoading={isLoading}
+          />
+      </div>
 
       <Card>
           <CardHeader>
