@@ -375,19 +375,14 @@ export function PosView() {
     const cart = activeSession?.cart || [];
     const discount = activeSession?.discount || 0;
     
-    const subtotal = cart.reduce((sum, item) => {
-      const quantityString = cartQuantities[item.id];
-      const quantity = quantityString !== undefined && !isNaN(parseFloat(quantityString))
-        ? parseFloat(quantityString)
-        : item.quantity;
-      
-      const tempItem = { ...item, quantity: Math.max(0, quantity) };
-      return sum + calculateItemTotal(tempItem);
+    const subtotalValue = cart.reduce((sum, item) => {
+      // Always use the canonical quantity from the session cart for calculations
+      return sum + calculateItemTotal(item);
     }, 0);
 
-    const total = Math.max(0, subtotal - discount);
-    return { subtotal, total };
-  }, [activeSession?.cart, activeSession?.discount, cartQuantities]);
+    const totalValue = Math.max(0, subtotalValue - discount);
+    return { subtotal: subtotalValue, total: totalValue };
+  }, [activeSession?.cart, activeSession?.discount]);
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
