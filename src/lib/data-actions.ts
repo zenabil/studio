@@ -79,10 +79,28 @@ async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
     return JSON.parse(decrypted);
   } catch (error) {
     console.warn(`Could not read or decrypt ${filePath}. Seeding with initial data.`);
+    
+    // Special handling for users file to hash passwords on first seed
+    if (filePath === USERS_FILE) {
+        const usersToSeed = initialData as unknown as User[];
+        const hashedUsers = await Promise.all(usersToSeed.map(async (user) => {
+            if (user.passwordHash === '__TO_BE_HASHED_ADMIN__') {
+                return { ...user, passwordHash: await bcrypt.hash('admin', 10) };
+            }
+            if (user.passwordHash === '__TO_BE_HASHED_EMPLOYEE__') {
+                return { ...user, passwordHash: await bcrypt.hash('employee', 10) };
+            }
+            return user;
+        }));
+        await writeData(filePath, hashedUsers as unknown as T[]);
+        return hashedUsers as unknown as T[];
+    }
+
     await writeData(filePath, initialData);
     return initialData;
   }
 }
+
 
 // Helper to encrypt and write data
 async function writeData<T>(filePath: string, data: T[]): Promise<void> {
