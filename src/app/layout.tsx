@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppProviders } from '@/components/app-providers';
-import { AppLayout } from '@/components/app-layout';
-import { ActivationProvider } from '@/components/activation-provider';
+import { AuthGuard } from '@/components/auth-guard';
 
 export const metadata: Metadata = {
   title: 'Frucio',
@@ -28,11 +26,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AppProviders>
-          <ActivationProvider>
-            <SidebarProvider>
-              <AppLayout>{children}</AppLayout>
-            </SidebarProvider>
-          </ActivationProvider>
+          <AuthGuard>{children}</AuthGuard>
           <Toaster />
         </AppProviders>
       </body>

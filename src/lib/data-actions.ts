@@ -8,6 +8,7 @@ import {
     bakeryOrders as initialBakeryOrders,
     suppliers as initialSuppliers,
     supplierInvoices as initialSupplierInvoices,
+    users as initialUsers,
     licenseKeys as initialLicenseKeys,
     type Product,
     type Customer,
@@ -17,12 +18,14 @@ import {
     type SupplierInvoice,
     type SupplierInvoiceItem,
     type CartItem,
+    type User,
 } from '@/lib/data';
 
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import 'dotenv/config';
+import bcrypt from 'bcryptjs';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
@@ -31,6 +34,7 @@ const SALES_HISTORY_FILE = path.join(DATA_DIR, 'salesHistory.json');
 const BAKERY_ORDERS_FILE = path.join(DATA_DIR, 'bakeryOrders.json');
 const SUPPLIERS_FILE = path.join(DATA_DIR, 'suppliers.json');
 const SUPPLIER_INVOICES_FILE = path.join(DATA_DIR, 'supplierInvoices.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const LICENSE_KEYS_FILE = path.join(DATA_DIR, 'licenseKeys.json');
 
 const ALGORITHM = 'aes-256-gcm';
@@ -105,6 +109,9 @@ export async function getSuppliers(): Promise<Supplier[]> {
 }
 export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
     return readData(SUPPLIER_INVOICES_FILE, initialSupplierInvoices);
+}
+export async function getUsers(): Promise<User[]> {
+    return readData(USERS_FILE, initialUsers);
 }
 export async function getLicenseKeys(): Promise<string[]> {
     try {
@@ -420,7 +427,6 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
     if (data.suppliers) await saveSuppliers(data.suppliers);
     if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
 }
-
     
 
     

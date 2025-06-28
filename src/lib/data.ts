@@ -78,6 +78,13 @@ export type SaleRecord = {
     date: string;
 }
 
+export type User = {
+    id: string;
+    username: string;
+    passwordHash: string;
+    role: 'admin' | 'employee';
+};
+
 export const products: Product[] = [
   { id: 'prod-01', name: 'Café Espresso', category: 'Boissons', price: 2.50, purchasePrice: 0.80, stock: 100, minStock: 20, quantityPerBox: 50, boxPrice: 115.00, barcodes: ['1234567890123']},
   { id: 'prod-02', name: 'Croissant au Beurre', category: 'Pâtisseries', price: 1.80, purchasePrice: 0.60, stock: 50, minStock: 15, quantityPerBox: 24, boxPrice: 40.00, barcodes: ['2345678901234']},
@@ -142,6 +149,11 @@ export const suppliers: Supplier[] = [
 ];
 
 export const supplierInvoices: SupplierInvoice[] = [];
+
+export const users: User[] = [
+    { id: 'user-01', username: 'admin', passwordHash: '$2a$10$vCGiR9G4T9N1tJdC3wV6O.D.b5eXGWmrvcLz2K9sf9iytcRGA8yry', role: 'admin' },
+    { id: 'user-02', username: 'employee', passwordHash: '$2a$10$Fz.qP.L2M5t.b.zEwV8Nq.3j6q9R5UfS1a/6n1t1Y.w0E.c0S8wzK', role: 'employee' }
+];
 
 export const licenseKeys: string[] = [
     "a1b2c3d4-e5f6-7890-1234-567890abcdef",

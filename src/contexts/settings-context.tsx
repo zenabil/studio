@@ -32,6 +32,7 @@ export interface Settings {
   isActivated: boolean;
   licenseKey: string | null;
   firstLaunchDate: string | null;
+  employeePermissions: string[];
 }
 
 // Define the context type
@@ -81,6 +82,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     isActivated: false,
     licenseKey: null,
     firstLaunchDate: null,
+    employeePermissions: ['/', '/products', '/customers', '/suppliers', '/bakery-orders'],
   });
   
   // Load settings from localStorage on initial client render
