@@ -67,14 +67,24 @@ const ALGORITHM = 'aes-256-gcm';
 // Validate and load the encryption key
 const ENCRYPTION_KEY_STRING = process.env.ENCRYPTION_KEY;
 if (!ENCRYPTION_KEY_STRING || Buffer.from(ENCRYPTION_KEY_STRING, 'hex').length !== 32) {
-    // Generate a new key if not present, and warn the user.
-    const newKey = crypto.randomBytes(32).toString('hex');
-    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: ENCRYPTION_KEY is not defined or invalid in your .env file.');
-    console.warn('\x1b[33m%s\x1b[0m', `A new key has been generated for you: ${newKey}`);
-    console.warn('\x1b[33m%s\x1b[0m', 'Please add this key to your .env file to ensure your data is persistently encrypted.');
-    process.env.ENCRYPTION_KEY = newKey;
+    // In a local development environment, it can be helpful to generate a key automatically.
+    // We can detect this by checking for the presence of a specific environment variable
+    // that is typically set by development servers but not in production.
+    if (process.env.NODE_ENV === 'development') {
+        const newKey = crypto.randomBytes(32).toString('hex');
+        console.warn('\x1b[33m%s\x1b[0m', 'WARNING: ENCRYPTION_KEY is not set or invalid in your .env file.');
+        console.warn('\x1b[33m%s\x1b[0m', `A new key has been generated for you for this development session: ${newKey}`);
+        console.warn('\x1b[33m%s\x1b[0m', 'For persistent data, add this to a .env file:');
+        console.warn(`ENCRYPTION_KEY=${newKey}`);
+        process.env.ENCRYPTION_KEY = newKey;
+    } else {
+        // In production, we must fail hard.
+        console.error('\x1b[31m%s\x1b[0m', 'FATAL: ENCRYPTION_KEY is not defined or is invalid (must be a 64-character hex string).');
+        console.error('\x1b[31m%s\x1b[0m', 'The application cannot start without a valid encryption key. Please set it in your environment variables.');
+        process.exit(1);
+    }
 }
-const KEY = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+const KEY = Buffer.from(process.env.ENCRYPTION_KEY as string, 'hex');
 
 
 // Encryption function
@@ -446,5 +456,7 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
         await Promise.all(writePromises);
     });
 }
+
+    
 
     
