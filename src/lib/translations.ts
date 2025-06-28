@@ -62,6 +62,8 @@ export const translations = {
       productRemovedTitle: "Produit supprimé",
       productRemovedMessage: "{productName} a été retiré du panier car il n'existe plus.",
       addProductButton: "Ajouter '{productName}' comme nouveau produit",
+      gridView: "Vue en grille",
+      listView: "Vue en liste",
     },
     products: {
       title: "Gestion des Produits",
@@ -439,6 +441,8 @@ export const translations = {
       productRemovedTitle: "تمت إزالة المنتج",
       productRemovedMessage: "تمت إزالة {productName} من السلة لأنه لم يعد موجودًا.",
       addProductButton: "إضافة '{productName}' كمنتج جديد",
+      gridView: "عرض شبكي",
+      listView: "عرض قائمة",
     },
     products: {
       title: "إدارة المنتجات",

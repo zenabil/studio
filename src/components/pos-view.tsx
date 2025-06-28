@@ -41,6 +41,8 @@ import {
   Search,
   Package,
   ShoppingCart,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -52,7 +54,7 @@ import { CustomerCombobox } from '@/components/customer-combobox';
 import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
 import { AddCustomerDialog } from './add-customer-dialog';
-import { calculateItemTotal } from '@/lib/utils';
+import { calculateItemTotal, cn } from '@/lib/utils';
 import Loading from '@/app/loading';
 import { PosProductCard } from './pos-product-card';
 import { BarcodeScannerDialog } from './barcode-scanner-dialog';
@@ -67,6 +69,7 @@ interface SaleSession {
 }
 
 const SESSIONS_STORAGE_KEY = 'frucio-pos-sessions';
+const POS_VIEW_MODE_KEY = 'frucio-pos-view-mode';
 
 export function PosView() {
   const { t } = useLanguage();
@@ -89,7 +92,8 @@ export function PosView() {
   const [newProductBarcode, setNewProductBarcode] = useState('');
   const [newProductName, setNewProductName] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const customerComboboxRef = useRef<HTMLButtonElement>(null);
@@ -98,6 +102,17 @@ export function PosView() {
   const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cartEndRef = useRef<HTMLTableRowElement | null>(null);
   
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem(POS_VIEW_MODE_KEY) as 'grid' | 'list' | null;
+    if (savedViewMode) {
+        setViewMode(savedViewMode);
+    }
+  }, []);
+
+  useEffect(() => {
+      localStorage.setItem(POS_VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
+
   const createNewSession = useCallback((currentSessions: SaleSession[]): SaleSession => {
     const saleNumbers = currentSessions
       .map(s => {
@@ -700,23 +715,84 @@ export function PosView() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="flex items-center rounded-md bg-muted p-1">
+                      <Button
+                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                        size="icon"
+                        onClick={() => setViewMode('grid')}
+                        className={`h-8 w-8 ${viewMode === 'grid' ? 'bg-background shadow-sm' : ''}`}
+                        title={t.pos.gridView}
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                        size="icon"
+                        onClick={() => setViewMode('list')}
+                        className={`h-8 w-8 ${viewMode === 'list' ? 'bg-background shadow-sm' : ''}`}
+                        title={t.pos.listView}
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                  </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="flex-grow">
             <ScrollArea className="h-[55vh] lg:h-full">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 pr-4">
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map((product) => (
-                    <PosProductCard
-                        key={product.id}
-                        product={product}
-                        onAddToCart={addToCart}
-                        currency={settings.currency}
-                        t={t}
-                      />
-                  ))
+              {filteredProducts.length > 0 ? (
+                viewMode === 'grid' ? (
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 pr-4">
+                    {filteredProducts.map((product) => (
+                      <PosProductCard
+                          key={product.id}
+                          product={product}
+                          onAddToCart={addToCart}
+                          currency={settings.currency}
+                          t={t}
+                        />
+                    ))}
+                  </div>
                 ) : (
+                  <div className="pr-4">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>{t.products.name}</TableHead>
+                                  <TableHead>{t.products.category}</TableHead>
+                                  <TableHead className="text-right">{t.products.price}</TableHead>
+                                  <TableHead className="text-right">{t.products.stock}</TableHead>
+                                  <TableHead className="text-right">{t.products.actions}</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {filteredProducts.map((product) => {
+                                  const isOutOfStock = product.stock <= 0;
+                                  return (
+                                  <TableRow key={product.id} className={cn(isOutOfStock && "opacity-60")}>
+                                      <TableCell className="font-medium">{product.name}</TableCell>
+                                      <TableCell>{product.category}</TableCell>
+                                      <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right">{product.stock}</TableCell>
+                                      <TableCell className="text-right">
+                                          <Button
+                                              size="sm"
+                                              onClick={() => addToCart(product)}
+                                              disabled={isOutOfStock}
+                                              variant="outline"
+                                          >
+                                              <PlusCircle className="mr-2 h-4 w-4" />
+                                              {t.pos.addToCart}
+                                          </Button>
+                                      </TableCell>
+                                  </TableRow>
+                                  )
+                              })}
+                          </TableBody>
+                      </Table>
+                  </div>
+                )
+              ) : (
                   <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground h-64">
                     <Search className="w-16 h-16 mb-4 opacity-50" />
                     <p className="font-semibold text-lg">{t.pos.noProductsFound}</p>
@@ -736,7 +812,6 @@ export function PosView() {
                     )}
                   </div>
                 )}
-              </div>
             </ScrollArea>
           </CardContent>
         </Card>
