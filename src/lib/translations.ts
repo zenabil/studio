@@ -376,7 +376,8 @@ export const translations = {
       forecastError: "La prévision des ventes a échoué.",
       outOfStock: "{productName} est en rupture de stock.",
       quantityExceedsStock: "La quantité demandée pour {productName} dépasse le stock disponible ({stock}).",
-      unknownError: "Une erreur inconnue est survenue. Veuillez réessayer."
+      unknownError: "Une erreur inconnue est survenue. Veuillez réessayer.",
+      imageGenerationError: "La génération de l'image du produit a échoué."
     }
   },
   ar: {
@@ -751,7 +752,8 @@ export const translations = {
       forecastError: "فشل توقع المبيعات.",
       outOfStock: "{productName} غير متوفر في المخزون.",
       quantityExceedsStock: "الكمية المطلوبة من {productName} تتجاوز المخزون المتاح ({stock}).",
-      unknownError: "حدث خطأ غير معروف. يرجى المحاولة مرة أخرى."
+      unknownError: "حدث خطأ غير معروف. يرجى المحاولة مرة أخرى.",
+      imageGenerationError: "فشل إنشاء صورة المنتج."
     }
   },
 };
