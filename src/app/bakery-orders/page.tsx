@@ -88,10 +88,10 @@ export default function BakeryOrdersPage() {
                 const instanceExists = bakeryOrders.some(o => o.name === name && isToday(new Date(o.date)));
                 
                 if (!instanceExists) {
-                // Find the template to copy from. The most recent one is a good candidate.
+                // Find the template to copy from. The oldest one is the "master" template.
                 const template = recurringTemplates
                     .filter(t => t.name === name)
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
                 
                 if (template) {
                     const { id, ...restOfTemplate } = template;
