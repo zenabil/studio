@@ -346,16 +346,15 @@ export async function processSupplierPayment(data: { supplierId: string; amount:
 
 // Backup and Restore
 export async function getBackupData() {
-    const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, licenseKeys] = await Promise.all([
+    const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices] = await Promise.all([
         getProducts(),
         getCustomers(),
         getSalesHistory(),
         getBakeryOrders(),
         getSuppliers(),
         getSupplierInvoices(),
-        getLicenseKeys()
     ]);
-    return { products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, licenseKeys };
+    return { products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices };
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
@@ -380,12 +379,11 @@ export async function saveLicenseKeys(keys: string[]): Promise<void> {
     return writeData(LICENSE_KEYS_FILE, keys);
 }
 
-export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[]; licenseKeys?: string[] }) {
+export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[] }) {
     if (data.products) await saveProducts(data.products);
     if (data.customers) await saveCustomers(data.customers);
     if (data.salesHistory) await saveSalesHistory(data.salesHistory);
     if (data.bakeryOrders) await saveBakeryOrders(data.bakeryOrders);
     if (data.suppliers) await saveSuppliers(data.suppliers);
     if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
-    if (data.licenseKeys) await saveLicenseKeys(data.licenseKeys);
 }
