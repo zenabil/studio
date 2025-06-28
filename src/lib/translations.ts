@@ -279,6 +279,8 @@ export const translations = {
       noPhoneNumber: "Ce client n'a pas de numéro de téléphone.",
       smsRedirect: "Redirection vers l'application de messagerie pour envoyer le SMS.",
       overdue: "En retard",
+      orderStock: "Commander",
+      noSupplierForCategory: "Aucun fournisseur trouvé pour la catégorie '{category}'. Veuillez d'abord en ajouter un.",
     },
     settings: {
       title: "Paramètres",
@@ -645,6 +647,8 @@ export const translations = {
       noPhoneNumber: "لا يوجد رقم هاتف لهذا العميل.",
       smsRedirect: "جاري إعادة التوجيه إلى تطبيق الرسائل لإرسال الرسالة.",
       overdue: "متأخر",
+      orderStock: "طلب مخزون",
+      noSupplierForCategory: "لم يتم العثور على مورد للفئة '{category}'. يرجى إضافة مورد أولاً.",
     },
     settings: {
       title: "الإعدادات",

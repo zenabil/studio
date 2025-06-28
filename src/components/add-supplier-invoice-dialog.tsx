@@ -48,6 +48,7 @@ interface AddSupplierInvoiceDialogProps {
   onClose: () => void;
   onSave: (values: z.infer<typeof formSchema>) => void;
   supplier: Supplier;
+  initialItems?: SupplierInvoiceItem[];
 }
 
 const invoiceItemSchema = z.object({
@@ -67,7 +68,7 @@ const formSchema = z.object({
   priceUpdateStrategy: z.string().default('average'),
 });
 
-export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: AddSupplierInvoiceDialogProps) {
+export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, initialItems }: AddSupplierInvoiceDialogProps) {
   const { t } = useLanguage();
   const { products, addProduct } = useData();
   const { settings } = useSettings();
@@ -103,7 +104,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
     mode: 'onChange',
     defaultValues: {
       supplierId: supplier.id,
-      items: [],
+      items: initialItems || [],
       amountPaid: 0,
       priceUpdateStrategy: 'average',
     },
@@ -153,12 +154,12 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
       setIsSaving(false);
       form.reset({
         supplierId: supplier.id,
-        items: [],
+        items: initialItems || [],
         amountPaid: 0,
         priceUpdateStrategy: 'average',
       });
     }
-  }, [isOpen, supplier, form]);
+  }, [isOpen, supplier, form, initialItems]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSaving(true);
