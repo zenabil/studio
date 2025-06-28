@@ -26,7 +26,6 @@ export interface Settings {
   theme: Theme;
   colorPreset: string; // name of the preset
   paymentTermsDays: number;
-  isActivated: boolean;
 }
 
 // Define the context type
@@ -70,7 +69,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     theme: 'light',
     colorPreset: 'Teal',
     paymentTermsDays: 30,
-    isActivated: false,
   });
   
   // Load settings from localStorage on initial client render
@@ -86,6 +84,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         if (parsed.companyInfo) {
           newSettings.companyInfo = { ...initialSettings.companyInfo, ...parsed.companyInfo };
         }
+        delete (newSettings as any).isActivated; // remove old property if it exists
         setSettingsState(newSettings);
       } else {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(initialSettings));

@@ -78,11 +78,6 @@ export type SaleRecord = {
     date: string;
 }
 
-export interface LicenseKey {
-  key: string;
-  createdAt: string;
-}
-
 export const products: Product[] = [
   { id: 'prod-01', name: 'Café Espresso', category: 'Boissons', price: 2.50, purchasePrice: 0.80, stock: 100, minStock: 20, quantityPerBox: 50, boxPrice: 115.00, barcodes: ['1234567890123']},
   { id: 'prod-02', name: 'Croissant au Beurre', category: 'Pâtisseries', price: 1.80, purchasePrice: 0.60, stock: 50, minStock: 15, quantityPerBox: 24, boxPrice: 40.00, barcodes: ['2345678901234']},
@@ -147,7 +142,3 @@ export const suppliers: Supplier[] = [
 ];
 
 export const supplierInvoices: SupplierInvoice[] = [];
-
-export const licenseKeys: LicenseKey[] = [
-  { key: 'PRO-LICENSE-2024', createdAt: '2024-01-01T00:00:00.000Z' },
-];
