@@ -47,14 +47,19 @@ export default function CustomersPage() {
   });
 
   const filteredAndSortedCustomers = useMemo(() => {
-    let sortableCustomers = [...customers];
+    // Filter out any potentially invalid customer entries (null, undefined) to prevent crashes
+    let sortableCustomers = customers.filter(c => !!c); 
     
-    sortableCustomers = sortableCustomers.filter(customer =>
-      (customer.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (customer.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (customer.phone || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
+    if (lowerCaseSearchTerm) {
+        sortableCustomers = sortableCustomers.filter(customer =>
+          (customer.name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+          (customer.email || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+          (customer.phone || '').toLowerCase().includes(lowerCaseSearchTerm)
+        );
+    }
+    
     sortableCustomers.sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
