@@ -365,10 +365,7 @@ export function PosView() {
   };
 
   const handleSaveProduct = async (productData: Omit<Product, 'id'>) => {
-    const newProduct = await addProduct(productData);
-    if (newProduct) {
-      addToCart(newProduct);
-    }
+    await addProduct(productData);
     toast({
         title: t.products.productAdded,
     });

@@ -49,7 +49,7 @@ interface DataContextType {
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
+    addProduct: (productData: Omit<Product, 'id'>) => Promise<void>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
@@ -117,7 +117,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         syncData();
     }, [syncData]);
 
-    const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
+    const addProduct = async (productData: Omit<Product, 'id'>): Promise<void> => {
         if (productData.barcodes && productData.barcodes.length > 0) {
             const allBarcodes = new Set(products.flatMap(p => p.barcodes));
             const duplicate = productData.barcodes.find(b => allBarcodes.has(b));
@@ -133,8 +133,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...productData,
         };
         await addProductInDB(newProduct);
-        setProducts(prev => [...prev, newProduct]);
-        return newProduct;
+        await syncData();
     };
 
     const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
@@ -148,7 +147,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
         }
         await updateProductInDB(productId, productData);
-        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
+        await syncData();
     };
 
     const deleteProduct = async (productId: string) => {
@@ -173,7 +172,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         await deleteProductInDB(productId);
-        setProducts(prev => prev.filter(p => p.id !== productId));
+        await syncData();
         toast({ title: t.products.productDeleted });
     };
 
@@ -185,12 +184,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...customerData,
         };
         await addCustomerInDB(newCustomer);
-        setCustomers(prev => [...prev, newCustomer]);
+        await syncData();
     };
     
     const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
         await updateCustomerInDB(customerId, customerData);
-        setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...customerData } : c));
+        await syncData();
     };
 
     const deleteCustomer = async (customerId: string) => {
@@ -204,7 +203,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         await deleteCustomerInDB(customerId);
-        setCustomers(prev => prev.filter(c => c.id !== customerId));
+        await syncData();
         toast({ title: t.customers.customerDeleted });
     };
     
@@ -219,28 +218,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         
         try {
             await processSale({ saleRecord: newSale, cart });
-            // Manual state updates instead of syncData()
-            setProducts(prevProducts => {
-                const newProducts = JSON.parse(JSON.stringify(prevProducts));
-                cart.forEach(item => {
-                    const productIndex = newProducts.findIndex((p: Product) => p.id === item.id);
-                    if (productIndex > -1) {
-                        newProducts[productIndex].stock -= item.quantity;
-                    }
-                });
-                return newProducts;
-            });
-
-            if (customerId) {
-                setCustomers(prevCustomers => 
-                    prevCustomers.map(c => 
-                        c.id === customerId 
-                        ? { ...c, spent: c.spent + totals.total, balance: c.balance + totals.balance }
-                        : c
-                    )
-                );
-            }
-            setSalesHistory(prevHistory => [...prevHistory, newSale]);
+            await syncData();
         } catch (error) {
             console.error("Sale completion failed:", error);
             throw error; // Re-throw to be handled by the UI component
@@ -264,8 +242,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         try {
             await processPayment({ customerId, amount, paymentRecord });
-            setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, balance: c.balance - amount } : c));
-            setSalesHistory(prev => [...prev, paymentRecord]);
+            await syncData();
         } catch (error) {
              console.error("Failed to process payment:", error);
              toast({
@@ -282,27 +259,27 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...orderData,
         };
         await addBakeryOrderInDB(newOrder);
-        setBakeryOrdersState(prev => [...prev, newOrder]);
+        await syncData();
     };
 
     const updateBakeryOrder = async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
         await updateBakeryOrderInDB(orderId, orderData);
-        setBakeryOrdersState(prev => prev.map(o => o.id === orderId ? { ...o, ...orderData } : o));
+        await syncData();
     };
     
     const deleteBakeryOrder = async (orderId: string) => {
         await deleteBakeryOrderInDB(orderId);
-        setBakeryOrdersState(prev => prev.filter(o => o.id !== orderId));
+        await syncData();
     };
 
     const setBakeryOrders = async (orders: BakeryOrder[]) => {
        await saveBakeryOrders(orders);
-       setBakeryOrdersState(orders);
+       await syncData();
     }
 
     const setRecurringStatusForOrderName = async (orderName: string, isRecurring: boolean) => {
         await setRecurringStatusForOrderNameInDB(orderName, isRecurring);
-        setBakeryOrdersState(prev => prev.map(o => o.name === orderName ? { ...o, isRecurring } : o));
+        await syncData();
     };
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
@@ -312,12 +289,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...supplierData,
         };
         await addSupplierInDB(newSupplier);
-        setSuppliers(prev => [...prev, newSupplier]);
+        await syncData();
     };
 
     const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
         await updateSupplierInDB(supplierId, supplierData);
-        setSuppliers(prev => prev.map(s => s.id === supplierId ? { ...s, ...supplierData } : s));
+        await syncData();
     };
 
     const deleteSupplier = async (supplierId: string) => {
@@ -332,7 +309,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         await deleteSupplierInDB(supplierId);
-        setSuppliers(prev => prev.filter(s => s.id !== supplierId));
+        await syncData();
         toast({ title: t.suppliers.supplierDeleted });
     };
     
@@ -348,10 +325,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         try {
             await processSupplierInvoice({ invoice: newInvoice, updateMasterPrices: invoiceData.updateMasterPrices });
-            
-            // State updates
-            await syncData(); // Temporarily using syncData for this complex transaction. For a full optimization, this would be manual too.
-            
+            await syncData(); 
         } catch (error) {
             console.error("Failed to process supplier invoice:", error);
             toast({
@@ -374,8 +348,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         };
         try {
             await processSupplierPayment({ paymentRecord });
-            setSuppliers(prev => prev.map(s => s.id === supplierId ? { ...s, balance: s.balance - amount } : s));
-            setSupplierInvoices(prev => [...prev, paymentRecord]);
+            await syncData();
         } catch (error) {
             console.error("Failed to process supplier payment:", error);
             toast({
