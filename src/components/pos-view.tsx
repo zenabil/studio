@@ -43,6 +43,7 @@ import {
   ShoppingCart,
   LayoutGrid,
   List,
+  LoaderCircle,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
@@ -93,6 +94,7 @@ export function PosView() {
   const [newProductName, setNewProductName] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isCompletingSale, setIsCompletingSale] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -498,15 +500,18 @@ export function PosView() {
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
   const handleSaleCompletion = useCallback(async () => {
-    if (!activeSession || activeSession.cart.length === 0 || !activeSessionId) {
-      toast({
-        variant: "destructive",
-        title: t.errors.title,
-        description: t.errors.emptyCart,
-      });
+    if (isCompletingSale || !activeSession || activeSession.cart.length === 0 || !activeSessionId) {
+      if (!isCompletingSale) {
+        toast({
+          variant: "destructive",
+          title: t.errors.title,
+          description: t.errors.emptyCart,
+        });
+      }
       return;
     }
 
+    setIsCompletingSale(true);
     const totals = { subtotal, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance };
     
     try {
@@ -525,8 +530,10 @@ export function PosView() {
             title: t.errors.title,
             description: error instanceof Error ? error.message : t.errors.unknownError,
         });
+    } finally {
+        setIsCompletingSale(false);
     }
-  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, total, t, toast, closeSession]);
+  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, total, t, toast, closeSession, isCompletingSale]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p && p.barcodes.includes(barcode));
@@ -983,9 +990,18 @@ export function PosView() {
                 </Button>
              </div>
              <div className="mt-2">
-                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={activeSession.cart.length === 0}>
-                    <span>{t.pos.completeSale}</span>
-                    <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
+                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={activeSession.cart.length === 0 || isCompletingSale}>
+                    {isCompletingSale ? (
+                        <>
+                            <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+                            {t.settings.saving.replace('...', '')}...
+                        </>
+                    ) : (
+                        <>
+                            <span>{t.pos.completeSale}</span>
+                            <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
+                        </>
+                    )}
                 </Button>
              </div>
           </div>
