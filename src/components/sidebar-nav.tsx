@@ -135,7 +135,7 @@ export function SidebarNav() {
                     <SidebarContent>
                         <SidebarMenu>
                         {navItems.map((item) => (
-                            <SidebarMenuItem key={item.label}>
+                            <SidebarMenuItem key={item.href}>
                             <SidebarMenuButton
                                 asChild
                                 isActive={pathname === item.href}
@@ -196,7 +196,7 @@ export function SidebarNav() {
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
+            <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
                 isActive={pathname === item.href}
