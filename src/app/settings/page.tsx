@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSettings, type Settings, type Theme } from '@/contexts/settings-context';
@@ -15,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { differenceInCalendarDays } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
 
 type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
 
@@ -185,6 +187,14 @@ export default function SettingsPage() {
                  <div className="space-y-2">
                   <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
                   <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="logoUrl">{t.settings.logoUrl}</Label>
+                  <Controller name="companyInfo.logoUrl" control={control} render={({ field }) => <Input id="logoUrl" placeholder="https://example.com/logo.png" {...field} value={field.value || ''} />} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="additionalInfo">{t.settings.additionalInfo}</Label>
+                  <Controller name="companyInfo.additionalInfo" control={control} render={({ field }) => <Textarea id="additionalInfo" {...field} value={field.value || ''} />} />
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="paymentTerms">{t.settings.paymentTerms}</Label>

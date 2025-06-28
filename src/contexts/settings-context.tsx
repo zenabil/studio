@@ -11,6 +11,8 @@ export interface CompanyInfo {
   address: string;
   phone: string;
   email: string;
+  logoUrl?: string;
+  additionalInfo?: string;
 }
 
 export type Theme = 'light' | 'dark' | 'system';
@@ -69,6 +71,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       address: '123 Market St, Commerce City',
       phone: '555-1234',
       email: 'contact@propos.com',
+      logoUrl: '',
+      additionalInfo: '',
     },
     currency: '$',
     theme: 'light',

@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
 import type { Product, Customer } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import { calculateItemTotal } from '@/lib/utils';
+import Image from 'next/image';
 
 interface CartItem extends Product {
     quantity: number;
@@ -47,7 +49,18 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
       <DialogContent className="max-w-2xl printable-area">
         <DialogHeader>
            <div className="flex items-center gap-4 text-primary">
-              <Package className="w-10 h-10" />
+              {settings.companyInfo.logoUrl ? (
+                <Image
+                  src={settings.companyInfo.logoUrl}
+                  alt={`${settings.companyInfo.name} Logo`}
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 object-contain rounded-md"
+                  unoptimized
+                />
+              ) : (
+                <Package className="w-10 h-10" />
+              )}
               <DialogTitle className="text-3xl font-bold">{t.pos.invoice}</DialogTitle>
            </div>
         </DialogHeader>
@@ -59,6 +72,9 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
               <p className="text-sm text-muted-foreground">{settings.companyInfo.address}</p>
               <p className="text-sm text-muted-foreground">{settings.companyInfo.phone}</p>
               <p className="text-sm text-muted-foreground">{settings.companyInfo.email}</p>
+               {settings.companyInfo.additionalInfo && (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-2">{settings.companyInfo.additionalInfo}</p>
+              )}
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{t.pos.invoiceNumber}</p>

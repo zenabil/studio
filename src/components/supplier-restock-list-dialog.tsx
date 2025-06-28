@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -15,6 +16,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import type { Supplier, Product } from '@/lib/data';
 import { format } from 'date-fns';
 import { Printer, Package } from 'lucide-react';
+import Image from 'next/image';
+import { useSettings } from '@/contexts/settings-context';
 
 interface SupplierRestockListDialogProps {
   isOpen: boolean;
@@ -25,6 +28,7 @@ interface SupplierRestockListDialogProps {
 
 export function SupplierRestockListDialog({ isOpen, onClose, supplier, products }: SupplierRestockListDialogProps) {
   const { t } = useLanguage();
+  const { settings } = useSettings();
 
   if (!supplier) return null;
 
@@ -34,7 +38,18 @@ export function SupplierRestockListDialog({ isOpen, onClose, supplier, products 
         <div className="printable-area">
           <DialogHeader className="mb-6">
             <div className="flex items-center gap-4 text-primary">
-                <Package className="w-10 h-10" />
+                {settings.companyInfo.logoUrl ? (
+                  <Image
+                    src={settings.companyInfo.logoUrl}
+                    alt={`${settings.companyInfo.name} Logo`}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 object-contain rounded-md"
+                    unoptimized
+                  />
+                ) : (
+                  <Package className="w-10 h-10" />
+                )}
                 <DialogTitle className="text-3xl font-bold">{t.suppliers.restockList}</DialogTitle>
             </div>
             <DialogDescription>
