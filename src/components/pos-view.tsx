@@ -298,10 +298,20 @@ export function PosView() {
   const { subtotal, total } = useMemo(() => {
     const cart = activeSession?.cart || [];
     const discount = activeSession?.discount || 0;
-    const subtotal = cart.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+    
+    const subtotal = cart.reduce((sum, item) => {
+      const quantityString = cartQuantities[item.id];
+      const quantity = quantityString !== undefined && !isNaN(parseFloat(quantityString))
+        ? parseFloat(quantityString)
+        : item.quantity;
+      
+      const tempItem = { ...item, quantity: Math.max(0, quantity) };
+      return sum + calculateItemTotal(tempItem);
+    }, 0);
+
     const total = Math.max(0, subtotal - discount);
     return { subtotal, total };
-  }, [activeSession?.cart, activeSession?.discount]);
+  }, [activeSession?.cart, activeSession?.discount, cartQuantities]);
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
@@ -686,6 +696,8 @@ export function PosView() {
         onConfirm={() => sessionToDelete && closeSession(sessionToDelete)}
         title={t.pos.confirmCloseSaleTitle}
         description={t.pos.confirmCloseSaleMessage}
+        confirmText={t.pos.closeButton}
+        confirmVariant="destructive"
       />
       <AddProductDialog
         isOpen={isAddProductDialogOpen}
