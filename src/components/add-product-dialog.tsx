@@ -25,6 +25,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useEffect, useMemo, useState } from 'react';
+import { BarcodeScannerDialog } from './barcode-scanner-dialog';
+import { Barcode } from 'lucide-react';
 
 interface AddProductDialogProps {
   isOpen: boolean;
@@ -39,6 +41,7 @@ interface AddProductDialogProps {
 export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initialBarcode, initialName, products }: AddProductDialogProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const formSchema = useMemo(() => {
     return z.object({
@@ -158,49 +161,30 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     }
   }
 
+  const handleScanSuccess = (scannedBarcode: string) => {
+    const currentBarcodes = form.getValues('barcodes');
+    const newBarcodes = currentBarcodes ? `${currentBarcodes}, ${scannedBarcode}` : scannedBarcode;
+    form.setValue('barcodes', newBarcodes, { shouldValidate: true });
+    setIsScannerOpen(false);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{productToEdit ? t.products.editProduct : t.products.newProduct}</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.products.name}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t.products.namePlaceholder} {...field} disabled={isSaving}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.products.category}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t.products.categoryPlaceholder} {...field} disabled={isSaving}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{productToEdit ? t.products.editProduct : t.products.newProduct}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="purchasePrice"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t.products.purchasePrice}</FormLabel>
+                    <FormLabel>{t.products.name}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder={t.products.purchasePricePlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      <Input placeholder={t.products.namePlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -208,98 +192,143 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
               />
               <FormField
                 control={form.control}
-                name="price"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t.products.price}</FormLabel>
+                    <FormLabel>{t.products.category}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder={t.products.pricePlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      <Input placeholder={t.products.categoryPlaceholder} {...field} disabled={isSaving}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="purchasePrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.products.purchasePrice}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder={t.products.purchasePricePlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.products.price}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder={t.products.pricePlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="stock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.products.stock}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="minStock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.products.minStock}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" placeholder={t.products.minStockPlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <FormField
+                  control={form.control}
+                  name="quantityPerBox"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.products.quantityPerBox}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="boxPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.products.boxPrice}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder={t.products.boxPricePlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="stock"
+                name="barcodes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t.products.stock}</FormLabel>
+                    <FormLabel>{t.products.barcodes}</FormLabel>
                     <FormControl>
-                      <Input type="number" step="1" placeholder={t.products.stockPlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
+                      <div className="relative">
+                        <Input placeholder={t.products.barcodePlaceholder} {...field} disabled={isSaving} className="pr-10"/>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8"
+                          onClick={() => setIsScannerOpen(true)}
+                          title={t.pos.scanBarcode.replace('...','')}
+                        >
+                          <Barcode className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="minStock"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.products.minStock}</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="1" placeholder={t.products.minStockPlaceholder} {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-               <FormField
-                control={form.control}
-                name="quantityPerBox"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.products.quantityPerBox}</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="boxPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.products.boxPrice}</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" placeholder={t.products.boxPricePlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="barcodes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t.products.barcodes}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t.products.barcodePlaceholder} {...field} disabled={isSaving}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="secondary" disabled={isSaving}>
-                  {t.products.cancel}
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSaving}>{isSaving ? t.settings.saving : t.products.save}</Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary" disabled={isSaving}>
+                    {t.products.cancel}
+                  </Button>
+                </DialogClose>
+                <Button type="submit" disabled={isSaving}>{isSaving ? t.settings.saving : t.products.save}</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      <BarcodeScannerDialog
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
+    </>
   );
 }
