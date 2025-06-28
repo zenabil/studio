@@ -165,6 +165,22 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
                                                         )
                                                     })}
                                                 </TableBody>
+                                                <TableFooter>
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} className="text-right font-medium">{t.pos.subtotal}</TableCell>
+                                                        <TableCell className="text-right font-medium">{settings.currency}{saleRecord.totals.subtotal.toFixed(2)}</TableCell>
+                                                    </TableRow>
+                                                    {saleRecord.totals.discount > 0 && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} className="text-right font-medium">{t.pos.discount}</TableCell>
+                                                        <TableCell className="text-right font-medium text-destructive">-{settings.currency}{saleRecord.totals.discount.toFixed(2)}</TableCell>
+                                                    </TableRow>
+                                                    )}
+                                                    <TableRow className="border-t-2 border-foreground/20">
+                                                        <TableCell colSpan={3} className="text-right font-bold">{t.pos.grandTotal}</TableCell>
+                                                        <TableCell className="text-right font-bold">{settings.currency}{saleRecord.totals.total.toFixed(2)}</TableCell>
+                                                    </TableRow>
+                                                </TableFooter>
                                             </Table>
                                         </div>
                                     </TableCell>
