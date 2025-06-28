@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -122,25 +123,38 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
 
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
-      if (!name) return;
+      if (!name || type !== 'change') return;
 
       const parts = name.split('.');
       if (parts.length < 3 || parts[0] !== 'items') return;
       
       const index = parseInt(parts[1], 10);
-      const fieldName = parts[2];
+      const fieldName = parts[2] as keyof SupplierInvoiceItem;
       const item = value.items?.[index];
 
       if (!item) return;
 
-      // If the user manually changes the unit purchase price,
-      // and a box price was set, we clear the box price to avoid inconsistency,
-      // as the two are no longer linked for this item.
-      if (fieldName === 'purchasePrice' && type === 'change') { 
-        if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
-          const derivedPrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
+      if (fieldName === 'boxPrice' || fieldName === 'quantityPerBox') {
+        const boxPrice = item.boxPrice;
+        const qtyPerBox = item.quantityPerBox;
+
+        if (typeof boxPrice === 'number' && boxPrice > 0 && typeof qtyPerBox === 'number' && qtyPerBox > 0) {
+          const newPurchasePrice = parseFloat((boxPrice / qtyPerBox).toFixed(2));
+          // Check if the current purchase price is different before setting, to avoid infinite loops
+          if (item.purchasePrice !== newPurchasePrice) {
+            form.setValue(`items.${index}.purchasePrice`, newPurchasePrice, { shouldValidate: true });
+          }
+        }
+      } else if (fieldName === 'purchasePrice') {
+        const boxPrice = item.boxPrice;
+        const qtyPerBox = item.quantityPerBox;
+
+        if (typeof boxPrice === 'number' && boxPrice > 0 && typeof qtyPerBox === 'number' && qtyPerBox > 0) {
+          const derivedPrice = parseFloat((boxPrice / qtyPerBox).toFixed(2));
           if (item.purchasePrice !== derivedPrice) {
-            form.setValue(`items.${index}.boxPrice`, undefined, { shouldValidate: true });
+            // Price was changed manually and no longer matches box price, so break the link
+            form.setValue(`items.${index}.boxPrice`, undefined, { shouldValidate: false });
+            form.setValue(`items.${index}.quantityPerBox`, undefined, { shouldValidate: true });
           }
         }
       }
