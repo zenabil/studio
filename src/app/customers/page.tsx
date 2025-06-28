@@ -235,6 +235,7 @@ export default function CustomersPage() {
         onClose={handleCloseAddDialog}
         onSave={handleSaveCustomer}
         customerToEdit={editingCustomer}
+        customers={customers}
       />
        <MakePaymentDialog
         isOpen={!!payingCustomer}

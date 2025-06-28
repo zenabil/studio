@@ -30,25 +30,42 @@ interface AddCustomerDialogProps {
   onClose: () => void;
   onSave: (customer: Omit<Customer, 'id' | 'spent' | 'balance'>, id?: string) => Promise<void>;
   customerToEdit?: Customer | null;
+  customers: Customer[];
 }
 
-export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit }: AddCustomerDialogProps) {
+export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, customers }: AddCustomerDialogProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
 
-  const formSchema = z.object({
-    name: z.string().min(2, { message: t.customers.nameMinLength }),
-    email: z.string().email({ message: t.customers.emailInvalid }).or(z.literal('')),
-    phone: z.string().optional(),
-    settlementDay: z.coerce
+  const formSchema = z
+    .object({
+      name: z.string().min(2, { message: t.customers.nameMinLength }),
+      email: z.string().email({ message: t.customers.emailInvalid }).or(z.literal('')),
+      phone: z.string().optional(),
+      settlementDay: z.coerce
         .number()
         .int()
         .min(1, { message: t.customers.settlementDayInvalid })
         .max(31, { message: t.customers.settlementDayInvalid })
         .optional()
         .or(z.literal(''))
-        .transform(val => val === '' ? undefined : val),
-  });
+        .transform((val) => (val === '' ? undefined : val)),
+    })
+    .superRefine((data, ctx) => {
+      if (data.email) {
+        const emailExists = customers.some(
+          (customer) =>
+            customer.email.toLowerCase() === data.email.toLowerCase() && customer.id !== customerToEdit?.id
+        );
+        if (emailExists) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t.customers.emailExists,
+            path: ['email'],
+          });
+        }
+      }
+    });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
