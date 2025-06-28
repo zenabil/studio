@@ -123,7 +123,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           minStock: productToEdit.minStock || 0,
           quantityPerBox: productToEdit.quantityPerBox || undefined,
           boxPrice: productToEdit.boxPrice || undefined,
-          barcodes: productToEdit.barcodes.join(', '),
+          barcodes: (productToEdit.barcodes || []).join(', '),
         });
       } else {
         form.reset({
