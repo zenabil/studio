@@ -19,10 +19,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, ChevronsUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
+
+type SortableKeys = keyof Pick<Product, 'name' | 'category' | 'purchasePrice' | 'price' | 'stock' | 'minStock' | 'quantityPerBox' | 'boxPrice'>;
 
 export default function ProductsPage() {
   const { t } = useLanguage();
@@ -33,18 +35,67 @@ export default function ProductsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({
+    key: 'name',
+    direction: 'ascending',
+  });
 
-  const filteredProducts = useMemo(() => {
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return products
-      .filter(product => !!product) // Safeguard against null/undefined products
-      .filter(product =>
-        (product.name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+  const filteredAndSortedProducts = useMemo(() => {
+    let sortableProducts = products
+      .filter(product => !!product)
+      .filter(product => {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        return (product.name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
         (product.category || '').toLowerCase().includes(lowerCaseSearchTerm) ||
         (product.barcodes || []).some(b => b.toLowerCase().includes(lowerCaseSearchTerm))
-      )
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [products, searchTerm]);
+      });
+      
+    sortableProducts.sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return sortableProducts;
+  }, [products, searchTerm, sortConfig]);
+  
+  const requestSort = (key: SortableKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: SortableKeys) => {
+    if (sortConfig.key !== key) {
+      return <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground/50" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+      return <ArrowUp className="ml-2 h-4 w-4" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => (
+      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => requestSort(sortKey)}>
+          <div className="flex items-center">
+              {children}
+              {getSortIcon(sortKey)}
+          </div>
+      </TableHead>
+  );
   
   const handleOpenDialog = (product: Product | null = null) => {
     setEditingProduct(product);
@@ -117,21 +168,21 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t.products.name}</TableHead>
-                <TableHead>{t.products.category}</TableHead>
+                <SortableHeader sortKey="name">{t.products.name}</SortableHeader>
+                <SortableHeader sortKey="category">{t.products.category}</SortableHeader>
                 <TableHead>{t.products.barcodes}</TableHead>
-                <TableHead className="text-right">{t.products.purchasePrice}</TableHead>
-                <TableHead className="text-right">{t.products.price}</TableHead>
-                <TableHead className="text-right">{t.products.stock}</TableHead>
-                <TableHead className="text-right">{t.products.minStock}</TableHead>
-                <TableHead className="text-right">{t.products.quantityPerBox}</TableHead>
-                <TableHead className="text-right">{t.products.boxPrice}</TableHead>
+                <SortableHeader sortKey="purchasePrice" className="text-right">{t.products.purchasePrice}</SortableHeader>
+                <SortableHeader sortKey="price" className="text-right">{t.products.price}</SortableHeader>
+                <SortableHeader sortKey="stock" className="text-right">{t.products.stock}</SortableHeader>
+                <SortableHeader sortKey="minStock" className="text-right">{t.products.minStock}</SortableHeader>
+                <SortableHeader sortKey="quantityPerBox" className="text-right">{t.products.quantityPerBox}</SortableHeader>
+                <SortableHeader sortKey="boxPrice" className="text-right">{t.products.boxPrice}</SortableHeader>
                 <TableHead className="text-right">{t.products.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
+              {filteredAndSortedProducts.length > 0 ? (
+                filteredAndSortedProducts.map((product) => (
                   <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
