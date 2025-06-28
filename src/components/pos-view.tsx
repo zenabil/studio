@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -712,8 +713,11 @@ export function PosView() {
                     </div>
                     <Input ref={discountInputRef} type="number" value={activeSession.discount || ''} onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} className="h-8 w-24 text-right" />
                 </div>
-                <Separator/>
-                <div className="flex justify-between font-bold text-lg"><span>{t.pos.grandTotal}</span><span>{settings.currency}{total.toFixed(2)}</span></div>
+            </div>
+            <Separator className="my-4" />
+            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 font-bold text-primary text-3xl">
+              <span>{t.pos.grandTotal}</span>
+              <span>{settings.currency}{total.toFixed(2)}</span>
             </div>
             <Separator className="my-4" />
              <div className="space-y-4">
