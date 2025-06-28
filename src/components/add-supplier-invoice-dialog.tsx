@@ -93,12 +93,35 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
 
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
-      if (name && (name.endsWith('.boxPrice') || name.endsWith('.quantityPerBox'))) {
-        const index = parseInt(name.split('.')[1], 10);
-        const item = value.items?.[index];
-        if (item && typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
-           const calculatedPrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
-           form.setValue(`items.${index}.purchasePrice`, calculatedPrice, { shouldValidate: true });
+      if (!name) return;
+
+      const parts = name.split('.');
+      if (parts.length < 3 || parts[0] !== 'items') return;
+      
+      const index = parseInt(parts[1], 10);
+      const fieldName = parts[2];
+      const item = value.items?.[index];
+
+      if (!item) return;
+
+      if (fieldName === 'boxPrice' || fieldName === 'quantityPerBox') {
+        // If both box price and quantity are present, calculate the unit price
+        if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
+          const newPurchasePrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
+          // Only set value if it's different to prevent re-renders
+          if (newPurchasePrice !== item.purchasePrice) {
+            form.setValue(`items.${index}.purchasePrice`, newPurchasePrice, { shouldValidate: true });
+          }
+        }
+      } else if (fieldName === 'purchasePrice' && type === 'change') { // 'change' likely means user input
+        // When the unit price is changed manually, it should take precedence.
+        // We can verify this by checking if it differs from what the box price would calculate.
+        if (typeof item.boxPrice === 'number' && typeof item.quantityPerBox === 'number' && item.quantityPerBox > 0) {
+          const derivedPrice = parseFloat((item.boxPrice / item.quantityPerBox).toFixed(2));
+          if (item.purchasePrice !== derivedPrice) {
+            // Since the user typed a new unit price, the box price is no longer the source of truth. Clear it.
+            form.setValue(`items.${index}.boxPrice`, undefined, { shouldValidate: true });
+          }
         }
       }
     });
