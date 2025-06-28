@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer, Wallet } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddSupplierDialog } from '@/components/add-supplier-dialog';
-import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
+import { AddSupplierInvoiceDialog } from '@/add-supplier-invoice-dialog';
 import { SupplierInvoicesDialog } from '@/components/supplier-invoices-dialog';
 import { SupplierRestockListDialog } from '@/components/supplier-restock-list-dialog';
 import Loading from '@/app/loading';
@@ -91,7 +91,6 @@ export default function SuppliersPage() {
   const handleDeleteSupplier = () => {
     if (!supplierToDelete) return;
     deleteSupplier(supplierToDelete.id);
-    toast({ title: t.suppliers.supplierDeleted });
     handleCloseDeleteDialog();
   };
 
@@ -172,46 +171,54 @@ export default function SuppliersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSuppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>{supplier.phone}</TableCell>
-                  <TableCell>{supplier.productCategory}</TableCell>
-                  <TableCell>
-                    {supplier.visitDays && supplier.visitDays.length > 0
-                        ? supplier.visitDays
-                            .sort((a,b) => a - b)
-                            .map(dayIndex => dayNames[dayIndex])
-                            .join(', ')
-                        : '-'}
-                  </TableCell>
-                  <TableCell className={`text-right font-bold ${(supplier.balance || 0) > 0 ? 'text-destructive' : 'text-success'}`}>
-                    {settings.currency}{(supplier.balance || 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="flex justify-end">
-                    {(supplier.balance || 0) > 0 && (
-                      <Button variant="ghost" size="icon" title={t.suppliers.makePayment} onClick={() => setPayingSupplier(supplier)}>
-                        <Wallet className="h-4 w-4" />
+              {filteredSuppliers.length > 0 ? (
+                filteredSuppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell>{supplier.phone}</TableCell>
+                    <TableCell>{supplier.productCategory}</TableCell>
+                    <TableCell>
+                      {supplier.visitDays && supplier.visitDays.length > 0
+                          ? supplier.visitDays
+                              .sort((a,b) => a - b)
+                              .map(dayIndex => dayNames[dayIndex])
+                              .join(', ')
+                          : '-'}
+                    </TableCell>
+                    <TableCell className={`text-right font-bold ${(supplier.balance || 0) > 0 ? 'text-destructive' : 'text-success'}`}>
+                      {settings.currency}{(supplier.balance || 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="flex justify-end">
+                      {(supplier.balance || 0) > 0 && (
+                        <Button variant="ghost" size="icon" title={t.suppliers.makePayment} onClick={() => setPayingSupplier(supplier)}>
+                          <Wallet className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" title={t.suppliers.generateRestockList} onClick={() => handleGenerateRestockList(supplier)}>
+                          <Printer className="h-4 w-4" />
                       </Button>
-                    )}
-                    <Button variant="ghost" size="icon" title={t.suppliers.generateRestockList} onClick={() => handleGenerateRestockList(supplier)}>
-                        <Printer className="h-4 w-4" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon" title={t.suppliers.addInvoice} onClick={() => handleOpenInvoiceDialog(supplier)}>
-                        <FilePlus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title={t.suppliers.viewInvoices} onClick={() => handleOpenViewInvoicesDialog(supplier)}>
-                        <BookOpen className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title={t.suppliers.editSupplier} onClick={() => handleOpenAddDialog(supplier)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title={t.suppliers.delete} onClick={() => handleOpenDeleteDialog(supplier)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Button type="button" variant="ghost" size="icon" title={t.suppliers.addInvoice} onClick={() => handleOpenInvoiceDialog(supplier)}>
+                          <FilePlus className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title={t.suppliers.viewInvoices} onClick={() => handleOpenViewInvoicesDialog(supplier)}>
+                          <BookOpen className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title={t.suppliers.editSupplier} onClick={() => handleOpenAddDialog(supplier)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title={t.suppliers.delete} onClick={() => handleOpenDeleteDialog(supplier)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    {searchTerm ? t.suppliers.noResultsFound : t.suppliers.noSuppliersYet}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

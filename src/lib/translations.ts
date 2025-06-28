@@ -218,6 +218,9 @@ export const translations = {
         credit: "Crédit",
         payment: "Paiement",
         invoice: "Facture",
+        noResultsFound: "Aucun fournisseur ne correspond à votre recherche.",
+        noSuppliersYet: "Vous n'avez encore ajouté aucun fournisseur.",
+        deleteErrorInUse: "Ce fournisseur ne peut pas être supprimé car il est lié à des factures existantes.",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -567,6 +570,9 @@ export const translations = {
         credit: "دائن",
         payment: "دفعة",
         invoice: "فاتورة",
+        noResultsFound: "لا يوجد موردون يطابقون بحثك.",
+        noSuppliersYet: "لم تقم بإضافة أي موردين بعد.",
+        deleteErrorInUse: "لا يمكن حذف هذا المورد لأنه مرتبط بفواتير حالية.",
     },
     reports: {
       title: "التقارير والتحليلات",

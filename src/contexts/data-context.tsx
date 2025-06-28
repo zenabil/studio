@@ -285,7 +285,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const deleteSupplier = async (supplierId: string) => {
+        const isSupplierInUse = supplierInvoices.some(invoice => invoice.supplierId === supplierId);
+        if (isSupplierInUse) {
+            toast({
+                variant: 'destructive',
+                title: t.errors.title,
+                description: t.suppliers.deleteErrorInUse,
+            });
+            return;
+        }
+
         await deleteSupplierInDB(supplierId);
+        toast({ title: t.suppliers.supplierDeleted });
         await syncData();
     };
     
