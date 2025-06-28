@@ -82,11 +82,7 @@ export default function CustomersPage() {
 
   const handleDeleteCustomer = () => {
     if (!customerToDelete) return;
-
     deleteCustomer(customerToDelete.id);
-    toast({
-        title: t.customers.customerDeleted,
-    });
     handleCloseDeleteDialog();
   };
   

@@ -195,7 +195,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const deleteCustomer = async (customerId: string) => {
+        const isCustomerInSales = salesHistory.some(sale => sale.customerId === customerId);
+        if (isCustomerInSales) {
+            toast({
+                variant: 'destructive',
+                title: t.errors.title,
+                description: t.customers.deleteErrorInUse,
+            });
+            return;
+        }
         await deleteCustomerInDB(customerId);
+        toast({ title: t.customers.customerDeleted });
         await syncData();
     };
     
