@@ -69,10 +69,24 @@ export default function BakeryOrdersPage() {
   const [isDeleteRecurringDialogOpen, setIsDeleteRecurringDialogOpen] = useState(false);
 
   useEffect(() => {
+    // This effect runs once on mount to clean up old localStorage entries.
+    if (typeof window !== 'undefined') {
+        const todaysKey = getTodaysDeletedRecurringKey();
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('deletedRecurringOrders_') && key !== todaysKey) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+  }, []);
+
+  useEffect(() => {
     // This effect runs once after data is loaded to create any missing daily recurring orders.
     if (!isLoading && !isInitialized) {
         const initializeRecurringOrders = async () => {
-            const today = new Date();
             const deletedForToday = getDeletedRecurringForToday();
             
             // Find unique templates. Each order with isRecurring=true is a template.
