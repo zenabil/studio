@@ -427,6 +427,22 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
     if (data.suppliers) await saveSuppliers(data.suppliers);
     if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
 }
-    
 
+export async function authenticateUser(username: string, password: string): Promise<User | null> {
+    const users = await getUsers();
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+    if (!user) {
+        return null;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isPasswordValid) {
+        return null;
+    }
+
+    return user;
+}
+    
     
