@@ -253,6 +253,14 @@ export async function deleteBakeryOrderInDB(orderId: string): Promise<void> {
     });
 }
 
+export async function deleteBakeryOrdersByNameInDB(orderName: string): Promise<void> {
+    return fileWriteMutex.runExclusive(async () => {
+        let orders = await getBakeryOrders();
+        orders = orders.filter(o => o.name !== orderName);
+        await writeData(BAKERY_ORDERS_FILE, orders);
+    });
+}
+
 export async function setRecurringStatusForOrderNameInDB(orderName: string, isRecurring: boolean): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
         let orders = await getBakeryOrders();
@@ -456,7 +464,3 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
         await Promise.all(writePromises);
     });
 }
-
-    
-
-    

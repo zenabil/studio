@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { useData } from '@/contexts/data-context';
 import type { BakeryOrder } from '@/lib/data';
 import Loading from '@/app/loading';
+import { DeleteRecurringOrderDialog } from '@/components/delete-recurring-order-dialog';
 
 // Helper functions for localStorage to remember deleted recurring orders for the day
 const getTodaysDeletedRecurringKey = () => {
@@ -57,13 +58,16 @@ const addDeletedRecurringForToday = (orderName: string) => {
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading, setRecurringStatusForOrderName } = useData();
+  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading, setRecurringStatusForOrderName, deleteBakeryOrdersByName } = useData();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<BakeryOrder | null>(null);
   const [orderToUnpin, setOrderToUnpin] = useState<BakeryOrder | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
+  const [isDeleteRecurringDialogOpen, setIsDeleteRecurringDialogOpen] = useState(false);
 
   useEffect(() => {
     // This effect runs once after data is loaded to create any missing daily recurring orders.
@@ -226,27 +230,44 @@ export default function BakeryOrdersPage() {
 
   const handleOpenDeleteDialog = (order: BakeryOrder) => {
     setOrderToDelete(order);
+    if (order.isRecurring) {
+      setIsDeleteRecurringDialogOpen(true);
+    } else {
+      setIsConfirmDeleteDialogOpen(true);
+    }
   };
 
   const handleCloseDeleteDialog = () => {
     setOrderToDelete(null);
+    setIsConfirmDeleteDialogOpen(false);
+    setIsDeleteRecurringDialogOpen(false);
   };
-
-  const handleDeleteOrder = () => {
-    if (!orderToDelete) return;
-
+  
+  const handleDeleteInstance = (orderId?: string) => {
+    const idToDelete = orderId || orderToDelete?.id;
+    if (!idToDelete) return;
+    
     // If deleting a recurring order for today, remember it so it's not recreated on reload.
-    if (orderToDelete.isRecurring && isToday(new Date(orderToDelete.date))) {
-      addDeletedRecurringForToday(orderToDelete.name);
+    const order = bakeryOrders.find(o => o.id === idToDelete);
+    if (order?.isRecurring && isToday(new Date(order.date))) {
+      addDeletedRecurringForToday(order.name);
     }
     
-    deleteBakeryOrder(orderToDelete.id);
+    deleteBakeryOrder(idToDelete);
     toast({
         title: t.bakeryOrders.orderDeleted,
     });
     handleCloseDeleteDialog();
   };
   
+  const handleDeletePattern = (orderName?: string) => {
+    const nameToDelete = orderName || orderToDelete?.name;
+    if (!nameToDelete) return;
+
+    deleteBakeryOrdersByName(nameToDelete);
+    handleCloseDeleteDialog();
+  };
+
   const handleConfirmUnpin = () => {
     if (!orderToUnpin) return;
     handleToggleRecurring(orderToUnpin.id);
@@ -375,19 +396,20 @@ export default function BakeryOrdersPage() {
         confirmText={t.bakeryOrders.unpinButton}
         confirmVariant="default"
       />
-      <ConfirmDialog
-        isOpen={!!orderToDelete}
+      <DeleteRecurringOrderDialog
+        isOpen={isDeleteRecurringDialogOpen}
         onClose={handleCloseDeleteDialog}
-        onConfirm={handleDeleteOrder}
+        order={orderToDelete}
+        onDeleteInstance={() => orderToDelete && handleDeleteInstance(orderToDelete.id)}
+        onDeletePattern={() => orderToDelete && handleDeletePattern(orderToDelete.name)}
+      />
+      <ConfirmDialog
+        isOpen={isConfirmDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={() => handleDeleteInstance()}
         title={t.bakeryOrders.deleteConfirmationTitle}
-        description={
-            orderToDelete?.isRecurring
-            ? t.bakeryOrders.deleteRecurringConfirmationMessage
-            : t.bakeryOrders.deleteConfirmationMessage
-        }
+        description={t.bakeryOrders.deleteConfirmationMessage}
       />
     </>
   );
 }
-
-    

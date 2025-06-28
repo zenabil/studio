@@ -37,6 +37,7 @@ import {
     processSupplierInvoice,
     processSupplierPayment,
     setRecurringStatusForOrderNameInDB,
+    deleteBakeryOrdersByNameInDB,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
@@ -62,6 +63,7 @@ interface DataContextType {
     addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => Promise<void>;
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
+    deleteBakeryOrdersByName: (orderName: string) => Promise<void>;
     setBakeryOrders: (orders: BakeryOrder[]) => Promise<void>;
     setRecurringStatusForOrderName: (orderName: string, isRecurring: boolean) => Promise<void>;
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
@@ -290,6 +292,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const deleteBakeryOrdersByName = async (orderName: string) => {
+        const previousOrders = bakeryOrders;
+        setBakeryOrdersState(current => current.filter(o => o.name !== orderName));
+        try {
+            await deleteBakeryOrdersByNameInDB(orderName);
+            toast({ title: t.bakeryOrders.patternDeleted });
+        } catch (e) {
+            setBakeryOrdersState(previousOrders);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete recurring order pattern.' });
+        }
+    };
+
     const setBakeryOrders = async (orders: BakeryOrder[]) => {
        const previousOrders = bakeryOrders;
        setBakeryOrdersState(orders);
@@ -431,6 +445,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addBakeryOrder,
         updateBakeryOrder,
         deleteBakeryOrder,
+        deleteBakeryOrdersByName,
         setBakeryOrders,
         setRecurringStatusForOrderName,
         addSupplier,
