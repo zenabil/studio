@@ -172,7 +172,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                         render={({ field }) => (
                           <FormItem>
                             {index === 0 && <FormLabel>{t.products.barcodes}</FormLabel>}
-                            <FormControl><Input type="text" {...field} /></FormControl>
+                            <FormControl><Input type="text" {...field} readOnly /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
