@@ -18,7 +18,7 @@ import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer, Wallet } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, FilePlus, BookOpen, Printer, Wallet, ChevronsUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddSupplierDialog } from '@/components/add-supplier-dialog';
 import { AddSupplierInvoiceDialog } from '@/add-supplier-invoice-dialog';
@@ -27,6 +27,8 @@ import { SupplierRestockListDialog } from '@/components/supplier-restock-list-di
 import Loading from '@/app/loading';
 import { useSettings } from '@/contexts/settings-context';
 import { MakeSupplierPaymentDialog } from '@/components/make-supplier-payment-dialog';
+
+type SortableKeys = keyof Pick<Supplier, 'name' | 'phone' | 'productCategory' | 'balance'>;
 
 export default function SuppliersPage() {
   const { t } = useLanguage();
@@ -49,16 +51,66 @@ export default function SuppliersPage() {
   const [lowStockProductsForSupplier, setLowStockProductsForSupplier] = useState<Product[]>([]);
   
   const [payingSupplier, setPayingSupplier] = useState<Supplier | null>(null);
+  
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({
+    key: 'name',
+    direction: 'ascending',
+  });
 
-  const filteredSuppliers = useMemo(() => {
-    return suppliers
-      .filter(supplier =>
-        supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.productCategory.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [suppliers, searchTerm]);
+  const filteredAndSortedSuppliers = useMemo(() => {
+    let sortableSuppliers = [...suppliers];
+    
+    sortableSuppliers = sortableSuppliers.filter(supplier =>
+      supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supplier.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supplier.productCategory.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    sortableSuppliers.sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return sortableSuppliers;
+  }, [suppliers, searchTerm, sortConfig]);
+
+  const requestSort = (key: SortableKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: SortableKeys) => {
+    if (sortConfig.key !== key) {
+      return <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground/50" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+      return <ArrowUp className="ml-2 h-4 w-4" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => (
+      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => requestSort(sortKey)}>
+          <div className="flex items-center">
+              {children}
+              {getSortIcon(sortKey)}
+          </div>
+      </TableHead>
+  );
 
   const handleOpenAddDialog = (supplier: Supplier | null = null) => {
     setEditingSupplier(supplier);
@@ -162,17 +214,17 @@ export default function SuppliersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t.suppliers.name}</TableHead>
-                <TableHead>{t.suppliers.phone}</TableHead>
-                <TableHead>{t.suppliers.productCategory}</TableHead>
+                <SortableHeader sortKey="name">{t.suppliers.name}</SortableHeader>
+                <SortableHeader sortKey="phone">{t.suppliers.phone}</SortableHeader>
+                <SortableHeader sortKey="productCategory">{t.suppliers.productCategory}</SortableHeader>
                 <TableHead>{t.suppliers.visitDays}</TableHead>
-                <TableHead className="text-right">{t.suppliers.balance}</TableHead>
+                <SortableHeader sortKey="balance" className="text-right">{t.suppliers.balance}</SortableHeader>
                 <TableHead className="text-right">{t.suppliers.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSuppliers.length > 0 ? (
-                filteredSuppliers.map((supplier) => (
+              {filteredAndSortedSuppliers.length > 0 ? (
+                filteredAndSortedSuppliers.map((supplier) => (
                   <TableRow key={supplier.id}>
                     <TableCell className="font-medium">{supplier.name}</TableCell>
                     <TableCell>{supplier.phone}</TableCell>
