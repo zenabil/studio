@@ -18,6 +18,20 @@ export const translations = {
       bakeryOrders: "Commandes Boulangerie",
       settings: "Paramètres",
       suppliers: "Fournisseurs",
+      logout: "Déconnexion",
+    },
+    login: {
+      welcome: "Bienvenue",
+      enterCredentials: "Entrez vos identifiants pour vous connecter",
+      username: "Nom d'utilisateur",
+      password: "Mot de passe",
+      login: "Se connecter",
+      invalidCredentials: "Nom d'utilisateur ou mot de passe invalide.",
+      loginSuccess: "Connexion réussie !",
+      role: {
+        admin: "Administrateur",
+        employee: "Employé",
+      },
     },
     pos: {
       searchProducts: "Rechercher des produits...",
@@ -307,7 +321,8 @@ export const translations = {
       activated: "Logiciel activé.",
       activateSuccess: "Logiciel activé avec succès!",
       activateError: "Clé de licence invalide.",
-      changesSavedAutomatically: "Les modifications de l'apparence sont enregistrées automatiquement."
+      changesSavedAutomatically: "Les modifications de l'apparence sont enregistrées automatiquement.",
+      employeePermissions: "Autorisations des employés",
     },
     activation: {
       title: "Activer votre logiciel",
@@ -386,6 +401,20 @@ export const translations = {
       bakeryOrders: "طلبات الخبز",
       settings: "الإعدادات",
       suppliers: "الموردون",
+      logout: "تسجيل الخروج",
+    },
+    login: {
+      welcome: "أهلاً بعودتك",
+      enterCredentials: "أدخل بياناتك لتسجيل الدخول",
+      username: "اسم المستخدم",
+      password: "كلمة المرور",
+      login: "تسجيل الدخول",
+      invalidCredentials: "اسم المستخدم أو كلمة المرور غير صالحة.",
+      loginSuccess: "تم تسجيل الدخول بنجاح!",
+      role: {
+        admin: "مدير",
+        employee: "موظف",
+      },
     },
     pos: {
       searchProducts: "البحث عن المنتجات...",
@@ -675,7 +704,8 @@ export const translations = {
       activated: "البرنامج مفعل.",
       activateSuccess: "تم تفعيل البرنامج بنجاح!",
       activateError: "مفتاح الترخيص غير صالح.",
-      changesSavedAutomatically: "يتم حفظ تغييرات المظهر تلقائيًا."
+      changesSavedAutomatically: "يتم حفظ تغييرات المظهر تلقائيًا.",
+      employeePermissions: "صلاحيات الموظفين",
     },
      activation: {
       title: "تفعيل برنامجك",
