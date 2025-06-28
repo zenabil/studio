@@ -24,6 +24,35 @@ import crypto from 'crypto';
 import 'dotenv/config';
 import { calculateUpdatedProductsForInvoice } from './utils';
 
+// --- Start: Critical Section for Data Integrity ---
+
+// Simple async mutex to prevent race conditions during file I/O.
+// This ensures that write operations are serialized, preventing data loss
+// when multiple actions (e.g., adding a product and adding a customer quickly)
+// try to write to files simultaneously.
+class AsyncMutex {
+  private_promise: Promise<void> = Promise.resolve();
+
+  async runExclusive<T>(callback: () => Promise<T>): Promise<T> {
+    const old_promise = this.private_promise;
+    let new_promise_resolver: () => void;
+    this.private_promise = new Promise(resolve => {
+      new_promise_resolver = resolve;
+    });
+
+    await old_promise;
+    try {
+      return await callback();
+    } finally {
+      new_promise_resolver!();
+    }
+  }
+}
+const fileWriteMutex = new AsyncMutex();
+
+// --- End: Critical Section for Data Integrity ---
+
+
 const DATA_DIR = path.join(process.cwd(), 'data');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
 const CUSTOMERS_FILE = path.join(DATA_DIR, 'customers.json');
@@ -143,196 +172,231 @@ export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
 
 // Granular write operations
 export async function addProductInDB(product: Product): Promise<void> {
-    const products = await getProducts();
-    products.push(product);
-    await writeData(PRODUCTS_FILE, products);
+    return fileWriteMutex.runExclusive(async () => {
+        const products = await getProducts();
+        products.push(product);
+        await writeData(PRODUCTS_FILE, products);
+    });
 }
 export async function updateProductInDB(productId: string, productData: Partial<Product>): Promise<void> {
-    let products = await getProducts();
-    products = products.map(p => p.id === productId ? { ...p, ...productData } : p);
-    await writeData(PRODUCTS_FILE, products);
+    return fileWriteMutex.runExclusive(async () => {
+        let products = await getProducts();
+        products = products.map(p => p.id === productId ? { ...p, ...productData } : p);
+        await writeData(PRODUCTS_FILE, products);
+    });
 }
 export async function deleteProductInDB(productId: string): Promise<void> {
-    let products = await getProducts();
-    products = products.filter(p => p.id !== productId);
-    await writeData(PRODUCTS_FILE, products);
+    return fileWriteMutex.runExclusive(async () => {
+        let products = await getProducts();
+        products = products.filter(p => p.id !== productId);
+        await writeData(PRODUCTS_FILE, products);
+    });
 }
 
 export async function addCustomerInDB(customer: Customer): Promise<void> {
-    const customers = await getCustomers();
-    customers.push(customer);
-    await writeData(CUSTOMERS_FILE, customers);
+    return fileWriteMutex.runExclusive(async () => {
+        const customers = await getCustomers();
+        customers.push(customer);
+        await writeData(CUSTOMERS_FILE, customers);
+    });
 }
 export async function updateCustomerInDB(customerId: string, customerData: Partial<Customer>): Promise<void> {
-    let customers = await getCustomers();
-    customers = customers.map(c => c.id === customerId ? { ...c, ...customerData } : c);
-    await writeData(CUSTOMERS_FILE, customers);
+    return fileWriteMutex.runExclusive(async () => {
+        let customers = await getCustomers();
+        customers = customers.map(c => c.id === customerId ? { ...c, ...customerData } : c);
+        await writeData(CUSTOMERS_FILE, customers);
+    });
 }
 export async function deleteCustomerInDB(customerId: string): Promise<void> {
-    let customers = await getCustomers();
-    customers = customers.filter(c => c.id !== customerId);
-    await writeData(CUSTOMERS_FILE, customers);
+    return fileWriteMutex.runExclusive(async () => {
+        let customers = await getCustomers();
+        customers = customers.filter(c => c.id !== customerId);
+        await writeData(CUSTOMERS_FILE, customers);
+    });
 }
 
 export async function addBakeryOrderInDB(order: BakeryOrder): Promise<void> {
-    const orders = await getBakeryOrders();
-    orders.push(order);
-    await writeData(BAKERY_ORDERS_FILE, orders);
+    return fileWriteMutex.runExclusive(async () => {
+        const orders = await getBakeryOrders();
+        orders.push(order);
+        await writeData(BAKERY_ORDERS_FILE, orders);
+    });
 }
 export async function updateBakeryOrderInDB(orderId: string, orderData: Partial<BakeryOrder>): Promise<void> {
-    let orders = await getBakeryOrders();
-    orders = orders.map(o => o.id === orderId ? { ...o, ...orderData } : o);
-    await writeData(BAKERY_ORDERS_FILE, orders);
+    return fileWriteMutex.runExclusive(async () => {
+        let orders = await getBakeryOrders();
+        orders = orders.map(o => o.id === orderId ? { ...o, ...orderData } : o);
+        await writeData(BAKERY_ORDERS_FILE, orders);
+    });
 }
 export async function deleteBakeryOrderInDB(orderId: string): Promise<void> {
-    let orders = await getBakeryOrders();
-    orders = orders.filter(o => o.id !== orderId);
-    await writeData(BAKERY_ORDERS_FILE, orders);
+    return fileWriteMutex.runExclusive(async () => {
+        let orders = await getBakeryOrders();
+        orders = orders.filter(o => o.id !== orderId);
+        await writeData(BAKERY_ORDERS_FILE, orders);
+    });
 }
 
 export async function setRecurringStatusForOrderNameInDB(orderName: string, isRecurring: boolean): Promise<void> {
-    let orders = await getBakeryOrders();
-    orders = orders.map(o => o.name === orderName ? { ...o, isRecurring } : o);
-    await writeData(BAKERY_ORDERS_FILE, orders);
+    return fileWriteMutex.runExclusive(async () => {
+        let orders = await getBakeryOrders();
+        orders = orders.map(o => o.name === orderName ? { ...o, isRecurring } : o);
+        await writeData(BAKERY_ORDERS_FILE, orders);
+    });
 }
 
 export async function addSupplierInDB(supplier: Supplier): Promise<void> {
-    const suppliers = await getSuppliers();
-    suppliers.push(supplier);
-    await writeData(SUPPLIERS_FILE, suppliers);
+    return fileWriteMutex.runExclusive(async () => {
+        const suppliers = await getSuppliers();
+        suppliers.push(supplier);
+        await writeData(SUPPLIERS_FILE, suppliers);
+    });
 }
 export async function updateSupplierInDB(supplierId: string, supplierData: Partial<Supplier>): Promise<void> {
-    let suppliers = await getSuppliers();
-    suppliers = suppliers.map(s => s.id === supplierId ? { ...s, ...supplierData } : s);
-    await writeData(SUPPLIERS_FILE, suppliers);
+    return fileWriteMutex.runExclusive(async () => {
+        let suppliers = await getSuppliers();
+        suppliers = suppliers.map(s => s.id === supplierId ? { ...s, ...supplierData } : s);
+        await writeData(SUPPLIERS_FILE, suppliers);
+    });
 }
 export async function deleteSupplierInDB(supplierId: string): Promise<void> {
-    let suppliers = await getSuppliers();
-    suppliers = suppliers.filter(s => s.id !== supplierId);
-    await writeData(SUPPLIERS_FILE, suppliers);
+    return fileWriteMutex.runExclusive(async () => {
+        let suppliers = await getSuppliers();
+        suppliers = suppliers.filter(s => s.id !== supplierId);
+        await writeData(SUPPLIERS_FILE, suppliers);
+    });
 }
 
 // "Transactional" operations
 export async function processSale(data: { saleRecord: SaleRecord; cart: CartItem[] }): Promise<void> {
-    const [products, customers, sales] = await Promise.all([
-        getProducts(),
-        getCustomers(),
-        getSalesHistory()
-    ]);
+    return fileWriteMutex.runExclusive(async () => {
+        const [products, customers, sales] = await Promise.all([
+            getProducts(),
+            getCustomers(),
+            getSalesHistory()
+        ]);
 
-    // Final stock validation before processing
-    for (const item of data.cart) {
-        const product = products.find(p => p.id === item.id);
-        if (!product || product.stock < item.quantity) {
-            // This message will be displayed in a toast to the user.
-            const errorMsg = `Not enough stock for '${product?.name || item.name}'. Available: ${product?.stock || 0}, Requested: ${item.quantity}.`;
-            throw new Error(errorMsg);
+        // Final stock validation before processing
+        for (const item of data.cart) {
+            const product = products.find(p => p.id === item.id);
+            if (!product || product.stock < item.quantity) {
+                // This message will be displayed in a toast to the user.
+                const errorMsg = `Not enough stock for '${product?.name || item.name}'. Available: ${product?.stock || 0}, Requested: ${item.quantity}.`;
+                throw new Error(errorMsg);
+            }
         }
-    }
 
-    // 1. Update product stock
-    data.cart.forEach(item => {
-        const product = products.find(p => p.id === item.id);
-        if (product) {
-            product.stock -= item.quantity;
+        // 1. Update product stock
+        data.cart.forEach(item => {
+            const product = products.find(p => p.id === item.id);
+            if (product) {
+                product.stock -= item.quantity;
+            }
+        });
+
+        // 2. Update customer balance
+        if (data.saleRecord.customerId) {
+            const customer = customers.find(c => c.id === data.saleRecord.customerId);
+            if (customer) {
+                customer.spent += data.saleRecord.totals.total;
+                customer.balance += data.saleRecord.totals.balance;
+            }
         }
+        
+        // 3. Add sale record
+        sales.push(data.saleRecord);
+
+        // 4. Write all changes
+        await Promise.all([
+            writeData(PRODUCTS_FILE, products),
+            writeData(CUSTOMERS_FILE, customers),
+            writeData(SALES_HISTORY_FILE, sales)
+        ]);
     });
-
-    // 2. Update customer balance
-    if (data.saleRecord.customerId) {
-        const customer = customers.find(c => c.id === data.saleRecord.customerId);
-        if (customer) {
-            customer.spent += data.saleRecord.totals.total;
-            customer.balance += data.saleRecord.totals.balance;
-        }
-    }
-    
-    // 3. Add sale record
-    sales.push(data.saleRecord);
-
-    // 4. Write all changes
-    await Promise.all([
-        writeData(PRODUCTS_FILE, products),
-        writeData(CUSTOMERS_FILE, customers),
-        writeData(SALES_HISTORY_FILE, sales)
-    ]);
 }
 
 export async function processPayment(data: { customerId: string; amount: number; paymentRecord: SaleRecord }): Promise<void> {
-    const [customers, sales] = await Promise.all([
-        getCustomers(),
-        getSalesHistory()
-    ]);
-    
-    // 1. Add payment record
-    sales.push(data.paymentRecord);
-    
-    // 2. Update customer balance
-    const customer = customers.find(c => c.id === data.customerId);
-    if(customer) {
-        customer.balance -= data.amount;
-    }
-    
-    // 3. Write all changes
-    await Promise.all([
-        writeData(CUSTOMERS_FILE, customers),
-        writeData(SALES_HISTORY_FILE, sales)
-    ]);
+    return fileWriteMutex.runExclusive(async () => {
+        const [customers, sales] = await Promise.all([
+            getCustomers(),
+            getSalesHistory()
+        ]);
+        
+        // 1. Add payment record
+        sales.push(data.paymentRecord);
+        
+        // 2. Update customer balance
+        const customer = customers.find(c => c.id === data.customerId);
+        if(customer) {
+            customer.balance -= data.amount;
+        }
+        
+        // 3. Write all changes
+        await Promise.all([
+            writeData(CUSTOMERS_FILE, customers),
+            writeData(SALES_HISTORY_FILE, sales)
+        ]);
+    });
 }
 
 export async function processSupplierInvoice(data: { invoice: SupplierInvoice, updateMasterPrices: boolean }): Promise<void> {
-    const { invoice, updateMasterPrices } = data;
-    
-    let [products, invoices, suppliers] = await Promise.all([
-        getProducts(),
-        getSupplierInvoices(),
-        getSuppliers()
-    ]);
-    
-    // Update product stock and prices using the centralized utility function
-    products = calculateUpdatedProductsForInvoice(products, invoice.items, updateMasterPrices);
+    return fileWriteMutex.runExclusive(async () => {
+        const { invoice, updateMasterPrices } = data;
+        
+        let [products, invoices, suppliers] = await Promise.all([
+            getProducts(),
+            getSupplierInvoices(),
+            getSuppliers()
+        ]);
+        
+        // Update product stock and prices using the centralized utility function
+        products = calculateUpdatedProductsForInvoice(products, invoice.items, updateMasterPrices);
 
-    invoices.push(invoice);
+        invoices.push(invoice);
 
-    // Update supplier balance
-    const supplier = suppliers.find(s => s.id === invoice.supplierId);
-    if (supplier) {
-        supplier.balance = (supplier.balance || 0) + (invoice.totalAmount - (invoice.amountPaid || 0));
-    }
-    
-    await Promise.all([
-        writeData(PRODUCTS_FILE, products),
-        writeData(SUPPLIER_INVOICES_FILE, invoices),
-        writeData(SUPPLIERS_FILE, suppliers)
-    ]);
+        // Update supplier balance
+        const supplier = suppliers.find(s => s.id === invoice.supplierId);
+        if (supplier) {
+            supplier.balance = (supplier.balance || 0) + (invoice.totalAmount - (invoice.amountPaid || 0));
+        }
+        
+        await Promise.all([
+            writeData(PRODUCTS_FILE, products),
+            writeData(SUPPLIER_INVOICES_FILE, invoices),
+            writeData(SUPPLIERS_FILE, suppliers)
+        ]);
+    });
 }
 
 export async function processSupplierPayment(data: { paymentRecord: SupplierInvoice }): Promise<void> {
-    const { paymentRecord } = data;
-    const [suppliers, invoices] = await Promise.all([
-        getSuppliers(),
-        getSupplierInvoices()
-    ]);
+    return fileWriteMutex.runExclusive(async () => {
+        const { paymentRecord } = data;
+        const [suppliers, invoices] = await Promise.all([
+            getSuppliers(),
+            getSupplierInvoices()
+        ]);
 
-    // 1. Update supplier balance
-    const supplier = suppliers.find(s => s.id === paymentRecord.supplierId);
-    if (supplier) {
-        supplier.balance -= paymentRecord.totalAmount;
-    }
+        // 1. Update supplier balance
+        const supplier = suppliers.find(s => s.id === paymentRecord.supplierId);
+        if (supplier) {
+            supplier.balance -= paymentRecord.totalAmount;
+        }
 
-    // 2. Create payment record
-    invoices.push(paymentRecord);
+        // 2. Create payment record
+        invoices.push(paymentRecord);
 
-    // 3. Write all changes
-    await Promise.all([
-        writeData(SUPPLIERS_FILE, suppliers),
-        writeData(SUPPLIER_INVOICES_FILE, invoices),
-    ]);
+        // 3. Write all changes
+        await Promise.all([
+            writeData(SUPPLIERS_FILE, suppliers),
+            writeData(SUPPLIER_INVOICES_FILE, invoices),
+        ]);
+    });
 }
 
 
 // Backup and Restore
 export async function getBackupData() {
+    // This is a read-only operation, no lock needed.
     const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices] = await Promise.all([
         getProducts(),
         getCustomers(),
@@ -345,29 +409,34 @@ export async function getBackupData() {
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
-  return writeData(PRODUCTS_FILE, products);
+    return fileWriteMutex.runExclusive(() => writeData(PRODUCTS_FILE, products));
 }
 export async function saveCustomers(customers: Customer[]): Promise<void> {
-  return writeData(CUSTOMERS_FILE, customers);
+    return fileWriteMutex.runExclusive(() => writeData(CUSTOMERS_FILE, customers));
 }
 export async function saveSalesHistory(salesHistory: SaleRecord[]): Promise<void> {
-  return writeData(SALES_HISTORY_FILE, salesHistory);
+    return fileWriteMutex.runExclusive(() => writeData(SALES_HISTORY_FILE, salesHistory));
 }
 export async function saveBakeryOrders(orders: BakeryOrder[]): Promise<void> {
-    return writeData(BAKERY_ORDERS_FILE, orders);
+    return fileWriteMutex.runExclusive(() => writeData(BAKERY_ORDERS_FILE, orders));
 }
 export async function saveSuppliers(suppliers: Supplier[]): Promise<void> {
-    return writeData(SUPPLIERS_FILE, suppliers);
+    return fileWriteMutex.runExclusive(() => writeData(SUPPLIERS_FILE, suppliers));
 }
 export async function saveSupplierInvoices(invoices: SupplierInvoice[]): Promise<void> {
-    return writeData(SUPPLIER_INVOICES_FILE, invoices);
+    return fileWriteMutex.runExclusive(() => writeData(SUPPLIER_INVOICES_FILE, invoices));
 }
 
 export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[]; }) {
-    if (data.products) await saveProducts(data.products);
-    if (data.customers) await saveCustomers(data.customers);
-    if (data.salesHistory) await saveSalesHistory(data.salesHistory);
-    if (data.bakeryOrders) await saveBakeryOrders(data.bakeryOrders);
-    if (data.suppliers) await saveSuppliers(data.suppliers);
-    if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
+    return fileWriteMutex.runExclusive(async () => {
+        // Use Promise.all to run writes concurrently within the lock for efficiency.
+        const writePromises: Promise<void>[] = [];
+        if (data.products) writePromises.push(writeData(PRODUCTS_FILE, data.products));
+        if (data.customers) writePromises.push(writeData(CUSTOMERS_FILE, data.customers));
+        if (data.salesHistory) writePromises.push(writeData(SALES_HISTORY_FILE, data.salesHistory));
+        if (data.bakeryOrders) writePromises.push(writeData(BAKERY_ORDERS_FILE, data.bakeryOrders));
+        if (data.suppliers) writePromises.push(writeData(SUPPLIERS_FILE, data.suppliers));
+        if (data.supplierInvoices) writePromises.push(writeData(SUPPLIER_INVOICES_FILE, data.supplierInvoices));
+        await Promise.all(writePromises);
+    });
 }
