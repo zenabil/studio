@@ -762,7 +762,7 @@ export function PosView() {
                 </Button>
              </div>
              <div className="mt-2">
-                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion}>
+                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={activeSession.cart.length === 0}>
                     <span>{t.pos.completeSale}</span>
                     <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
                 </Button>
