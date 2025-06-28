@@ -290,30 +290,30 @@ export async function processSupplierInvoice(data: { supplierId: string; items: 
             // Update stock always
             product.stock += newQuantity;
 
-            // ONLY update master prices if requested
+            // Calculate and update weighted average purchase price ALWAYS
+            const oldPurchasePrice = product.purchasePrice || 0;
+            const newPurchasePrice = item.purchasePrice;
+            
+            // Robust weighted average calculation
+            const oldPositiveStock = Math.max(0, oldStock);
+            const totalPositiveStockAfterInvoice = oldPositiveStock + newQuantity;
+
+            if (totalPositiveStockAfterInvoice > 0) {
+                const totalOldValue = oldPositiveStock * oldPurchasePrice;
+                const totalNewValue = newQuantity * newPurchasePrice;
+                const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalPositiveStockAfterInvoice;
+                product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+            } else {
+                // Fallback: This case is unlikely if newQuantity > 0, but safe to have.
+                // If stock was negative and the new quantity doesn't make it positive,
+                // the new purchase price is the most relevant.
+                product.purchasePrice = newPurchasePrice;
+            }
+
+            // ONLY update master box prices if requested
             if (updateMasterPrices) {
                 if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
                 if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
-
-                // Calculate and update weighted average purchase price
-                const oldPurchasePrice = product.purchasePrice || 0;
-                const newPurchasePrice = item.purchasePrice;
-                
-                // Robust weighted average calculation
-                const oldPositiveStock = Math.max(0, oldStock);
-                const totalPositiveStockAfterInvoice = oldPositiveStock + newQuantity;
-
-                if (totalPositiveStockAfterInvoice > 0) {
-                    const totalOldValue = oldPositiveStock * oldPurchasePrice;
-                    const totalNewValue = newQuantity * newPurchasePrice;
-                    const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalPositiveStockAfterInvoice;
-                    product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
-                } else {
-                    // Fallback: This case is unlikely if newQuantity > 0, but safe to have.
-                    // If stock was negative and the new quantity doesn't make it positive,
-                    // the new purchase price is the most relevant.
-                    product.purchasePrice = newPurchasePrice;
-                }
             }
         }
     });
@@ -420,5 +420,7 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
     if (data.suppliers) await saveSuppliers(data.suppliers);
     if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
 }
+
+    
 
     
