@@ -71,6 +71,13 @@ function decrypt(data: { iv: string; authTag: string; encryptedData: string }): 
     return decrypted.toString('utf8');
 }
 
+class DecryptionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DecryptionError';
+  }
+}
+
 // Helper to read, decrypt and parse data, or seed if not present
 async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
   try {
@@ -79,10 +86,28 @@ async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
     if (!fileContent) { // Handle empty file case
         throw new Error("File is empty");
     }
-    const decrypted = decrypt(JSON.parse(fileContent));
-    return JSON.parse(decrypted);
+    
+    const parsedContent = JSON.parse(fileContent);
+
+    try {
+        const decrypted = decrypt(parsedContent);
+        return JSON.parse(decrypted);
+    } catch (decryptionError) {
+        throw new DecryptionError('Decryption failed. This is likely due to an incorrect or missing ENCRYPTION_KEY.');
+    }
   } catch (error) {
-    console.warn(`Could not read or decrypt ${filePath}. Seeding with initial data.`);
+     if (error instanceof DecryptionError) {
+      console.error('\x1b[31m%s\x1b[0m', 'FATAL ERROR: Failed to decrypt data file.');
+      console.error('\x1b[33m%s\x1b[0m', `File path: ${filePath}`);
+      console.error('\x1b[33m%s\x1b[0m', 'This usually means your ENCRYPTION_KEY in the .env file is incorrect or has changed.');
+      console.error('\x1b[33m%s\x1b[0m', 'To prevent data loss, the application will not overwrite the existing file.');
+      console.error('\x1b[33m%s\x1b[0m', 'Please restore your original ENCRYPTION_KEY and restart the application.');
+      // Safely exit to prevent data corruption.
+      process.exit(1); 
+    }
+
+    // For other errors (file not found, empty file, JSON parsing error), seed with initial data.
+    console.warn(`Could not read file ${filePath} or it was invalid. Seeding with initial data. Error: ${(error as Error).message}`);
     await writeData(filePath, initialData);
     return initialData;
   }
