@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Supplier, SupplierInvoiceItem } from '@/lib/data';
+import type { Supplier, SupplierInvoiceItem, Product } from '@/lib/data';
 import {
   Form,
   FormControl,
@@ -33,6 +33,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
@@ -68,9 +70,27 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
   const { settings } = useSettings();
   const [isSaving, setIsSaving] = useState(false);
 
-  const supplierProducts = useMemo(() => {
-    return products.filter(p => p && p.category === supplier.productCategory);
-  }, [products, supplier]);
+  const categorizedProducts = useMemo(() => {
+    const grouped: { [category: string]: Product[] } = {};
+    products.filter(p => !!p).forEach(p => {
+        if (!grouped[p.category]) {
+            grouped[p.category] = [];
+        }
+        grouped[p.category].push(p);
+    });
+
+    const sortedCategories = Object.keys(grouped).sort((a, b) => {
+        if (a === supplier.productCategory) return -1;
+        if (b === supplier.productCategory) return 1;
+        return a.localeCompare(b);
+    });
+    
+    return sortedCategories.map(category => ({
+        name: category,
+        products: grouped[category].sort((a,b) => a.name.localeCompare(b.name))
+    }));
+  }, [products, supplier.productCategory]);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -172,7 +192,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                               {index === 0 && <FormLabel>{t.suppliers.product}</FormLabel>}
                               <Select
                                 onValueChange={(value) => {
-                                  const product = supplierProducts.find(p => p.id === value);
+                                  const product = products.find(p => p.id === value);
                                   field.onChange(value);
                                   form.setValue(`items.${index}.productName`, product?.name || '');
                                   form.setValue(`items.${index}.purchasePrice`, product?.purchasePrice || 0);
@@ -189,9 +209,18 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {supplierProducts.length > 0 ? supplierProducts.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                  )) : <p className="p-2 text-sm text-muted-foreground">{t.suppliers.noProductsInCategory}</p>}
+                                  {categorizedProducts.length > 0 ? (
+                                    categorizedProducts.map(group => (
+                                      <SelectGroup key={group.name}>
+                                        <SelectLabel>{group.name}</SelectLabel>
+                                        {group.products.map(p => (
+                                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    ))
+                                  ) : (
+                                    <p className="p-2 text-sm text-muted-foreground">{t.suppliers.noProductsInCategory}</p>
+                                  )}
                                 </SelectContent>
                               </Select>
                               <FormMessage />
