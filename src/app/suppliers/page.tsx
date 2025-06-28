@@ -104,7 +104,7 @@ export default function SuppliersPage() {
   };
 
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => (
-      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => requestSort(sortKey)}>
+      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className || ''}`} onClick={() => requestSort(sortKey)}>
           <div className="flex items-center">
               {children}
               {getSortIcon(sortKey)}
@@ -151,7 +151,7 @@ export default function SuppliersPage() {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
+  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
     await addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);

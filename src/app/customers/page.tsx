@@ -98,7 +98,7 @@ export default function CustomersPage() {
   };
 
   const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => (
-      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => requestSort(sortKey)}>
+      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className || ''}`} onClick={() => requestSort(sortKey)}>
           <div className="flex items-center">
               {children}
               {getSortIcon(sortKey)}
