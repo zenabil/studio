@@ -281,8 +281,6 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
             
             product.stock = totalNewStock;
             product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
-            if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
-            if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
         }
     });
 
@@ -386,3 +384,5 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
     if (data.suppliers) await saveSuppliers(data.suppliers);
     if (data.supplierInvoices) await saveSupplierInvoices(data.supplierInvoices);
 }
+
+    
