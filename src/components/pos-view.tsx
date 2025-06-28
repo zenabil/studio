@@ -128,88 +128,88 @@ export function PosView() {
     if (sessions.length === 0 || products.length === 0) {
       return;
     }
-
+  
     setSessions(currentSessions => {
-      let overallChanges = false;
+      let hasOverallChanges = false;
+  
       const newSyncedSessions = currentSessions.map(session => {
-        let sessionCartChanged = false;
-
         const quantityAdjustments: { productName: string; oldQty: number; newQty: number }[] = [];
         const deletedProductNames: string[] = [];
-        
+  
+        // Create a fresh cart based on the latest product data
         const newCart = session.cart
           .map(cartItem => {
             const productFromDb = products.find(p => p.id === cartItem.id);
-
+  
+            // Handle deleted product
             if (!productFromDb) {
-              sessionCartChanged = true;
               deletedProductNames.push(cartItem.name);
               return null;
             }
-
-            const isStale =
-              productFromDb.name !== cartItem.name ||
-              productFromDb.category !== cartItem.category ||
-              productFromDb.stock !== cartItem.stock;
-
-            if (isStale) {
-              sessionCartChanged = true;
-              const newQuantity = Math.min(cartItem.quantity, productFromDb.stock);
-
-              if (newQuantity < cartItem.quantity) {
-                  quantityAdjustments.push({
-                      productName: productFromDb.name,
-                      oldQty: cartItem.quantity,
-                      newQty: newQuantity,
-                  });
-              }
-
-              return { 
-                  ...productFromDb,
-                  price: cartItem.price,
-                  stock: productFromDb.stock,
-                  quantity: newQuantity,
-              };
+  
+            // Handle stock adjustment
+            const newQuantity = Math.min(cartItem.quantity, productFromDb.stock);
+            if (newQuantity < cartItem.quantity) {
+              quantityAdjustments.push({
+                productName: productFromDb.name,
+                oldQty: cartItem.quantity,
+                newQty: newQuantity,
+              });
             }
-
-            return cartItem;
+  
+            // Construct the updated cart item, preserving the locked-in price and adjusted quantity.
+            return {
+              ...productFromDb,      // All latest data from the DB
+              price: cartItem.price, // The price at the time of adding to cart is locked.
+              quantity: newQuantity, // The current quantity in cart, adjusted for stock.
+            };
           })
           .filter((item): item is CartItem => item !== null);
+  
+        // Determine if there were any significant changes that require user notification
+        const hasDeletions = deletedProductNames.length > 0;
+        const hasAdjustments = quantityAdjustments.length > 0;
+        const hasSignificantChanges = hasDeletions || hasAdjustments;
+  
+        // Even if no notifications, the cart data might have changed (e.g., category update)
+        const hasAnyChange = JSON.stringify(session.cart) !== JSON.stringify(newCart);
 
-        if (newCart.length !== session.cart.length) {
-            sessionCartChanged = true;
-        }
+        if (hasAnyChange) {
+            hasOverallChanges = true;
 
-        if (sessionCartChanged) {
-            overallChanges = true;
-            quantityAdjustments.forEach(adj => {
-                toast({
-                    variant: 'destructive',
-                    title: t.pos.stockAdjustedTitle,
-                    description: t.pos.stockAdjustedMessage
-                        .replace('{productName}', adj.productName)
-                        .replace('{newQty}', String(adj.newQty)),
+            if (hasSignificantChanges) {
+                // Show toasts for the critical changes
+                quantityAdjustments.forEach(adj => {
+                    toast({
+                        variant: 'destructive',
+                        title: t.pos.stockAdjustedTitle,
+                        description: t.pos.stockAdjustedMessage
+                            .replace('{productName}', adj.productName)
+                            .replace('{newQty}', String(adj.newQty)),
+                    });
                 });
-            });
-            deletedProductNames.forEach(name => {
-                 toast({
-                    variant: 'destructive',
-                    title: t.pos.productRemovedTitle,
-                    description: t.pos.productRemovedMessage
-                        .replace('{productName}', name),
+                deletedProductNames.forEach(name => {
+                    toast({
+                        variant: 'destructive',
+                        title: t.pos.productRemovedTitle,
+                        description: t.pos.productRemovedMessage
+                            .replace('{productName}', name),
+                    });
                 });
-            });
+            }
 
             return { ...session, cart: newCart };
         }
-        
+  
+        // If no changes at all, return the original session object to avoid re-renders.
         return session;
       });
-
-      if (overallChanges) {
+  
+      // Only update the state if there were any changes across any session.
+      if (hasOverallChanges) {
         return newSyncedSessions;
       }
-
+  
       return currentSessions;
     });
   }, [products, sessions, t.pos.stockAdjustedTitle, t.pos.stockAdjustedMessage, t.pos.productRemovedTitle, t.pos.productRemovedMessage, toast]);
@@ -252,16 +252,9 @@ export function PosView() {
         });
     }
 
-    const newCart = [...activeSession.cart];
-    const existingItemIndex = newCart.findIndex(item => item.id === productId);
-
-    if (existingItemIndex > -1) {
-        if (finalQuantity > 0) {
-            newCart[existingItemIndex].quantity = finalQuantity;
-        } else {
-            newCart.splice(existingItemIndex, 1);
-        }
-    }
+    const newCart = activeSession.cart.map(item => 
+        item.id === productId ? { ...item, quantity: finalQuantity } : item
+    ).filter(item => item.quantity > 0);
     
     updateActiveSession({ cart: newCart });
   }, [activeSession, updateActiveSession, products, t, toast]);
@@ -887,5 +880,3 @@ export function PosView() {
     </div>
   );
 }
-
-    

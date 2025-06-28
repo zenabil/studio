@@ -91,10 +91,10 @@ export const products: Product[] = [
 ];
 
 export const customers: Customer[] = [
-  { id: 'cust-01', name: 'Jean Dupont', email: 'jean.dupont@example.com', phone: '0612345678', spent: 150.75, balance: 0 },
-  { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 275.50, balance: 25.50, settlementDay: 15 },
-  { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 89.20, balance: 0 },
-  { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 412.00, balance: 0 },
+  { id: 'cust-01', name: 'Jean Dupont', email: 'jean.dupont@example.com', phone: '0612345678', spent: 0, balance: 0 },
+  { id: 'cust-02', name: 'Marie Curie', email: 'marie.curie@example.com', phone: '0687654321', spent: 30.50, balance: 25.50, settlementDay: 15 },
+  { id: 'cust-03', name: 'Pierre Martin', email: 'pierre.martin@example.com', phone: '0611223344', spent: 0, balance: 0 },
+  { id: 'cust-04', name: 'Sophie Bernard', email: 'sophie.bernard@example.com', phone: '0655667788', spent: 0, balance: 0 },
 ];
 
 export const bakeryOrders: BakeryOrder[] = [
@@ -161,7 +161,18 @@ export const salesHistory: SaleRecord[] = [
 
 export const suppliers: Supplier[] = [
     { id: 'supp-01', name: 'Fournisseur Boissons', phone: '0123456789', productCategory: 'Boissons', balance: 0 },
-    { id: 'supp-02', name: 'Fournisseur Pâtisseries', phone: '0987654321', productCategory: 'Pâtisseries', balance: 0 },
+    { id: 'supp-02', name: 'Fournisseur Pâtisseries', phone: '0987654321', productCategory: 'Pâtisseries', balance: 14.40 },
 ];
 
-export const supplierInvoices: SupplierInvoice[] = [];
+export const supplierInvoices: SupplierInvoice[] = [
+    {
+        id: 'SINV-001',
+        supplierId: 'supp-02',
+        date: new Date('2023-10-28T14:00:00Z').toISOString(),
+        items: [
+            { productId: 'prod-02', productName: 'Croissant au Beurre', quantity: 24, purchasePrice: 0.60 },
+        ],
+        totalAmount: 14.40,
+        amountPaid: 0,
+    }
+];
