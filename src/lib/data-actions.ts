@@ -22,6 +22,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import 'dotenv/config';
+import { calculateUpdatedProductsForInvoice } from './utils';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
@@ -282,53 +283,14 @@ export async function processPayment(data: { customerId: string; amount: number;
 export async function processSupplierInvoice(data: { invoice: SupplierInvoice, updateMasterPrices: boolean }): Promise<void> {
     const { invoice, updateMasterPrices } = data;
     
-    const [products, invoices, suppliers] = await Promise.all([
+    let [products, invoices, suppliers] = await Promise.all([
         getProducts(),
         getSupplierInvoices(),
         getSuppliers()
     ]);
     
-    // Update product stock and prices
-    invoice.items.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (product) {
-            // Store the stock level *before* this invoice is added.
-            const stockBeforeInvoice = product.stock;
-            const quantityFromInvoice = item.quantity;
-            
-            // 1. Update stock always
-            product.stock += quantityFromInvoice;
-
-            // 2. Update prices based on user's choice
-            if (updateMasterPrices) {
-                // If user wants to update master prices, set the invoice price as the new master price.
-                product.purchasePrice = item.purchasePrice;
-                if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
-                if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
-            } else {
-                // Otherwise, calculate the new weighted average purchase price.
-                const oldPurchasePrice = product.purchasePrice || 0;
-                const newPurchasePrice = item.purchasePrice;
-                
-                // Use the stock level from *before* this transaction for the calculation.
-                // Treat any negative stock as 0 for a stable average calculation.
-                const oldPositiveStock = Math.max(0, stockBeforeInvoice);
-                
-                const totalStockAfterInvoice = oldPositiveStock + quantityFromInvoice;
-
-                if (totalStockAfterInvoice > 0) {
-                    const totalOldValue = oldPositiveStock * oldPurchasePrice;
-                    const totalNewValue = quantityFromInvoice * newPurchasePrice;
-                    const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalStockAfterInvoice;
-                    product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
-                } else {
-                    // Fallback: This case is unlikely if quantityFromInvoice > 0, but safe to have.
-                    // If both old and new quantities are zero or less, the new price is most relevant.
-                    product.purchasePrice = newPurchasePrice;
-                }
-            }
-        }
-    });
+    // Update product stock and prices using the centralized utility function
+    products = calculateUpdatedProductsForInvoice(products, invoice.items, updateMasterPrices);
 
     invoices.push(invoice);
 

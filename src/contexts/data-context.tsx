@@ -40,6 +40,7 @@ import {
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
+import { calculateUpdatedProductsForInvoice } from '@/lib/utils';
 
 interface DataContextType {
     products: Product[];
@@ -382,30 +383,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         // Optimistic update
         setSupplierInvoices(current => [...current, newInvoice]);
         setSuppliers(current => current.map(s => s.id === invoiceData.supplierId ? { ...s, balance: (s.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0)) } : s));
-        setProducts(currentProducts => {
-            const updatedProducts = JSON.parse(JSON.stringify(currentProducts)); // Deep copy to avoid mutation issues
-            invoiceData.items.forEach(item => {
-                const product = updatedProducts.find((p: Product) => p.id === item.productId);
-                if (product) {
-                    const stockBeforeInvoice = product.stock;
-                    product.stock += item.quantity;
-                    if (invoiceData.updateMasterPrices) {
-                        product.purchasePrice = item.purchasePrice;
-                        if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
-                        if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
-                    } else {
-                        const oldPositiveStock = Math.max(0, stockBeforeInvoice);
-                        const totalStockAfterInvoice = oldPositiveStock + item.quantity;
-                        if (totalStockAfterInvoice > 0) {
-                            product.purchasePrice = parseFloat(((oldPositiveStock * (product.purchasePrice || 0) + item.quantity * item.purchasePrice) / totalStockAfterInvoice).toFixed(2));
-                        } else {
-                            product.purchasePrice = item.purchasePrice;
-                        }
-                    }
-                }
-            });
-            return updatedProducts;
-        });
+        
+        // Use the centralized utility function for product updates
+        const updatedProducts = calculateUpdatedProductsForInvoice(products, invoiceData.items, invoiceData.updateMasterPrices);
+        setProducts(updatedProducts);
 
         try {
             await processSupplierInvoice({ invoice: newInvoice, updateMasterPrices: invoiceData.updateMasterPrices });

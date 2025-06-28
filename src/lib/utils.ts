@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { CartItem, Customer, SaleRecord } from "./data";
+import type { CartItem, Customer, SaleRecord, Product, SupplierInvoiceItem } from "./data";
 import { addDays, differenceInCalendarDays, isBefore, addMonths, set } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
@@ -100,4 +100,45 @@ export const calculateDebtAlerts = (
   }
 
   return alerts.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+};
+
+export const calculateUpdatedProductsForInvoice = (
+  currentProducts: Product[],
+  invoiceItems: SupplierInvoiceItem[],
+  updateMasterPrices: boolean
+): Product[] => {
+  const updatedProducts = JSON.parse(JSON.stringify(currentProducts)) as Product[];
+
+  invoiceItems.forEach(item => {
+    const product = updatedProducts.find(p => p.id === item.productId);
+    if (product) {
+      const stockBeforeInvoice = product.stock;
+      const quantityFromInvoice = item.quantity;
+      
+      product.stock += quantityFromInvoice;
+
+      if (updateMasterPrices) {
+        product.purchasePrice = item.purchasePrice;
+        if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
+        if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
+      } else {
+        const oldPurchasePrice = product.purchasePrice || 0;
+        const newPurchasePrice = item.purchasePrice;
+        
+        const oldPositiveStock = Math.max(0, stockBeforeInvoice);
+        const totalStockAfterInvoice = oldPositiveStock + quantityFromInvoice;
+
+        if (totalStockAfterInvoice > 0) {
+          const totalOldValue = oldPositiveStock * oldPurchasePrice;
+          const totalNewValue = quantityFromInvoice * newPurchasePrice;
+          const newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalStockAfterInvoice;
+          product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
+        } else {
+          product.purchasePrice = newPurchasePrice;
+        }
+      }
+    }
+  });
+
+  return updatedProducts;
 };
