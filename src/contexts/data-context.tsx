@@ -162,6 +162,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             });
             return;
         }
+
+        const isProductInSupplierInvoices = supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId));
+        if (isProductInSupplierInvoices) {
+            toast({
+                variant: 'destructive',
+                title: t.errors.title,
+                description: t.products.deleteErrorInUse,
+            });
+            return;
+        }
+
         await deleteProductInDB(productId);
         toast({ title: t.products.productDeleted });
         await syncData();

@@ -95,7 +95,7 @@ export const translations = {
       noResultsFound: "Aucun produit ne correspond à votre recherche.",
       noProductsYet: "Vous n'avez encore ajouté aucun produit.",
       barcodeExists: "Le code-barres '{barcode}' est déjà utilisé par un autre produit.",
-      deleteErrorInUse: "Ce produit ne peut pas être supprimé car il est présent dans l'historique des ventes.",
+      deleteErrorInUse: "Ce produit ne peut pas être supprimé car il est lié à des transactions existantes (ventes, factures fournisseurs, etc.).",
     },
     customers: {
       title: "Gestion des Clients",
@@ -305,7 +305,7 @@ export const translations = {
       invalidKey: "La clé de licence fournie n'est pas valide. Veuillez réessayer."
     },
     bakeryOrders: {
-      title: "Commandes Boulangerie",
+      title: "Commandes Mخبز",
       description: "Gérez les commandes de pain et de pâtisseries du jour ici.",
       todaysOrders: "Commandes du jour",
       addOrder: "Ajouter une commande",
@@ -443,7 +443,7 @@ export const translations = {
       noResultsFound: "لا توجد منتجات تطابق بحثك.",
       noProductsYet: "لم تقم بإضافة أي منتجات بعد.",
       barcodeExists: "الباركود '{barcode}' مستخدم بالفعل لمنتج آخر.",
-      deleteErrorInUse: "لا يمكن حذف هذا المنتج لأنه موجود في سجل المبيعات.",
+      deleteErrorInUse: "لا يمكن حذف هذا المنتج لأنه مرتبط بمعاملات حالية (مبيعات، فواتير موردين، إلخ).",
     },
     customers: {
       title: "إدارة العملاء",

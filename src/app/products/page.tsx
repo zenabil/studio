@@ -35,11 +35,13 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(product =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.barcodes.some(b => b.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    return products
+      .filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.barcodes.some(b => b.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [products, searchTerm]);
   
   const handleOpenDialog = (product: Product | null = null) => {
