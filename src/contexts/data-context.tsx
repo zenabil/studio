@@ -11,6 +11,7 @@ import {
     type Supplier,
     type SupplierInvoice,
     type SupplierInvoiceItem,
+    type Expense,
 } from '@/lib/data';
 import {
     getProducts,
@@ -19,6 +20,7 @@ import {
     getBakeryOrders,
     getSuppliers,
     getSupplierInvoices,
+    getExpenses,
     restoreBackupData,
     addProductInDB,
     updateProductInDB,
@@ -39,6 +41,9 @@ import {
     processSupplierPayment,
     setAsRecurringTemplateInDB,
     deleteRecurringPatternInDB,
+    addExpenseInDB,
+    updateExpenseInDB,
+    deleteExpenseInDB,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
@@ -51,6 +56,7 @@ interface DataContextType {
     bakeryOrders: BakeryOrder[];
     suppliers: Supplier[];
     supplierInvoices: SupplierInvoice[];
+    expenses: Expense[];
     isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
@@ -60,7 +66,7 @@ interface DataContextType {
     deleteCustomer: (customerId: string) => Promise<void>;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
     makePayment: (customerId: string, amount: number) => Promise<void>;
-    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[] }) => Promise<void>;
+    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[]; expenses: Expense[]; }) => Promise<void>;
     addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => Promise<void>;
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
@@ -72,6 +78,9 @@ interface DataContextType {
     deleteSupplier: (supplierId: string) => Promise<void>;
     addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
+    addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
+    updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
+    deleteExpense: (expenseId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -85,18 +94,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [bakeryOrders, setBakeryOrdersState] = useState<BakeryOrder[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const syncData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices] = await Promise.all([
+            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices, loadedExpenses] = await Promise.all([
                 getProducts(),
                 getCustomers(),
                 getSalesHistory(),
                 getBakeryOrders(),
                 getSuppliers(),
                 getSupplierInvoices(),
+                getExpenses(),
             ]);
             setProducts(loadedProducts);
             setCustomers(loadedCustomers);
@@ -104,6 +115,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setBakeryOrdersState(loadedBakeryOrders);
             setSuppliers(loadedSuppliers);
             setSupplierInvoices(loadedSupplierInvoices);
+            setExpenses(loadedExpenses);
         } catch (error) {
             console.error("Failed to sync data:", error);
             // Don't toast here as it can be triggered by the key error which is handled in data-actions
@@ -430,6 +442,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
+        const newExpense: Expense = { id: `exp-${new Date().getTime()}`, ...expenseData };
+        const previousExpenses = expenses;
+        setExpenses(current => [...current, newExpense]);
+        try {
+            await addExpenseInDB(newExpense);
+        } catch (e) {
+            setExpenses(previousExpenses);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add expense.' });
+            throw e;
+        }
+    };
+
+    const updateExpense = async (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => {
+        const previousExpenses = expenses;
+        setExpenses(current => current.map(e => e.id === expenseId ? { ...e, ...expenseData, id: expenseId } : e));
+        try {
+            await updateExpenseInDB(expenseId, expenseData);
+        } catch (e) {
+            setExpenses(previousExpenses);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update expense.' });
+            throw e;
+        }
+    };
+
+    const deleteExpense = async (expenseId: string) => {
+        const previousExpenses = expenses;
+        setExpenses(current => current.filter(e => e.id !== expenseId));
+        try {
+            await deleteExpenseInDB(expenseId);
+            toast({ title: t.expenses.expenseDeleted });
+        } catch (e) {
+            setExpenses(previousExpenses);
+            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete expense.' });
+        }
+    };
+
     const restoreData = async (data: any) => {
         setIsLoading(true);
         try {
@@ -450,6 +499,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         bakeryOrders,
         suppliers,
         supplierInvoices,
+        expenses,
         isLoading,
         addProduct,
         updateProduct,
@@ -471,6 +521,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteSupplier,
         addSupplierInvoice,
         makePaymentToSupplier,
+        addExpense,
+        updateExpense,
+        deleteExpense,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

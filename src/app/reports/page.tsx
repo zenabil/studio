@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import {
@@ -25,14 +26,14 @@ import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import type { DateRange } from 'react-day-picker';
-import { DollarSign, ShoppingCart, Users, LineChart, Package, Crown } from 'lucide-react';
+import { DollarSign, ShoppingCart, Users, LineChart, Package, Crown, Receipt } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
 import { calculateItemTotal } from '@/lib/utils';
 
 export default function ReportsPage() {
   const { t } = useLanguage();
-  const { salesHistory, customers: allCustomers, products, isLoading } = useData();
+  const { salesHistory, customers: allCustomers, products, expenses, isLoading } = useData();
   const { settings } = useSettings();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -54,8 +55,8 @@ export default function ReportsPage() {
     });
   }, [salesHistory, dateRange]);
   
-  const { totalProfits, totalSales, uniqueCustomerCount, customersForChart, bestSellers, totalProductsSold } = useMemo(() => {
-      let profit = 0;
+  const { totalProfits, totalSales, uniqueCustomerCount, customersForChart, bestSellers, totalProductsSold, totalExpenses } = useMemo(() => {
+      let profitFromSales = 0;
       let sales = 0;
       let productsSoldCount = 0;
       const customerSpending: { [key: string]: number } = {};
@@ -75,7 +76,7 @@ export default function ReportsPage() {
               if (!item) return;
               const revenue = calculateItemTotal(item);
               const cost = (item.purchasePrice || 0) * item.quantity;
-              profit += revenue - cost;
+              profitFromSales += revenue - cost;
               productsSoldCount += item.quantity;
 
               if (!productQuantities[item.id]) {
@@ -85,6 +86,18 @@ export default function ReportsPage() {
           });
       });
       
+      const filteredExpenses = expenses.filter(expense => {
+        if (!dateRange?.from) return true;
+        const expenseDate = new Date(expense.date);
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
+        toDate.setHours(23, 59, 59, 999);
+        return expenseDate >= fromDate && expenseDate <= toDate;
+      });
+
+      const expenseTotal = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+
       const uniqueCustomersInPeriod = Object.keys(customerSpending);
 
       const customersWithSpending = allCustomers
@@ -126,14 +139,15 @@ export default function ReportsPage() {
           .slice(0, 5);
 
       return { 
-          totalProfits: profit, 
+          totalProfits: profitFromSales - expenseTotal, 
           totalSales: sales, 
           uniqueCustomerCount: uniqueCustomersInPeriod.length,
           customersForChart: chartData,
           bestSellers: topSellers,
-          totalProductsSold: productsSoldCount
+          totalProductsSold: productsSoldCount,
+          totalExpenses: expenseTotal
       };
-  }, [filteredSales, allCustomers, products, t.reports.other]);
+  }, [filteredSales, allCustomers, products, expenses, dateRange, t.reports.other]);
 
   if (isLoading) {
     return <Loading />;
@@ -146,7 +160,7 @@ export default function ReportsPage() {
         <DateRangePicker date={dateRange} onDateChange={setDateRange} />
       </div>
 
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t.reports.totalSales}</CardTitle>
@@ -154,6 +168,15 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">{settings.currency}{totalSales.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.reports.totalExpenses}</CardTitle>
+                <Receipt className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{settings.currency}{totalExpenses.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>

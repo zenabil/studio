@@ -8,6 +8,7 @@ import {
     bakeryOrders as initialBakeryOrders,
     suppliers as initialSuppliers,
     supplierInvoices as initialSupplierInvoices,
+    expenses as initialExpenses,
     type Product,
     type Customer,
     type SaleRecord,
@@ -16,6 +17,7 @@ import {
     type SupplierInvoice,
     type SupplierInvoiceItem,
     type CartItem,
+    type Expense,
 } from '@/lib/data';
 
 import fs from 'fs/promises';
@@ -60,6 +62,7 @@ const SALES_HISTORY_FILE = path.join(DATA_DIR, 'salesHistory.json');
 const BAKERY_ORDERS_FILE = path.join(DATA_DIR, 'bakeryOrders.json');
 const SUPPLIERS_FILE = path.join(DATA_DIR, 'suppliers.json');
 const SUPPLIER_INVOICES_FILE = path.join(DATA_DIR, 'supplierInvoices.json');
+const EXPENSES_FILE = path.join(DATA_DIR, 'expenses.json');
 
 
 const ALGORITHM = 'aes-256-gcm';
@@ -185,6 +188,9 @@ export async function getSuppliers(): Promise<Supplier[]> {
 export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
     return readData(SUPPLIER_INVOICES_FILE, initialSupplierInvoices);
 }
+export async function getExpenses(): Promise<Expense[]> {
+    return readData(EXPENSES_FILE, initialExpenses);
+}
 
 // Granular write operations
 export async function addProductInDB(product: Product): Promise<void> {
@@ -307,6 +313,29 @@ export async function deleteSupplierInDB(supplierId: string): Promise<void> {
         await writeData(SUPPLIERS_FILE, suppliers);
     });
 }
+
+export async function addExpenseInDB(expense: Expense): Promise<void> {
+    return fileWriteMutex.runExclusive(async () => {
+        const expenses = await getExpenses();
+        expenses.push(expense);
+        await writeData(EXPENSES_FILE, expenses);
+    });
+}
+export async function updateExpenseInDB(expenseId: string, expenseData: Partial<Expense>): Promise<void> {
+    return fileWriteMutex.runExclusive(async () => {
+        let expenses = await getExpenses();
+        expenses = expenses.map(e => e.id === expenseId ? { ...e, ...expenseData } : e);
+        await writeData(EXPENSES_FILE, expenses);
+    });
+}
+export async function deleteExpenseInDB(expenseId: string): Promise<void> {
+    return fileWriteMutex.runExclusive(async () => {
+        let expenses = await getExpenses();
+        expenses = expenses.filter(e => e.id !== expenseId);
+        await writeData(EXPENSES_FILE, expenses);
+    });
+}
+
 
 // "Transactional" operations
 export async function processSale(data: { saleRecord: SaleRecord; cart: CartItem[] }): Promise<void> {
@@ -438,15 +467,16 @@ export async function processSupplierPayment(data: { paymentRecord: SupplierInvo
 // Backup and Restore
 export async function getBackupData() {
     // This is a read-only operation, no lock needed.
-    const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices] = await Promise.all([
+    const [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses] = await Promise.all([
         getProducts(),
         getCustomers(),
         getSalesHistory(),
         getBakeryOrders(),
         getSuppliers(),
         getSupplierInvoices(),
+        getExpenses(),
     ]);
-    return { products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices };
+    return { products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses };
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
@@ -468,7 +498,7 @@ export async function saveSupplierInvoices(invoices: SupplierInvoice[]): Promise
     return fileWriteMutex.runExclusive(() => writeData(SUPPLIER_INVOICES_FILE, invoices));
 }
 
-export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[]; }) {
+export async function restoreBackupData(data: { products?: Product[]; customers?: Customer[]; salesHistory?: SaleRecord[]; bakeryOrders?: BakeryOrder[]; suppliers?: Supplier[]; supplierInvoices?: SupplierInvoice[]; expenses?: Expense[]; }) {
     return fileWriteMutex.runExclusive(async () => {
         // Use Promise.all to run writes concurrently within the lock for efficiency.
         const writePromises: Promise<void>[] = [];
@@ -478,6 +508,7 @@ export async function restoreBackupData(data: { products?: Product[]; customers?
         if (data.bakeryOrders) writePromises.push(writeData(BAKERY_ORDERS_FILE, data.bakeryOrders));
         if (data.suppliers) writePromises.push(writeData(SUPPLIERS_FILE, data.suppliers));
         if (data.supplierInvoices) writePromises.push(writeData(SUPPLIER_INVOICES_FILE, data.supplierInvoices));
+        if (data.expenses) writePromises.push(writeData(EXPENSES_FILE, data.expenses));
         await Promise.all(writePromises);
     });
 }

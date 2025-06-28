@@ -61,6 +61,14 @@ export interface SupplierInvoice {
   priceUpdateStrategy?: 'master' | 'average' | 'none';
 }
 
+export interface Expense {
+  id: string;
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+}
+
 export interface CartItem extends Product {
     quantity: number;
 }
@@ -102,6 +110,8 @@ export const bakeryOrders: BakeryOrder[] = [
     { id: '2', date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), name: 'Patisserie Dupont', quantity: 75, paid: false, received: true, isRecurring: false },
     { id: '3', date: new Date().toISOString(), name: 'Le Fournil de la Gare', quantity: 30, paid: false, received: false, isRecurring: false },
 ];
+
+export const expenses: Expense[] = [];
 
 // To ensure data integrity, we find products by their static ID instead of relying on array index.
 const espresso = products.find(p => p.id === 'prod-01')!;
