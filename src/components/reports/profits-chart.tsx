@@ -15,8 +15,9 @@ export function ProfitsChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
     
     salesHistory.forEach(sale => {
         sale.items.forEach(item => {
+            const productName = item.name || 'Unknown Product';
             if (!productProfits[item.id]) {
-                productProfits[item.id] = { productName: item.name, profit: 0 };
+                productProfits[item.id] = { productName, profit: 0 };
             }
             const revenue = calculateItemTotal(item);
             const cost = (item.purchasePrice || 0) * item.quantity;
@@ -25,8 +26,25 @@ export function ProfitsChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
         });
     });
 
-    return Object.values(productProfits).filter(p => p.profit > 0);
-  }, [salesHistory]);
+    const allProfits = Object.values(productProfits)
+        .filter(p => p.profit > 0)
+        .sort((a, b) => b.profit - a.profit);
+        
+    const topN = 10;
+    if (allProfits.length > topN) {
+        const topProfits = allProfits.slice(0, topN);
+        const otherProfits = allProfits.slice(topN);
+        const otherTotalProfit = otherProfits.reduce((sum, item) => sum + item.profit, 0);
+
+        return [
+            ...topProfits,
+            { productName: t.reports.other, profit: otherTotalProfit }
+        ];
+    }
+
+    return allProfits;
+
+  }, [salesHistory, t.reports.other]);
 
 
   return (

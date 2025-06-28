@@ -245,6 +245,7 @@ export const translations = {
       selectProduct: "Sélectionner un produit",
       predictedSales: "Ventes prévues pour aujourd'hui",
       notEnoughData: "Données de vente insuffisantes pour faire une prévision.",
+      other: "Autres",
     },
     alerts: {
       title: "Alertes",
@@ -598,6 +599,7 @@ export const translations = {
       selectProduct: "اختر منتجًا",
       predictedSales: "المبيعات المتوقعة لليوم",
       notEnoughData: "بيانات المبيعات غير كافية لعمل توقع.",
+      other: "أخرى",
     },
     alerts: {
       title: "التنبيهات",

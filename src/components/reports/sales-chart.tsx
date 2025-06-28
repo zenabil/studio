@@ -15,15 +15,31 @@ export function SalesChart({ salesHistory }: { salesHistory: SaleRecord[] }) {
     
     salesHistory.forEach(sale => {
         sale.items.forEach(item => {
+            const productName = item.name || 'Unknown Product';
             if (!productSales[item.id]) {
-                productSales[item.id] = { productName: item.name, revenue: 0 };
+                productSales[item.id] = { productName, revenue: 0 };
             }
             productSales[item.id].revenue += calculateItemTotal(item);
         });
     });
 
-    return Object.values(productSales);
-  }, [salesHistory]);
+    const allSales = Object.values(productSales).sort((a, b) => b.revenue - a.revenue);
+    
+    const topN = 10;
+    if (allSales.length > topN) {
+        const topSales = allSales.slice(0, topN);
+        const otherSales = allSales.slice(topN);
+        const otherRevenue = otherSales.reduce((sum, item) => sum + item.revenue, 0);
+
+        return [
+            ...topSales,
+            { productName: t.reports.other, revenue: otherRevenue }
+        ];
+    }
+    
+    return allSales;
+
+  }, [salesHistory, t.reports.other]);
 
 
   return (
