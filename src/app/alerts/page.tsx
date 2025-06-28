@@ -23,6 +23,7 @@ import { addDays, differenceInCalendarDays, format, set, isBefore, addMonths } f
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Loading from '@/app/loading';
+import { cn } from '@/lib/utils';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
@@ -39,7 +40,7 @@ export default function AlertsPage() {
   const debtAlerts = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; }[] = [];
+    const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; isOverdue: boolean; }[] = [];
     
     const indebtedCustomers = customers.filter(c => c.balance > 0);
 
@@ -72,6 +73,7 @@ export default function AlertsPage() {
                   balance: customer.balance,
                   dueDate: alertDueDate,
                   phone: customer.phone,
+                  isOverdue: daysUntilDue < 0,
               });
           }
         }
@@ -173,13 +175,16 @@ export default function AlertsPage() {
                     </TableHeader>
                     <TableBody>
                         {debtAlerts.map((alert, index) => (
-                            <TableRow key={index} className="bg-destructive/10 hover:bg-destructive/20">
+                            <TableRow key={index} className={cn(alert.isOverdue ? 'bg-destructive/20 hover:bg-destructive/30' : 'bg-destructive/10 hover:bg-destructive/20')}>
                                 <TableCell className="font-medium">{alert.customerName}</TableCell>
                                 <TableCell className="text-right font-bold text-destructive">
                                     {settings.currency}{alert.balance.toFixed(2)}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    {format(alert.dueDate, 'PP')}
+                                    <div className='flex items-center justify-end gap-2'>
+                                      <span>{format(alert.dueDate, 'PP')}</span>
+                                      {alert.isOverdue && <span className="text-xs font-bold text-destructive">({t.alerts.overdue})</span>}
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <Button variant="ghost" size="icon" title={t.alerts.sendSms} onClick={() => handleSendSms(alert)}>

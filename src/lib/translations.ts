@@ -265,6 +265,7 @@ export const translations = {
       smsBody: "Bonjour {customerName}, un petit rappel amical que votre paiement de {currency}{balance} arrive à échéance le {dueDate}. Nous vous remercions de votre confiance. Passez une excellente journée !",
       noPhoneNumber: "Ce client n'a pas de numéro de téléphone.",
       smsRedirect: "Redirection vers l'application de messagerie pour envoyer le SMS.",
+      overdue: "En retard",
     },
     settings: {
       title: "Paramètres",
@@ -619,6 +620,7 @@ export const translations = {
       smsBody: "مرحباً {customerName}، نود تذكيركم بمودة بأن موعد استحقاق دفعتكم البالغة {currency}{balance} هو يوم {dueDate}. نشكركم على ثقتكم ونتمنى لكم يوماً سعيداً!",
       noPhoneNumber: "لا يوجد رقم هاتف لهذا العميل.",
       smsRedirect: "جاري إعادة التوجيه إلى تطبيق الرسائل لإرسال الرسالة.",
+      overdue: "متأخر",
     },
     settings: {
       title: "الإعدادات",
