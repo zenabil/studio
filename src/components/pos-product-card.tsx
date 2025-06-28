@@ -4,9 +4,10 @@ import React from 'react';
 import type { Product } from '@/lib/data';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Package } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
+import Image from 'next/image';
 
 interface PosProductCardProps {
   product: Product;
@@ -17,6 +18,9 @@ interface PosProductCardProps {
 
 const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAddToCart, currency, t }) => {
   const isOutOfStock = product.stock <= 0;
+  
+  // Generate a hint for AI image generation from the product name.
+  const hint = product.name.toLowerCase().split(' ').slice(0, 2).join(' ');
 
   return (
     <Card 
@@ -28,8 +32,14 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
       )}
       onClick={() => !isOutOfStock && onAddToCart(product)}
     >
-      <div className="aspect-video w-full overflow-hidden relative bg-muted flex items-center justify-center">
-          <Package className="h-16 w-16 text-muted-foreground/50 transition-transform duration-300 group-hover:scale-110" />
+      <div className="aspect-video w-full overflow-hidden relative bg-muted">
+          <Image
+            src={`https://placehold.co/400x400.png`}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
+            data-ai-hint={hint}
+          />
            <div className="absolute top-2 right-2 bg-background/80 text-foreground text-xs font-bold px-2 py-1 rounded-full backdrop-blur-sm">
              {currency}{product.price.toFixed(2)}
            </div>
