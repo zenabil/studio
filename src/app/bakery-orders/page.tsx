@@ -67,45 +67,53 @@ export default function BakeryOrdersPage() {
   useEffect(() => {
     // This effect runs once after data is loaded to create any missing daily recurring orders.
     if (!isLoading && !isInitialized) {
-      const today = new Date();
-      const deletedForToday = getDeletedRecurringForToday();
-      
-      // Find recurring templates (any order marked as recurring)
-      const recurringTemplates = bakeryOrders.filter(o => o.isRecurring);
-      const uniqueTemplateNames = [...new Set(recurringTemplates.map(t => t.name))];
-      
-      const addPromises: Promise<void>[] = [];
+        const initializeRecurringOrders = async () => {
+            const today = new Date();
+            const deletedForToday = getDeletedRecurringForToday();
+            
+            // Find recurring templates (any order marked as recurring)
+            const recurringTemplates = bakeryOrders.filter(o => o.isRecurring);
+            const uniqueTemplateNames = [...new Set(recurringTemplates.map(t => t.name))];
+            
+            const addPromises: Promise<void>[] = [];
 
-      uniqueTemplateNames.forEach(name => {
-        // Skip creation if it was deleted today
-        if (deletedForToday.includes(name)) {
-          return;
+            uniqueTemplateNames.forEach(name => {
+                // Skip creation if it was deleted today
+                if (deletedForToday.includes(name)) {
+                return;
+                }
+
+                // Check if an order with this name already exists for today
+                const instanceExists = bakeryOrders.some(o => o.name === name && isToday(new Date(o.date)));
+                
+                if (!instanceExists) {
+                // Find the template to copy from. The most recent one is a good candidate.
+                const template = recurringTemplates
+                    .filter(t => t.name === name)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                
+                if (template) {
+                    const { id, ...restOfTemplate } = template;
+                    const newOrderData = {
+                    ...restOfTemplate,
+                    date: today.toISOString(),
+                    paid: false,
+                    received: false,
+                    };
+                    addPromises.push(addBakeryOrder(newOrderData));
+                }
+                }
+            });
+
+            if (addPromises.length > 0) {
+                await Promise.all(addPromises);
+            }
+            
+            // Once we've checked for and added orders, we mark this as initialized to prevent re-running.
+            setIsInitialized(true);
         }
 
-        // Check if an order with this name already exists for today
-        const instanceExists = bakeryOrders.some(o => o.name === name && isToday(new Date(o.date)));
-        
-        if (!instanceExists) {
-          // Find the template to copy from. The most recent one is a good candidate.
-          const template = recurringTemplates
-            .filter(t => t.name === name)
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-          
-          if (template) {
-            const { id, ...restOfTemplate } = template;
-            const newOrderData = {
-              ...restOfTemplate,
-              date: today.toISOString(),
-              paid: false,
-              received: false,
-            };
-            addPromises.push(addBakeryOrder(newOrderData));
-          }
-        }
-      });
-      
-      // Once we've checked for and added orders, we mark this as initialized to prevent re-running.
-      setIsInitialized(true);
+        initializeRecurringOrders();
     }
   }, [isLoading, isInitialized, bakeryOrders, addBakeryOrder]);
 
