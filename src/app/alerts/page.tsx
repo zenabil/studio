@@ -43,27 +43,39 @@ export default function AlertsPage() {
     const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; isOverdue: boolean; }[] = [];
     
     const indebtedCustomers = customers.filter(c => c.balance > 0);
+    const allSalesSorted = salesHistory.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (const customer of indebtedCustomers) {
+        let debtOriginDate: Date | null = null;
+        let balanceTrace = customer.balance;
+        
+        // Trace the customer's history backwards from their current balance 
+        // to find the transaction that started the current debt period.
+        const customerHistory = allSalesSorted.filter(s => s.customerId === customer.id);
+        for (let i = customerHistory.length - 1; i >= 0; i--) {
+            const tx = customerHistory[i];
+            if (balanceTrace <= 0) break; // Stop when we've accounted for the whole balance
+
+            debtOriginDate = new Date(tx.date);
+            
+            if (tx.items.length > 0) { // It's a Sale
+                balanceTrace -= tx.totals.balance;
+            } else { // It's a Payment
+                balanceTrace += tx.totals.amountPaid;
+            }
+        }
+        
+        if (!debtOriginDate) continue; // Safeguard
+
         let alertDueDate: Date | null = null;
         
-        const oldestDebtSale = salesHistory
-            .filter(s => s.customerId === customer.id && s.totals.balance > 0)
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
         if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-            const debtDate = oldestDebtSale ? new Date(oldestDebtSale.date) : today;
-            let relevantDueDate = set(debtDate, { date: customer.settlementDay });
-
-            if (isBefore(relevantDueDate, debtDate)) {
+            let relevantDueDate = set(debtOriginDate, { date: customer.settlementDay });
+            if (isBefore(relevantDueDate, debtOriginDate)) {
                 relevantDueDate = addMonths(relevantDueDate, 1);
             }
             alertDueDate = relevantDueDate;
-
         } else if (settings.paymentTermsDays > 0) {
-            // If there's an oldest sale, use its date. Otherwise, use a very old date (epoch)
-            // to consider the debt immediately overdue.
-            const debtOriginDate = oldestDebtSale ? new Date(oldestDebtSale.date) : new Date(0);
             alertDueDate = addDays(debtOriginDate, settings.paymentTermsDays);
         }
         
@@ -81,7 +93,7 @@ export default function AlertsPage() {
           }
         }
     }
-    return alerts;
+    return alerts.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
   }, [customers, salesHistory, settings.paymentTermsDays]);
 
   const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
