@@ -50,9 +50,9 @@ export default function CustomersPage() {
     let sortableCustomers = [...customers];
     
     sortableCustomers = sortableCustomers.filter(customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
+      (customer.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.phone || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     sortableCustomers.sort((a, b) => {
