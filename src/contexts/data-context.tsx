@@ -83,10 +83,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const syncData = useCallback(async (isInitialLoad = false) => {
-        if (isInitialLoad) {
-            setIsLoading(true);
-        }
+    const syncData = useCallback(async () => {
+        setIsLoading(true);
         try {
             const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices] = await Promise.all([
                 getProducts(),
@@ -110,15 +108,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 description: "Could not load application data."
             });
         } finally {
-            if (isInitialLoad) {
-                setIsLoading(false);
-            }
+            setIsLoading(false);
         }
     }, [toast, t]);
 
     // Initial data load
     useEffect(() => {
-        syncData(true);
+        syncData();
     }, [syncData]);
 
     const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
@@ -137,7 +133,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...productData,
         };
         await addProductInDB(newProduct);
-        await syncData();
+        setProducts(prev => [...prev, newProduct]);
         return newProduct;
     };
 
@@ -152,7 +148,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
         }
         await updateProductInDB(productId, productData);
-        await syncData();
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
     };
 
     const deleteProduct = async (productId: string) => {
@@ -177,8 +173,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         await deleteProductInDB(productId);
+        setProducts(prev => prev.filter(p => p.id !== productId));
         toast({ title: t.products.productDeleted });
-        await syncData();
     };
 
     const addCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
@@ -189,12 +185,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...customerData,
         };
         await addCustomerInDB(newCustomer);
-        await syncData();
+        setCustomers(prev => [...prev, newCustomer]);
     };
     
     const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
         await updateCustomerInDB(customerId, customerData);
-        await syncData();
+        setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...customerData } : c));
     };
 
     const deleteCustomer = async (customerId: string) => {
@@ -208,8 +204,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         await deleteCustomerInDB(customerId);
+        setCustomers(prev => prev.filter(c => c.id !== customerId));
         toast({ title: t.customers.customerDeleted });
-        await syncData();
     };
     
     const addSaleRecord = async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
@@ -223,7 +219,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         
         try {
             await processSale({ saleRecord: newSale, cart });
-            await syncData();
+            // Manual state updates instead of syncData()
+            setProducts(prevProducts => {
+                const newProducts = JSON.parse(JSON.stringify(prevProducts));
+                cart.forEach(item => {
+                    const productIndex = newProducts.findIndex((p: Product) => p.id === item.id);
+                    if (productIndex > -1) {
+                        newProducts[productIndex].stock -= item.quantity;
+                    }
+                });
+                return newProducts;
+            });
+
+            if (customerId) {
+                setCustomers(prevCustomers => 
+                    prevCustomers.map(c => 
+                        c.id === customerId 
+                        ? { ...c, spent: c.spent + totals.total, balance: c.balance + totals.balance }
+                        : c
+                    )
+                );
+            }
+            setSalesHistory(prevHistory => [...prevHistory, newSale]);
         } catch (error) {
             console.error("Sale completion failed:", error);
             throw error; // Re-throw to be handled by the UI component
@@ -231,9 +248,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
     
     const makePayment = async (customerId: string, amount: number) => {
+        const paymentRecord: SaleRecord = {
+            id: `PAY-${new Date().getTime()}`,
+            customerId: customerId,
+            items: [],
+            totals: {
+                subtotal: 0,
+                discount: 0,
+                total: amount,
+                amountPaid: amount,
+                balance: -amount,
+            },
+            date: new Date().toISOString(),
+        };
+
         try {
-            await processPayment({ customerId, amount });
-            await syncData();
+            await processPayment({ customerId, amount, paymentRecord });
+            setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, balance: c.balance - amount } : c));
+            setSalesHistory(prev => [...prev, paymentRecord]);
         } catch (error) {
              console.error("Failed to process payment:", error);
              toast({
@@ -250,27 +282,27 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...orderData,
         };
         await addBakeryOrderInDB(newOrder);
-        await syncData();
+        setBakeryOrdersState(prev => [...prev, newOrder]);
     };
 
     const updateBakeryOrder = async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
         await updateBakeryOrderInDB(orderId, orderData);
-        await syncData();
+        setBakeryOrdersState(prev => prev.map(o => o.id === orderId ? { ...o, ...orderData } : o));
     };
     
     const deleteBakeryOrder = async (orderId: string) => {
         await deleteBakeryOrderInDB(orderId);
-        await syncData();
+        setBakeryOrdersState(prev => prev.filter(o => o.id !== orderId));
     };
 
     const setBakeryOrders = async (orders: BakeryOrder[]) => {
        await saveBakeryOrders(orders);
-       await syncData();
+       setBakeryOrdersState(orders);
     }
 
     const setRecurringStatusForOrderName = async (orderName: string, isRecurring: boolean) => {
         await setRecurringStatusForOrderNameInDB(orderName, isRecurring);
-        await syncData();
+        setBakeryOrdersState(prev => prev.map(o => o.name === orderName ? { ...o, isRecurring } : o));
     };
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
@@ -280,12 +312,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...supplierData,
         };
         await addSupplierInDB(newSupplier);
-        await syncData();
+        setSuppliers(prev => [...prev, newSupplier]);
     };
 
     const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
         await updateSupplierInDB(supplierId, supplierData);
-        await syncData();
+        setSuppliers(prev => prev.map(s => s.id === supplierId ? { ...s, ...supplierData } : s));
     };
 
     const deleteSupplier = async (supplierId: string) => {
@@ -300,14 +332,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         await deleteSupplierInDB(supplierId);
+        setSuppliers(prev => prev.filter(s => s.id !== supplierId));
         toast({ title: t.suppliers.supplierDeleted });
-        await syncData();
     };
     
     const addSupplierInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
+        const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
+        const newInvoice: SupplierInvoice = {
+            id: `SINV-${new Date().getTime()}`,
+            date: new Date().toISOString(),
+            isPayment: false,
+            totalAmount,
+            ...invoiceData,
+        };
+
         try {
-            await processSupplierInvoice(invoiceData);
-            await syncData();
+            await processSupplierInvoice({ invoice: newInvoice, updateMasterPrices: invoiceData.updateMasterPrices });
+            
+            // State updates
+            await syncData(); // Temporarily using syncData for this complex transaction. For a full optimization, this would be manual too.
+            
         } catch (error) {
             console.error("Failed to process supplier invoice:", error);
             toast({
@@ -319,9 +363,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
     
     const makePaymentToSupplier = async (supplierId: string, amount: number) => {
+        const paymentRecord: SupplierInvoice = {
+            id: `SPAY-${new Date().getTime()}`,
+            supplierId: supplierId,
+            date: new Date().toISOString(),
+            items: [],
+            totalAmount: amount,
+            isPayment: true,
+            amountPaid: amount,
+        };
         try {
-            await processSupplierPayment({ supplierId, amount });
-            await syncData();
+            await processSupplierPayment({ paymentRecord });
+            setSuppliers(prev => prev.map(s => s.id === supplierId ? { ...s, balance: s.balance - amount } : s));
+            setSupplierInvoices(prev => [...prev, paymentRecord]);
         } catch (error) {
             console.error("Failed to process supplier payment:", error);
             toast({
@@ -336,7 +390,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(true);
         try {
             await restoreBackupData(data);
-            await syncData(true);
+            await syncData();
         } catch(error) {
             console.error("Failed to restore data:", error);
             throw error; 

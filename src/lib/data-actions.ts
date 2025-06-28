@@ -232,28 +232,14 @@ export async function processSale(data: { saleRecord: SaleRecord; cart: CartItem
     ]);
 }
 
-export async function processPayment(data: { customerId: string; amount: number }): Promise<void> {
+export async function processPayment(data: { customerId: string; amount: number; paymentRecord: SaleRecord }): Promise<void> {
     const [customers, sales] = await Promise.all([
         getCustomers(),
         getSalesHistory()
     ]);
     
-    const paymentRecord: SaleRecord = {
-        id: `PAY-${new Date().getTime()}`,
-        customerId: data.customerId,
-        items: [],
-        totals: {
-            subtotal: 0,
-            discount: 0,
-            total: data.amount,
-            amountPaid: data.amount,
-            balance: -data.amount,
-        },
-        date: new Date().toISOString(),
-    };
-    
     // 1. Add payment record
-    sales.push(paymentRecord);
+    sales.push(data.paymentRecord);
     
     // 2. Update customer balance
     const customer = customers.find(c => c.id === data.customerId);
@@ -268,20 +254,17 @@ export async function processPayment(data: { customerId: string; amount: number 
     ]);
 }
 
-export async function processSupplierInvoice(data: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }): Promise<void> {
-    const { updateMasterPrices, ...invoiceData } = data;
+export async function processSupplierInvoice(data: { invoice: SupplierInvoice, updateMasterPrices: boolean }): Promise<void> {
+    const { invoice, updateMasterPrices } = data;
     
     const [products, invoices, suppliers] = await Promise.all([
         getProducts(),
         getSupplierInvoices(),
         getSuppliers()
     ]);
-
-    let totalAmount = 0;
     
     // Update product stock and prices
-    invoiceData.items.forEach(item => {
-        totalAmount += item.quantity * item.purchasePrice;
+    invoice.items.forEach(item => {
         const product = products.find(p => p.id === item.productId);
         if (product) {
             const oldStock = product.stock;
@@ -318,22 +301,12 @@ export async function processSupplierInvoice(data: { supplierId: string; items: 
         }
     });
 
-    const amountPaid = invoiceData.amountPaid || 0;
-
-    const newInvoice: SupplierInvoice = {
-        id: `SINV-${new Date().getTime()}`,
-        date: new Date().toISOString(),
-        totalAmount,
-        ...invoiceData,
-        amountPaid: amountPaid,
-        isPayment: false,
-    };
-    invoices.push(newInvoice);
+    invoices.push(invoice);
 
     // Update supplier balance
-    const supplier = suppliers.find(s => s.id === invoiceData.supplierId);
+    const supplier = suppliers.find(s => s.id === invoice.supplierId);
     if (supplier) {
-        supplier.balance = (supplier.balance || 0) + (totalAmount - amountPaid);
+        supplier.balance = (supplier.balance || 0) + (invoice.totalAmount - (invoice.amountPaid || 0));
     }
     
     await Promise.all([
@@ -343,28 +316,20 @@ export async function processSupplierInvoice(data: { supplierId: string; items: 
     ]);
 }
 
-export async function processSupplierPayment(data: { supplierId: string; amount: number }): Promise<void> {
+export async function processSupplierPayment(data: { paymentRecord: SupplierInvoice }): Promise<void> {
+    const { paymentRecord } = data;
     const [suppliers, invoices] = await Promise.all([
         getSuppliers(),
         getSupplierInvoices()
     ]);
 
     // 1. Update supplier balance
-    const supplier = suppliers.find(s => s.id === data.supplierId);
+    const supplier = suppliers.find(s => s.id === paymentRecord.supplierId);
     if (supplier) {
-        supplier.balance -= data.amount;
+        supplier.balance -= paymentRecord.totalAmount;
     }
 
     // 2. Create payment record
-    const paymentRecord: SupplierInvoice = {
-        id: `SPAY-${new Date().getTime()}`,
-        supplierId: data.supplierId,
-        date: new Date().toISOString(),
-        items: [], // An empty items array signifies a payment
-        totalAmount: data.amount,
-        isPayment: true,
-        amountPaid: data.amount,
-    };
     invoices.push(paymentRecord);
 
     // 3. Write all changes
