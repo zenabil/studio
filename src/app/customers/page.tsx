@@ -12,20 +12,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Customer, type SaleRecord } from '@/lib/data';
+import { type Customer } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddCustomerDialog } from '@/components/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, FileSearch, Wallet } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, FileSearch, Wallet, ChevronsUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerInvoicesDialog } from '@/components/customer-invoices-dialog';
 import { MakePaymentDialog } from '@/components/make-payment-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
-import { addDays, differenceInCalendarDays, getDate, getMonth, getYear } from 'date-fns';
+
+type SortableKeys = keyof Pick<Customer, 'name' | 'email' | 'phone' | 'spent' | 'balance' | 'settlementDay'>;
+
 
 export default function CustomersPage() {
   const { t } = useLanguage();
@@ -39,14 +41,65 @@ export default function CustomersPage() {
   const [viewingInvoicesFor, setViewingInvoicesFor] = useState<Customer | null>(null);
   const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
 
-  const filteredCustomers = useMemo(() => {
-    return customers
-      .filter(customer =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => b.spent - a.spent);
-  }, [customers, searchTerm]);
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({
+    key: 'spent',
+    direction: 'descending',
+  });
+
+  const filteredAndSortedCustomers = useMemo(() => {
+    let sortableCustomers = [...customers];
+    
+    sortableCustomers = sortableCustomers.filter(customer =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    sortableCustomers.sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return sortableCustomers;
+  }, [customers, searchTerm, sortConfig]);
+
+  const requestSort = (key: SortableKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: SortableKeys) => {
+    if (sortConfig.key !== key) {
+      return <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground/50" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+      return <ArrowUp className="ml-2 h-4 w-4" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  const SortableHeader = ({ sortKey, children, className }: { sortKey: SortableKeys, children: React.ReactNode, className?: string }) => (
+      <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => requestSort(sortKey)}>
+          <div className="flex items-center">
+              {children}
+              {getSortIcon(sortKey)}
+          </div>
+      </TableHead>
+  );
   
   const handleOpenAddDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -124,17 +177,17 @@ export default function CustomersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t.customers.name}</TableHead>
-                <TableHead>{t.customers.email}</TableHead>
-                <TableHead>{t.customers.phone}</TableHead>
-                <TableHead className="text-center">{t.customers.settlementDay}</TableHead>
-                <TableHead className="text-right">{t.customers.totalSpent}</TableHead>
-                <TableHead className="text-right">{t.customers.balance}</TableHead>
+                <SortableHeader sortKey="name">{t.customers.name}</SortableHeader>
+                <SortableHeader sortKey="email">{t.customers.email}</SortableHeader>
+                <SortableHeader sortKey="phone">{t.customers.phone}</SortableHeader>
+                <SortableHeader sortKey="settlementDay" className="text-center">{t.customers.settlementDay}</SortableHeader>
+                <SortableHeader sortKey="spent" className="text-right">{t.customers.totalSpent}</SortableHeader>
+                <SortableHeader sortKey="balance" className="text-right">{t.customers.balance}</SortableHeader>
                 <TableHead className="text-right">{t.customers.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {filteredAndSortedCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
