@@ -39,7 +39,7 @@ export default function ProductsPage() {
       .filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.barcodes.some(b => b.toLowerCase().includes(searchTerm.toLowerCase()))
+        (product.barcodes || []).some(b => b.toLowerCase().includes(searchTerm.toLowerCase()))
       )
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [products, searchTerm]);
@@ -133,7 +133,7 @@ export default function ProductsPage() {
                   <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
-                    <TableCell>{product.barcodes.join(', ')}</TableCell>
+                    <TableCell>{(product.barcodes || []).join(', ')}</TableCell>
                     <TableCell className="text-right">{settings.currency}{(product.purchasePrice || 0).toFixed(2)}</TableCell>
                     <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{product.stock}</TableCell>
