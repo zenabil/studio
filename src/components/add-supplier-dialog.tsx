@@ -26,13 +26,6 @@ import {
 import { useEffect, useMemo } from 'react';
 import { Checkbox } from './ui/checkbox';
 import { useData } from '@/contexts/data-context';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface AddSupplierDialogProps {
   isOpen: boolean;
@@ -142,18 +135,18 @@ export function AddSupplierDialog({ isOpen, onClose, onSave, supplierToEdit }: A
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t.suppliers.productCategory}</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t.suppliers.categoryPlaceholder} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {productCategories.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input
+                      placeholder={t.suppliers.categoryPlaceholder}
+                      {...field}
+                      list="product-categories"
+                    />
+                  </FormControl>
+                  <datalist id="product-categories">
+                    {productCategories.map(category => (
+                      <option key={category} value={category} />
+                    ))}
+                  </datalist>
                   <FormMessage />
                 </FormItem>
               )}
