@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Supplier, type Product, type SupplierInvoice } from '@/lib/data';
+import { type Supplier, type Product, type SupplierInvoice, SupplierInvoiceItem } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
@@ -151,7 +151,7 @@ export default function SuppliersPage() {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handleSaveInvoice = (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
+  const handleSaveInvoice = (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
     addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);

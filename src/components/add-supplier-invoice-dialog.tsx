@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Supplier, SupplierInvoiceItem, SupplierInvoice } from '@/lib/data';
+import type { Supplier, SupplierInvoiceItem } from '@/lib/data';
 import {
   Form,
   FormControl,
@@ -36,11 +36,12 @@ import {
 } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
+import { Checkbox } from './ui/checkbox';
 
 interface AddSupplierInvoiceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => void;
+  onSave: (values: z.infer<typeof formSchema>) => void;
   supplier: Supplier;
 }
 
@@ -58,6 +59,7 @@ const formSchema = z.object({
   supplierId: z.string(),
   items: z.array(invoiceItemSchema).min(1),
   amountPaid: z.coerce.number().min(0).optional(),
+  updateMasterPrices: z.boolean().default(false),
 });
 
 export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: AddSupplierInvoiceDialogProps) {
@@ -75,6 +77,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
       supplierId: supplier.id,
       items: [],
       amountPaid: 0,
+      updateMasterPrices: false,
     },
   });
 
@@ -109,6 +112,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
         supplierId: supplier.id,
         items: [{ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' }],
         amountPaid: 0,
+        updateMasterPrices: false,
       });
     }
   }, [isOpen, supplier, form]);
@@ -248,23 +252,45 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                 {t.suppliers.addItem}
               </Button>
             </ScrollArea>
-             <div className="flex justify-end items-center gap-8 pr-6 border-t pt-4">
+             <div className="flex justify-between items-center gap-8 pr-6 border-t pt-4">
                  <FormField
-                    control={form.control}
-                    name="amountPaid"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center gap-2">
-                        <FormLabel className="text-base">{t.pos.amountPaid}:</FormLabel>
-                        <FormControl>
-                            <Input className="w-32 text-base" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                <div className="text-right font-bold text-lg">
-                    {t.pos.grandTotal}: {settings.currency}{totalAmount.toFixed(2)}
-                 </div>
+                  control={form.control}
+                  name="updateMasterPrices"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                         <FormLabel className="cursor-pointer">
+                           {t.suppliers.updateMasterPrices}
+                         </FormLabel>
+                         <p className="text-xs text-muted-foreground">{t.suppliers.updateMasterPricesDescription}</p>
+                      </div>
+                    </FormItem>
+                  )}
+                 />
+                <div className="flex items-center gap-8">
+                    <FormField
+                        control={form.control}
+                        name="amountPaid"
+                        render={({ field }) => (
+                        <FormItem className="flex items-center gap-2">
+                            <FormLabel className="text-base">{t.pos.amountPaid}:</FormLabel>
+                            <FormControl>
+                                <Input className="w-32 text-base" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <div className="text-right font-bold text-lg">
+                        {t.pos.grandTotal}: {settings.currency}{totalAmount.toFixed(2)}
+                    </div>
+                </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>

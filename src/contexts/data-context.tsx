@@ -9,6 +9,7 @@ import {
     type BakeryOrder,
     type Supplier,
     type SupplierInvoice,
+    type SupplierInvoiceItem,
 } from '@/lib/data';
 import {
     getProducts,
@@ -65,7 +66,7 @@ interface DataContextType {
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
-    addSupplierInvoice: (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => Promise<void>;
+    addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
 }
 
@@ -307,7 +308,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         await syncData();
     };
     
-    const addSupplierInvoice = async (invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>) => {
+    const addSupplierInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }) => {
         try {
             await processSupplierInvoice(invoiceData);
             await syncData();

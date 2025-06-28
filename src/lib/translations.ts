@@ -222,6 +222,8 @@ export const translations = {
         noResultsFound: "Aucun fournisseur ne correspond à votre recherche.",
         noSuppliersYet: "Vous n'avez encore ajouté aucun fournisseur.",
         deleteErrorInUse: "Ce fournisseur ne peut pas être supprimé car il est lié à des factures existantes.",
+        updateMasterPrices: "Mettre à jour les prix des produits",
+        updateMasterPricesDescription: "Sauvegarde les prix de cette facture comme nouveaux prix par défaut."
     },
     reports: {
       title: "Rapports et Analyses",
@@ -579,6 +581,8 @@ export const translations = {
         noResultsFound: "لا يوجد موردون يطابقون بحثك.",
         noSuppliersYet: "لم تقم بإضافة أي موردين بعد.",
         deleteErrorInUse: "لا يمكن حذف هذا المورد لأنه مرتبط بفواتير حالية.",
+        updateMasterPrices: "تحديث أسعار المنتجات الرئيسية",
+        updateMasterPricesDescription: "حفظ أسعار هذه الفاتورة كالأسعار الافتراضية الجديدة."
     },
     reports: {
       title: "التقارير والتحليلات",

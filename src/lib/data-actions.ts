@@ -15,6 +15,7 @@ import {
     type BakeryOrder,
     type Supplier,
     type SupplierInvoice,
+    type SupplierInvoiceItem,
     type CartItem,
 } from '@/lib/data';
 
@@ -252,7 +253,9 @@ export async function processPayment(data: { customerId: string; amount: number 
     ]);
 }
 
-export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 'id' | 'date' | 'totalAmount'>): Promise<void> {
+export async function processSupplierInvoice(data: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; updateMasterPrices: boolean }): Promise<void> {
+    const { updateMasterPrices, ...invoiceData } = data;
+    
     const [products, invoices, suppliers] = await Promise.all([
         getProducts(),
         getSupplierInvoices(),
@@ -266,6 +269,13 @@ export async function processSupplierInvoice(invoiceData: Omit<SupplierInvoice, 
         totalAmount += item.quantity * item.purchasePrice;
         const product = products.find(p => p.id === item.productId);
         if (product) {
+            // If requested, update the master product's default pricing info
+            if (updateMasterPrices) {
+                if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
+                if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
+            }
+            
+            // Update stock and weighted average purchase price for this transaction
             const oldStock = product.stock;
             const oldPurchasePrice = product.purchasePrice || 0;
             const newQuantity = item.quantity;
