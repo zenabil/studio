@@ -58,12 +58,11 @@ const addDeletedRecurringForToday = (orderName: string) => {
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading, setRecurringStatusForOrderName, deleteBakeryOrdersByName } = useData();
+  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading, setAsRecurringTemplate, deleteRecurringPattern } = useData();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<BakeryOrder | null>(null);
-  const [orderToUnpin, setOrderToUnpin] = useState<BakeryOrder | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
   const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
@@ -76,37 +75,30 @@ export default function BakeryOrdersPage() {
             const today = new Date();
             const deletedForToday = getDeletedRecurringForToday();
             
-            // Find recurring templates (any order marked as recurring)
+            // Find unique templates. Each order with isRecurring=true is a template.
             const recurringTemplates = bakeryOrders.filter(o => o.isRecurring);
-            const uniqueTemplateNames = [...new Set(recurringTemplates.map(t => t.name))];
             
             const addPromises: Promise<void>[] = [];
 
-            uniqueTemplateNames.forEach(name => {
-                // Skip creation if it was deleted today
-                if (deletedForToday.includes(name)) {
-                return;
+            recurringTemplates.forEach(template => {
+                // Skip creation if an order with this name was deleted today
+                if (deletedForToday.includes(template.name)) {
+                    return;
                 }
 
                 // Check if an order with this name already exists for today
-                const instanceExists = bakeryOrders.some(o => o.name === name && isToday(new Date(o.date)));
+                const instanceExists = bakeryOrders.some(o => o.name === template.name && isToday(new Date(o.date)));
                 
                 if (!instanceExists) {
-                // Find the template to copy from. The oldest one is the "master" template.
-                const template = recurringTemplates
-                    .filter(t => t.name === name)
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-                
-                if (template) {
                     const { id, ...restOfTemplate } = template;
                     const newOrderData = {
-                    ...restOfTemplate,
-                    date: today.toISOString(),
-                    paid: false,
-                    received: false,
+                        ...restOfTemplate,
+                        date: new Date().toISOString(),
+                        paid: false,
+                        received: false,
+                        isRecurring: false, // The new instance is NOT a template
                     };
                     addPromises.push(addBakeryOrder(newOrderData));
-                }
                 }
             });
 
@@ -114,7 +106,6 @@ export default function BakeryOrdersPage() {
                 await Promise.all(addPromises);
             }
             
-            // Once we've checked for and added orders, we mark this as initialized to prevent re-running.
             setIsInitialized(true);
         }
 
@@ -197,40 +188,17 @@ export default function BakeryOrdersPage() {
       }
   };
 
-  const handleToggleRecurring = async (orderId: string) => {
-    const orderToToggle = bakeryOrders.find(o => o.id === orderId);
-    if (!orderToToggle) return;
-    
-    const orderName = orderToToggle.name;
-    const isNowRecurring = !orderToToggle.isRecurring;
-    
-    // If we are pinning a new recurring order
-    if (isNowRecurring) {
-        // Check if an instance for today already exists using the latest bakeryOrders state
-        const instanceExists = bakeryOrders.some(o => o.name === orderName && isToday(new Date(o.date)));
-        
-        // If not, create one for today based on the one being pinned
-        if (!instanceExists) {
-            const { id, ...restOfTemplate } = orderToToggle;
-            const newOrderData = {
-              ...restOfTemplate,
-              date: new Date().toISOString(),
-              paid: false, 
-              received: false,
-              isRecurring: true, // Explicitly set new instance as recurring
-            };
-            await addBakeryOrder(newOrderData);
-        }
-    }
-
-    await setRecurringStatusForOrderName(orderName, isNowRecurring);
-    
-    toast({ title: isNowRecurring ? t.bakeryOrders.orderPinned : t.bakeryOrders.orderUnpinned });
+  const handleToggleRecurring = async (order: BakeryOrder) => {
+    const isCurrentlyRecurring = order.isRecurring;
+    await setAsRecurringTemplate(order.id, !isCurrentlyRecurring);
+    toast({ title: !isCurrentlyRecurring ? t.bakeryOrders.orderPinned : t.bakeryOrders.orderUnpinned });
   };
 
   const handleOpenDeleteDialog = (order: BakeryOrder) => {
     setOrderToDelete(order);
-    if (order.isRecurring) {
+    const templateExistsForThisName = bakeryOrders.some(o => o.name === order.name && o.isRecurring);
+    // Open the special dialog if the order itself is the template OR if a template for its name exists.
+    if (order.isRecurring || templateExistsForThisName) {
       setIsDeleteRecurringDialogOpen(true);
     } else {
       setIsConfirmDeleteDialogOpen(true);
@@ -247,9 +215,10 @@ export default function BakeryOrdersPage() {
     const idToDelete = orderId || orderToDelete?.id;
     if (!idToDelete) return;
     
-    // If deleting a recurring order for today, remember it so it's not recreated on reload.
     const order = bakeryOrders.find(o => o.id === idToDelete);
-    if (order?.isRecurring && isToday(new Date(order.date))) {
+    // If we're deleting an instance of a recurring order for today, remember it so it's not recreated on reload.
+    const isPattern = bakeryOrders.some(o => o.name === order?.name && o.isRecurring);
+    if (order && isPattern && isToday(new Date(order.date))) {
       addDeletedRecurringForToday(order.name);
     }
     
@@ -263,15 +232,9 @@ export default function BakeryOrdersPage() {
   const handleDeletePattern = (orderName?: string) => {
     const nameToDelete = orderName || orderToDelete?.name;
     if (!nameToDelete) return;
-
-    deleteBakeryOrdersByName(nameToDelete);
+    // This now just deletes the template, which is safer.
+    deleteRecurringPattern(nameToDelete);
     handleCloseDeleteDialog();
-  };
-
-  const handleConfirmUnpin = () => {
-    if (!orderToUnpin) return;
-    handleToggleRecurring(orderToUnpin.id);
-    setOrderToUnpin(null);
   };
 
   if (isLoading) {
@@ -330,13 +293,7 @@ export default function BakeryOrdersPage() {
                          variant="ghost" 
                          size="icon" 
                          title={order.isRecurring ? t.bakeryOrders.unpin : t.bakeryOrders.pin}
-                         onClick={() => {
-                            if (order.isRecurring) {
-                                setOrderToUnpin(order);
-                            } else {
-                                handleToggleRecurring(order.id);
-                            }
-                         }}
+                         onClick={() => handleToggleRecurring(order)}
                        >
                          <Star className={cn("h-4 w-4", order.isRecurring ? "text-yellow-500 fill-current" : "text-muted-foreground")} />
                        </Button>
@@ -386,15 +343,6 @@ export default function BakeryOrdersPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveOrder}
         orderToEdit={orderToEdit}
-      />
-      <ConfirmDialog
-        isOpen={!!orderToUnpin}
-        onClose={() => setOrderToUnpin(null)}
-        onConfirm={handleConfirmUnpin}
-        title={t.bakeryOrders.unpinConfirmationTitle}
-        description={t.bakeryOrders.unpinConfirmationMessage}
-        confirmText={t.bakeryOrders.unpinButton}
-        confirmVariant="default"
       />
       <DeleteRecurringOrderDialog
         isOpen={isDeleteRecurringDialogOpen}

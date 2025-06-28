@@ -253,18 +253,35 @@ export async function deleteBakeryOrderInDB(orderId: string): Promise<void> {
     });
 }
 
-export async function deleteBakeryOrdersByNameInDB(orderName: string): Promise<void> {
+export async function deleteRecurringPatternInDB(orderName: string): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
         let orders = await getBakeryOrders();
-        orders = orders.filter(o => o.name !== orderName);
+        // Safer deletion: only removes the template, not historical instances.
+        orders = orders.filter(o => !(o.name === orderName && o.isRecurring));
         await writeData(BAKERY_ORDERS_FILE, orders);
     });
 }
 
-export async function setRecurringStatusForOrderNameInDB(orderName: string, isRecurring: boolean): Promise<void> {
+export async function setAsRecurringTemplateInDB(templateId: string, isRecurring: boolean): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
         let orders = await getBakeryOrders();
-        orders = orders.map(o => o.name === orderName ? { ...o, isRecurring } : o);
+        const templateOrder = orders.find(o => o.id === templateId);
+
+        if (!templateOrder) return;
+
+        if (isRecurring) {
+            // Set this order as the unique template for its name
+            orders = orders.map(o => {
+                if (o.name === templateOrder.name) {
+                    // Unset other templates with the same name
+                    return { ...o, isRecurring: o.id === templateId };
+                }
+                return o;
+            });
+        } else {
+            // Unset this order as a template
+            orders = orders.map(o => o.id === templateId ? { ...o, isRecurring: false } : o);
+        }
         await writeData(BAKERY_ORDERS_FILE, orders);
     });
 }

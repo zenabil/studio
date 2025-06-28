@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -36,8 +37,8 @@ import {
     deleteSupplierInDB,
     processSupplierInvoice,
     processSupplierPayment,
-    setRecurringStatusForOrderNameInDB,
-    deleteBakeryOrdersByNameInDB,
+    setAsRecurringTemplateInDB,
+    deleteRecurringPatternInDB,
 } from '@/lib/data-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
@@ -63,9 +64,9 @@ interface DataContextType {
     addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => Promise<void>;
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
-    deleteBakeryOrdersByName: (orderName: string) => Promise<void>;
+    deleteRecurringPattern: (orderName: string) => Promise<void>;
     setBakeryOrders: (orders: BakeryOrder[]) => Promise<void>;
-    setRecurringStatusForOrderName: (orderName: string, isRecurring: boolean) => Promise<void>;
+    setAsRecurringTemplate: (templateId: string, isRecurring: boolean) => Promise<void>;
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
@@ -293,11 +294,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const deleteBakeryOrdersByName = async (orderName: string) => {
+    const deleteRecurringPattern = async (orderName: string) => {
         const previousOrders = bakeryOrders;
-        setBakeryOrdersState(current => current.filter(o => o.name !== orderName));
+        setBakeryOrdersState(current => current.filter(o => !(o.name === orderName && o.isRecurring)));
         try {
-            await deleteBakeryOrdersByNameInDB(orderName);
+            await deleteRecurringPatternInDB(orderName);
             toast({ title: t.bakeryOrders.patternDeleted });
         } catch (e) {
             setBakeryOrdersState(previousOrders);
@@ -317,11 +318,27 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
        }
     }
 
-    const setRecurringStatusForOrderName = async (orderName: string, isRecurring: boolean) => {
+    const setAsRecurringTemplate = async (templateId: string, isRecurring: boolean) => {
         const previousOrders = bakeryOrders;
-        setBakeryOrdersState(current => current.map(o => o.name === orderName ? { ...o, isRecurring } : o));
+        // Optimistic UI update
+        setBakeryOrdersState(current => {
+            const templateOrder = current.find(o => o.id === templateId);
+            if (!templateOrder) return current;
+    
+            if (isRecurring) {
+                return current.map(o => {
+                    if (o.name === templateOrder.name) {
+                        return { ...o, isRecurring: o.id === templateId };
+                    }
+                    return o;
+                });
+            } else {
+                return current.map(o => (o.id === templateId ? { ...o, isRecurring: false } : o));
+            }
+        });
+    
         try {
-            await setRecurringStatusForOrderNameInDB(orderName, isRecurring);
+            await setAsRecurringTemplateInDB(templateId, isRecurring);
         } catch (e) {
             setBakeryOrdersState(previousOrders);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update recurring status.'});
@@ -446,9 +463,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addBakeryOrder,
         updateBakeryOrder,
         deleteBakeryOrder,
-        deleteBakeryOrdersByName,
+        deleteRecurringPattern,
         setBakeryOrders,
-        setRecurringStatusForOrderName,
+        setAsRecurringTemplate,
         addSupplier,
         updateSupplier,
         deleteSupplier,
