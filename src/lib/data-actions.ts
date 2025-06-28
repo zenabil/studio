@@ -107,7 +107,11 @@ export async function getSupplierInvoices(): Promise<SupplierInvoice[]> {
     return readData(SUPPLIER_INVOICES_FILE, initialSupplierInvoices);
 }
 export async function getLicenseKeys(): Promise<string[]> {
-    return readData(LICENSE_KEYS_FILE, initialLicenseKeys);
+    try {
+        return readData(LICENSE_KEYS_FILE, initialLicenseKeys);
+    } catch(e) {
+        return initialLicenseKeys;
+    }
 }
 
 // Granular write operations
@@ -269,28 +273,31 @@ export async function processSupplierInvoice(data: { supplierId: string; items: 
         totalAmount += item.quantity * item.purchasePrice;
         const product = products.find(p => p.id === item.productId);
         if (product) {
-            // If requested, update the master product's default pricing info
+            const oldStock = product.stock;
+            const newQuantity = item.quantity;
+            
+            // Update stock always
+            product.stock += newQuantity;
+
+            // ONLY update master prices if requested
             if (updateMasterPrices) {
                 if (item.boxPrice !== undefined) product.boxPrice = item.boxPrice;
                 if (item.quantityPerBox !== undefined) product.quantityPerBox = item.quantityPerBox;
-            }
-            
-            // Update stock and weighted average purchase price for this transaction
-            const oldStock = product.stock;
-            const oldPurchasePrice = product.purchasePrice || 0;
-            const newQuantity = item.quantity;
-            const newPurchasePrice = item.purchasePrice;
-            const totalNewStock = oldStock + newQuantity;
 
-            let newWeightedAveragePrice = newPurchasePrice;
-            if (oldStock > 0 && totalNewStock > 0) {
-                const totalOldValue = oldStock * oldPurchasePrice;
-                const totalNewValue = newQuantity * newPurchasePrice;
-                newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalNewStock;
+                // Calculate and update weighted average purchase price
+                const oldPurchasePrice = product.purchasePrice || 0;
+                const newPurchasePrice = item.purchasePrice;
+                const totalNewStock = oldStock + newQuantity;
+
+                let newWeightedAveragePrice = newPurchasePrice;
+                if (oldStock > 0 && totalNewStock > 0) {
+                    const totalOldValue = oldStock * oldPurchasePrice;
+                    const totalNewValue = newQuantity * newPurchasePrice;
+                    newWeightedAveragePrice = (totalOldValue + totalNewValue) / totalNewStock;
+                }
+                
+                product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
             }
-            
-            product.stock = totalNewStock;
-            product.purchasePrice = parseFloat(newWeightedAveragePrice.toFixed(2));
         }
     });
 
