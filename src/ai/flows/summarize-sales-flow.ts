@@ -20,7 +20,7 @@ const SalesOverTimePointSchema = z.object({
     sales: z.number(),
 });
 
-export const SummarizeSalesInputSchema = z.object({
+const SummarizeSalesInputSchema = z.object({
   totalSales: z.number(),
   totalProfits: z.number(),
   totalExpenses: z.number(),
@@ -36,7 +36,7 @@ export const SummarizeSalesInputSchema = z.object({
 });
 export type SummarizeSalesInput = z.infer<typeof SummarizeSalesInputSchema>;
 
-export const SummarizeSalesOutputSchema = z.object({
+const SummarizeSalesOutputSchema = z.object({
     summary: z.string().describe("A concise, insightful summary of the business performance based on the provided data. Should be in markdown format. It should highlight key trends, successes, and areas for concern."),
 });
 export type SummarizeSalesOutput = z.infer<typeof SummarizeSalesOutputSchema>;
