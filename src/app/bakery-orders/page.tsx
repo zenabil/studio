@@ -29,6 +29,30 @@ import { useData } from '@/contexts/data-context';
 import type { BakeryOrder } from '@/lib/data';
 import Loading from '@/app/loading';
 
+// Helper functions for localStorage to remember deleted recurring orders for the day
+const getTodaysDeletedRecurringKey = () => {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  return `deletedRecurringOrders_${today}`;
+};
+
+const getDeletedRecurringForToday = (): string[] => {
+  if (typeof window === 'undefined') return [];
+  const key = getTodaysDeletedRecurringKey();
+  const stored = localStorage.getItem(key);
+  return stored ? JSON.parse(stored) : [];
+};
+
+const addDeletedRecurringForToday = (orderName: string) => {
+  if (typeof window === 'undefined') return;
+  const key = getTodaysDeletedRecurringKey();
+  const deletedNames = getDeletedRecurringForToday();
+  if (!deletedNames.includes(orderName)) {
+    deletedNames.push(orderName);
+    localStorage.setItem(key, JSON.stringify(deletedNames));
+  }
+};
+
+
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -42,6 +66,7 @@ export default function BakeryOrdersPage() {
     // This effect runs once after data is loaded to create any missing daily recurring orders.
     if (!isLoading && !isInitialized) {
       const today = new Date();
+      const deletedForToday = getDeletedRecurringForToday();
       
       // Find recurring templates (any order marked as recurring)
       const recurringTemplates = bakeryOrders.filter(o => o.isRecurring);
@@ -50,6 +75,11 @@ export default function BakeryOrdersPage() {
       const addPromises: Promise<void>[] = [];
 
       uniqueTemplateNames.forEach(name => {
+        // Skip creation if it was deleted today
+        if (deletedForToday.includes(name)) {
+          return;
+        }
+
         // Check if an order with this name already exists for today
         const instanceExists = bakeryOrders.some(o => o.name === name && isToday(new Date(o.date)));
         
@@ -73,7 +103,6 @@ export default function BakeryOrdersPage() {
       });
       
       // Once we've checked for and added orders, we mark this as initialized to prevent re-running.
-      // The context will handle refetching the data and updating the state.
       setIsInitialized(true);
     }
   }, [isLoading, isInitialized, bakeryOrders, addBakeryOrder]);
@@ -155,6 +184,12 @@ export default function BakeryOrdersPage() {
 
   const handleDeleteOrder = () => {
     if (!orderToDelete) return;
+
+    // If deleting a recurring order for today, remember it so it's not recreated on reload.
+    if (orderToDelete.isRecurring && isToday(new Date(orderToDelete.date))) {
+      addDeletedRecurringForToday(orderToDelete.name);
+    }
+    
     deleteBakeryOrder(orderToDelete.id);
     toast({
         title: t.bakeryOrders.orderDeleted,
