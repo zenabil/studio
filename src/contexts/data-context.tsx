@@ -54,7 +54,7 @@ interface DataContextType {
     addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
-    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
+    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<Customer>;
     updateCustomer: (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => Promise<void>;
     deleteCustomer: (customerId: string) => Promise<void>;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
@@ -163,7 +163,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const addCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
+    const addCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<Customer> => {
         const newCustomer: Customer = {
             id: `cust-${new Date().getTime()}`,
             spent: 0,
@@ -175,6 +175,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setCustomers(current => [...current, newCustomer]);
         try {
             await addCustomerInDB(newCustomer);
+            return newCustomer;
         } catch (e) {
             setCustomers(previousCustomers);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add customer.'});

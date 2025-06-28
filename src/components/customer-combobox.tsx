@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,10 +25,11 @@ interface CustomerComboboxProps {
   customers: Customer[];
   selectedCustomerId: string | null;
   onSelectCustomer: (customerId: string | null) => void;
+  onAddNewCustomer: () => void;
 }
 
 export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComboboxProps>(
-  ({ customers, selectedCustomerId, onSelectCustomer }, ref) => {
+  ({ customers, selectedCustomerId, onSelectCustomer, onAddNewCustomer }, ref) => {
     const { t } = useLanguage();
     const [open, setOpen] = React.useState(false);
 
@@ -55,6 +56,16 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
             <CommandList>
               <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
               <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    onAddNewCustomer();
+                    setOpen(false);
+                  }}
+                  className="text-primary"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  {t.customers.addCustomer}
+                </CommandItem>
                 <CommandItem
                   value="no-customer"
                   onSelect={() => {

@@ -51,6 +51,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CustomerCombobox } from '@/components/customer-combobox';
 import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
+import { AddCustomerDialog } from './add-customer-dialog';
 import { calculateItemTotal } from '@/lib/utils';
 import Loading from '@/app/loading';
 import { PosProductCard } from './pos-product-card';
@@ -70,7 +71,7 @@ const SESSIONS_STORAGE_KEY = 'frucio-pos-sessions';
 export function PosView() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, customers, addSaleRecord, addProduct, isLoading } = useData();
+  const { products, customers, addSaleRecord, addProduct, isLoading, addCustomer } = useData();
   const { settings } = useSettings();
   
   const [sessions, setSessions] = useState<SaleSession[]>([]);
@@ -84,6 +85,7 @@ export function PosView() {
   const [cartQuantities, setCartQuantities] = useState<{ [key: string]: string }>({});
 
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
   const [newProductBarcode, setNewProductBarcode] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   
@@ -548,9 +550,21 @@ export function PosView() {
     addToCart(newProduct);
   };
   
+  const handleSaveNewCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
+    try {
+      const newCustomer = await addCustomer(customerData);
+      toast({ title: t.customers.customerAdded });
+      updateActiveSession({ selectedCustomerId: newCustomer.id });
+      setIsAddCustomerDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to add new customer from POS:", error);
+      throw error; 
+    }
+  };
+  
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isInvoiceOpen || !!sessionToDelete || isAddProductDialogOpen) return;
+      if (isInvoiceOpen || !!sessionToDelete || isAddProductDialogOpen || isAddCustomerDialogOpen) return;
       
       const activeElement = document.activeElement as HTMLElement;
 
@@ -598,7 +612,7 @@ export function PosView() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isInvoiceOpen, sessionToDelete, isAddProductDialogOpen, resetSale, activeSession, handleSaleCompletion]);
+  }, [isInvoiceOpen, sessionToDelete, isAddProductDialogOpen, isAddCustomerDialogOpen, resetSale, activeSession, handleSaleCompletion]);
 
 
   const categories = useMemo(() => ['all', ...Array.from(new Set(products.filter(p => !!p).map((p) => p.category)))], [products]);
@@ -617,7 +631,7 @@ export function PosView() {
 
           const nameMatch = p.name.toLowerCase().includes(lowerCaseSearchTerm);
           const categoryMatch = p.category.toLowerCase().includes(lowerCaseSearchTerm);
-          const barcodeMatch = p.barcodes.some(b => b.toLowerCase().includes(lowerCaseSearchTerm));
+          const barcodeMatch = (p.barcodes || []).some(b => b.toLowerCase().includes(lowerCaseSearchTerm));
           
           return nameMatch || categoryMatch || barcodeMatch;
         }
@@ -844,6 +858,7 @@ export function PosView() {
                     onSelectCustomer={(customerId) =>
                         updateActiveSession({ selectedCustomerId: customerId })
                     }
+                    onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
                     />
                     <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
                 </div>
@@ -913,6 +928,13 @@ export function PosView() {
         productToEdit={null}
         initialBarcode={newProductBarcode}
         products={products}
+      />
+      <AddCustomerDialog
+        isOpen={isAddCustomerDialogOpen}
+        onClose={() => setIsAddCustomerDialogOpen(false)}
+        onSave={handleSaveNewCustomer}
+        customerToEdit={null}
+        customers={customers}
       />
        <BarcodeScannerDialog
         isOpen={isScannerOpen}
