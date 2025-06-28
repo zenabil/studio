@@ -50,8 +50,8 @@ const invoiceItemSchema = z.object({
   productName: z.string(),
   quantity: z.coerce.number().min(1),
   purchasePrice: z.coerce.number().min(0),
-  boxPrice: z.coerce.number().min(0).optional(),
-  quantityPerBox: z.coerce.number().int().min(0).optional(),
+  boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
   barcode: z.string().optional(),
 });
 
@@ -219,7 +219,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                           render={({ field }) => (
                             <FormItem>
                               {index === 0 && <FormLabel>{t.suppliers.quantity}</FormLabel>}
-                              <FormControl><Input type="number" {...field} disabled={isSaving} /></FormControl>
+                              <FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -232,7 +232,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                           render={({ field }) => (
                             <FormItem>
                               {index === 0 && <FormLabel>{t.products.purchasePrice}</FormLabel>}
-                              <FormControl><Input type="number" step="0.01" {...field} disabled={isSaving} /></FormControl>
+                              <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} disabled={isSaving} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -245,7 +245,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                           render={({ field }) => (
                             <FormItem>
                               {index === 0 && <FormLabel>{t.products.boxPrice}</FormLabel>}
-                              <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} disabled={isSaving} /></FormControl>
+                              <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -258,7 +258,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier }: 
                           render={({ field }) => (
                             <FormItem>
                               {index === 0 && <FormLabel>{t.products.quantityPerBox}</FormLabel>}
-                              <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} disabled={isSaving} /></FormControl>
+                              <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
