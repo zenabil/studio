@@ -300,6 +300,7 @@ export const translations = {
       activated: "Logiciel activé.",
       activateSuccess: "Logiciel activé avec succès!",
       activateError: "Clé de licence invalide.",
+      changesSavedAutomatically: "Les modifications de l'apparence sont enregistrées automatiquement."
     },
     activation: {
       title: "Activer votre logiciel",
@@ -655,6 +656,7 @@ export const translations = {
       activated: "البرنامج مفعل.",
       activateSuccess: "تم تفعيل البرنامج بنجاح!",
       activateError: "مفتاح الترخيص غير صالح.",
+      changesSavedAutomatically: "يتم حفظ تغييرات المظهر تلقائيًا."
     },
      activation: {
       title: "تفعيل برنامجك",

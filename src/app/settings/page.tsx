@@ -1,20 +1,22 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { useSettings } from '@/contexts/settings-context';
+import { useSettings, type Settings, type Theme } from '@/contexts/settings-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
-import { Check, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { differenceInCalendarDays } from 'date-fns';
+
+type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
 
 export default function SettingsPage() {
   const { settings, setSettings, colorPresets, activateLicense } = useSettings();
@@ -25,15 +27,21 @@ export default function SettingsPage() {
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
   const [isActivating, setIsActivating] = useState(false);
 
-  const { control, handleSubmit, reset } = useForm({
-    defaultValues: settings,
+  const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
+    defaultValues: {
+      companyInfo: settings.companyInfo,
+      paymentTermsDays: settings.paymentTermsDays,
+    },
   });
   
   useEffect(() => {
-    reset(settings);
-  }, [settings, reset]);
+    reset({
+      companyInfo: settings.companyInfo,
+      paymentTermsDays: settings.paymentTermsDays,
+    });
+  }, [settings.companyInfo, settings.paymentTermsDays, reset]);
 
-  const onSubmit = (data: any) => {
+  const onCompanyInfoSubmit = (data: CompanyInfoFormData) => {
     setSettings(data);
     toast({ title: t.settings.settingsSaved });
   };
@@ -43,7 +51,7 @@ export default function SettingsPage() {
       const backupData = await getBackupData();
       const dataToBackup = {
         ...backupData,
-        settings: settings, // Use the saved settings, not the watched form state
+        settings: settings,
       };
       const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
         JSON.stringify(dataToBackup, null, 2)
@@ -76,14 +84,15 @@ export default function SettingsPage() {
         }
         const data = JSON.parse(text);
 
-        // Basic validation: check for at least one key data type
         if (data.products && data.customers && data.salesHistory) {
-          // Pass the entire data object to restoreData
           await restoreData(data);
           
           if (data.settings) {
             setSettings(data.settings);
-            reset(data.settings);
+            reset({
+              companyInfo: data.settings.companyInfo,
+              paymentTermsDays: data.settings.paymentTermsDays,
+            });
           }
           toast({ title: t.settings.restoreSuccess });
         } else {
@@ -140,10 +149,9 @@ export default function SettingsPage() {
 
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold font-headline">{t.settings.title}</h1>
-        <Button type="submit">{t.settings.save}</Button>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
@@ -152,98 +160,103 @@ export default function SettingsPage() {
           <TabsTrigger value="appearance">{t.settings.appearance}</TabsTrigger>
           <TabsTrigger value="data">{t.settings.dataManagement}</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="general" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.settings.companyInfo}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">{t.settings.companyName}</Label>
-                    <Controller name="companyInfo.name" control={control} render={({ field }) => <Input id="companyName" {...field} />} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="companyPhone">{t.settings.companyPhone}</Label>
-                    <Controller name="companyInfo.phone" control={control} render={({ field }) => <Input id="companyPhone" {...field} />} />
-                  </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="companyAddress">{t.settings.companyAddress}</Label>
-                <Controller name="companyInfo.address" control={control} render={({ field }) => <Input id="companyAddress" {...field} />} />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
-                <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="paymentTerms">{t.settings.paymentTerms}</Label>
-                <Controller name="paymentTermsDays" control={control} render={({ field }) => <Input id="paymentTerms" type="number" min="0" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />} />
-                <p className="text-sm text-muted-foreground">{t.settings.paymentTermsDescription}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <form onSubmit={handleSubmit(onCompanyInfoSubmit)}>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.settings.companyInfo}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName">{t.settings.companyName}</Label>
+                      <Controller name="companyInfo.name" control={control} render={({ field }) => <Input id="companyName" {...field} />} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="companyPhone">{t.settings.companyPhone}</Label>
+                      <Controller name="companyInfo.phone" control={control} render={({ field }) => <Input id="companyPhone" {...field} />} />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="companyAddress">{t.settings.companyAddress}</Label>
+                  <Controller name="companyInfo.address" control={control} render={({ field }) => <Input id="companyAddress" {...field} />} />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
+                  <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="paymentTerms">{t.settings.paymentTerms}</Label>
+                  <Controller name="paymentTermsDays" control={control} render={({ field }) => <Input id="paymentTerms" type="number" min="0" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />} />
+                  <p className="text-sm text-muted-foreground">{t.settings.paymentTermsDescription}</p>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit">{t.settings.save}</Button>
+              </CardFooter>
+            </Card>
+          </form>
         </TabsContent>
+        
         <TabsContent value="appearance" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle>{t.settings.appearance}</CardTitle>
+              <CardDescription>{t.settings.changesSavedAutomatically}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
                     <Label>{t.settings.currency}</Label>
-                    <Controller name="currency" control={control} render={({ field }) => <Input className="w-24" {...field} />} />
+                    <Input
+                      className="w-24"
+                      value={settings.currency}
+                      onChange={(e) => setSettings({ currency: e.target.value })}
+                    />
                 </div>
                  <div className="space-y-2">
                   <Label>{t.settings.theme}</Label>
-                  <Controller
-                    name="theme"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-4">
-                        <Label className="flex items-center gap-2 cursor-pointer">
-                          <RadioGroupItem value="light" /> Light
-                        </Label>
-                        <Label className="flex items-center gap-2 cursor-pointer">
-                          <RadioGroupItem value="dark" /> Dark
-                        </Label>
-                         <Label className="flex items-center gap-2 cursor-pointer">
-                          <RadioGroupItem value="system" /> System
-                        </Label>
-                      </RadioGroup>
-                    )}
-                  />
+                  <RadioGroup 
+                    onValueChange={(value: Theme) => setSettings({ theme: value })} 
+                    value={settings.theme} 
+                    className="flex gap-4"
+                  >
+                    <Label className="flex items-center gap-2 cursor-pointer">
+                      <RadioGroupItem value="light" /> Light
+                    </Label>
+                    <Label className="flex items-center gap-2 cursor-pointer">
+                      <RadioGroupItem value="dark" /> Dark
+                    </Label>
+                     <Label className="flex items-center gap-2 cursor-pointer">
+                      <RadioGroupItem value="system" /> System
+                    </Label>
+                  </RadioGroup>
                 </div>
                 <div className="space-y-2">
                     <Label>{t.settings.colors}</Label>
-                     <Controller
-                        name="colorPreset"
-                        control={control}
-                        render={({ field }) => (
-                           <div className="flex flex-wrap gap-3">
-                            {colorPresets.map((preset) => (
-                                <button
-                                type="button"
-                                key={preset.name}
-                                onClick={() => field.onChange(preset.name)}
-                                className={cn(
-                                    'flex h-12 w-20 items-center justify-center rounded-lg border-2',
-                                    field.value === preset.name ? 'border-primary' : 'border-transparent'
-                                )}
-                                style={{ backgroundColor: `hsl(${preset.primary.dark})`}}
-                                >
-                                <div className="flex gap-2">
-                                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: `hsl(${preset.accent.dark})` }} />
-                                </div>
-                                </button>
-                            ))}
-                            </div>
-                        )}
-                        />
+                     <div className="flex flex-wrap gap-3">
+                      {colorPresets.map((preset) => (
+                          <button
+                          type="button"
+                          key={preset.name}
+                          onClick={() => setSettings({ colorPreset: preset.name })}
+                          className={cn(
+                              'flex h-12 w-20 items-center justify-center rounded-lg border-2',
+                              settings.colorPreset === preset.name ? 'border-primary' : 'border-transparent'
+                          )}
+                          style={{ backgroundColor: `hsl(${preset.primary.dark})`}}
+                          >
+                          <div className="flex gap-2">
+                              <span className="h-6 w-6 rounded-full" style={{ backgroundColor: `hsl(${preset.accent.dark})` }} />
+                          </div>
+                          </button>
+                      ))}
+                      </div>
                 </div>
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="data" className="mt-4">
           <Card>
             <CardHeader>
@@ -288,6 +301,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </form>
+    </div>
   );
 }
