@@ -19,11 +19,12 @@ import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { TriangleAlert, CalendarClock, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
-import { addDays, differenceInCalendarDays, format, set, isBefore, addMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Loading from '@/app/loading';
 import { cn } from '@/lib/utils';
+import { calculateDebtAlerts } from '@/lib/utils';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
@@ -38,62 +39,7 @@ export default function AlertsPage() {
   }, [products]);
 
   const debtAlerts = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const alerts: { customerName: string; balance: number; dueDate: Date; phone: string; isOverdue: boolean; }[] = [];
-    
-    const indebtedCustomers = customers.filter(c => !!c && c.balance > 0);
-    const allSalesSorted = salesHistory.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    for (const customer of indebtedCustomers) {
-        let debtOriginDate: Date | null = null;
-        let balanceTrace = customer.balance;
-        
-        // Trace the customer's history backwards from their current balance 
-        // to find the transaction that started the current debt period.
-        const customerHistory = allSalesSorted.filter(s => s.customerId === customer.id);
-        for (let i = customerHistory.length - 1; i >= 0; i--) {
-            const tx = customerHistory[i];
-            if (balanceTrace <= 0) break; // Stop when we've accounted for the whole balance
-
-            debtOriginDate = new Date(tx.date);
-            
-            if (tx.items.length > 0) { // It's a Sale
-                balanceTrace -= tx.totals.balance;
-            } else { // It's a Payment
-                balanceTrace += tx.totals.amountPaid;
-            }
-        }
-        
-        if (!debtOriginDate) continue; // Safeguard
-
-        let alertDueDate: Date | null = null;
-        
-        if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-            let relevantDueDate = set(debtOriginDate, { date: customer.settlementDay });
-            if (isBefore(relevantDueDate, debtOriginDate)) {
-                relevantDueDate = addMonths(relevantDueDate, 1);
-            }
-            alertDueDate = relevantDueDate;
-        } else if (settings.paymentTermsDays > 0) {
-            alertDueDate = addDays(debtOriginDate, settings.paymentTermsDays);
-        }
-        
-        if (alertDueDate) {
-          const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
-          // Alert for payments that are overdue (negative), due today (0), or due tomorrow (1).
-          if (daysUntilDue <= 1) { 
-              alerts.push({
-                  customerName: customer.name,
-                  balance: customer.balance,
-                  dueDate: alertDueDate,
-                  phone: customer.phone,
-                  isOverdue: daysUntilDue < 0,
-              });
-          }
-        }
-    }
-    return alerts.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    return calculateDebtAlerts(customers, salesHistory, settings.paymentTermsDays);
   }, [customers, salesHistory, settings.paymentTermsDays]);
 
   const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
