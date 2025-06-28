@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import {
@@ -192,14 +193,33 @@ export default function BakeryOrdersPage() {
       }
   };
 
-  const handleToggleRecurring = (orderId: string) => {
+  const handleToggleRecurring = async (orderId: string) => {
     const orderToToggle = bakeryOrders.find(o => o.id === orderId);
     if (!orderToToggle) return;
     
     const orderName = orderToToggle.name;
     const isNowRecurring = !orderToToggle.isRecurring;
     
-    setRecurringStatusForOrderName(orderName, isNowRecurring);
+    // If we are pinning a new recurring order
+    if (isNowRecurring) {
+        // Check if an instance for today already exists using the latest bakeryOrders state
+        const instanceExists = bakeryOrders.some(o => o.name === orderName && isToday(new Date(o.date)));
+        
+        // If not, create one for today based on the one being pinned
+        if (!instanceExists) {
+            const { id, ...restOfTemplate } = orderToToggle;
+            const newOrderData = {
+              ...restOfTemplate,
+              date: new Date().toISOString(),
+              paid: false, 
+              received: false,
+              isRecurring: true, // Explicitly set new instance as recurring
+            };
+            await addBakeryOrder(newOrderData);
+        }
+    }
+
+    await setRecurringStatusForOrderName(orderName, isNowRecurring);
     
     toast({ title: isNowRecurring ? t.bakeryOrders.orderPinned : t.bakeryOrders.orderUnpinned });
   };
@@ -369,3 +389,5 @@ export default function BakeryOrdersPage() {
     </>
   );
 }
+
+    
