@@ -19,7 +19,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { TriangleAlert, CalendarClock, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
-import { addDays, differenceInCalendarDays, format, set, getDate, getMonth, getYear } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, set, isBefore, addMonths } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Loading from '@/app/loading';
@@ -45,36 +45,27 @@ export default function AlertsPage() {
 
     for (const customer of indebtedCustomers) {
         let alertDueDate: Date | null = null;
+        
+        const oldestDebtSale = salesHistory
+            .filter(s => s.customerId === customer.id && s.totals.balance > 0)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
-        // Priority 1: Customer-specific settlement day
         if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-            const todayDate = getDate(today);
-            const currentMonth = getMonth(today);
-            const currentYear = getYear(today);
+            const debtDate = oldestDebtSale ? new Date(oldestDebtSale.date) : today;
+            let relevantDueDate = set(debtDate, { date: customer.settlementDay });
 
-            if (todayDate >= customer.settlementDay) {
-                // Due date is next month
-                alertDueDate = new Date(currentYear, currentMonth + 1, customer.settlementDay);
-            } else {
-                // Due date is this month
-                alertDueDate = set(today, { date: customer.settlementDay });
+            if (isBefore(relevantDueDate, debtDate)) {
+                relevantDueDate = addMonths(relevantDueDate, 1);
             }
-        } 
-        // Priority 2: Global payment terms based on oldest debt-creating sale
-        else {
-            const debtCreatingSales = salesHistory
-                .filter(s => s.customerId === customer.id && s.totals.balance > 0)
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            
-            if (debtCreatingSales.length > 0) {
-                const oldestDebtSale = debtCreatingSales[0];
-                alertDueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
-            }
+            alertDueDate = relevantDueDate;
+
+        } else if (settings.paymentTermsDays > 0 && oldestDebtSale) {
+            alertDueDate = addDays(new Date(oldestDebtSale.date), settings.paymentTermsDays);
         }
         
         if (alertDueDate) {
           const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
-          // Alert for payments that are overdue, due today, or due tomorrow.
+          // Alert for payments that are overdue (negative), due today (0), or due tomorrow (1).
           if (daysUntilDue <= 1) { 
               alerts.push({
                   customerName: customer.name,
