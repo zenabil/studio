@@ -226,11 +226,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             await syncData();
         } catch (error) {
             console.error("Failed to process sale:", error);
-            toast({
-                variant: 'destructive',
-                title: "Save Error",
-                description: "Could not save sale data.",
-            });
+            throw error; // Re-throw to be handled by the UI component
         }
     };
     

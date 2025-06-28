@@ -363,7 +363,8 @@ export const translations = {
       scanError: "Une erreur est survenue lors du scan.",
       forecastError: "La prévision des ventes a échoué.",
       outOfStock: "{productName} est en rupture de stock.",
-      quantityExceedsStock: "La quantité demandée pour {productName} dépasse le stock disponible ({stock})."
+      quantityExceedsStock: "La quantité demandée pour {productName} dépasse le stock disponible ({stock}).",
+      unknownError: "Une erreur inconnue est survenue. Veuillez réessayer."
     }
   },
   ar: {
@@ -726,7 +727,8 @@ export const translations = {
       scanError: "حدث خطأ أثناء المسح.",
       forecastError: "فشل توقع المبيعات.",
       outOfStock: "{productName} غير متوفر في المخزون.",
-      quantityExceedsStock: "الكمية المطلوبة من {productName} تتجاوز المخزون المتاح ({stock})."
+      quantityExceedsStock: "الكمية المطلوبة من {productName} تتجاوز المخزون المتاح ({stock}).",
+      unknownError: "حدث خطأ غير معروف. يرجى المحاولة مرة أخرى."
     }
   },
 };

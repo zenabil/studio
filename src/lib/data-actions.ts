@@ -194,6 +194,16 @@ export async function processSale(data: { saleRecord: SaleRecord; cart: CartItem
         getSalesHistory()
     ]);
 
+    // Final stock validation before processing
+    for (const item of data.cart) {
+        const product = products.find(p => p.id === item.id);
+        if (!product || product.stock < item.quantity) {
+            // This message will be displayed in a toast to the user.
+            const errorMsg = `Not enough stock for '${product?.name || item.name}'. Available: ${product?.stock || 0}, Requested: ${item.quantity}.`;
+            throw new Error(errorMsg);
+        }
+    }
+
     // 1. Update product stock
     data.cart.forEach(item => {
         const product = products.find(p => p.id === item.id);

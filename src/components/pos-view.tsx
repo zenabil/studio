@@ -305,7 +305,7 @@ export function PosView() {
 
   const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
 
-  const handleSaleCompletion = useCallback(() => {
+  const handleSaleCompletion = useCallback(async () => {
     if (!activeSession || activeSession.cart.length === 0 || !activeSessionId) {
       toast({
         variant: "destructive",
@@ -316,15 +316,25 @@ export function PosView() {
     }
 
     const totals = { subtotal, discount: activeSession.discount, total, amountPaid: activeSession.amountPaid, balance };
-    addSaleRecord(activeSession.cart, activeSession.selectedCustomerId, totals);
-
-    toast({
-      title: t.pos.saleSuccessTitle,
-      description: t.pos.saleSuccessMessage,
-    });
     
-    closeSession(activeSessionId);
-  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, t, toast, closeSession]);
+    try {
+      await addSaleRecord(activeSession.cart, activeSession.selectedCustomerId, totals);
+
+      toast({
+        title: t.pos.saleSuccessTitle,
+        description: t.pos.saleSuccessMessage,
+      });
+      
+      closeSession(activeSessionId);
+    } catch (error) {
+        console.error("Sale completion failed:", error);
+        toast({
+            variant: "destructive",
+            title: t.errors.title,
+            description: error instanceof Error ? error.message : t.errors.unknownError,
+        });
+    }
+  }, [activeSession, activeSessionId, addSaleRecord, balance, subtotal, total, t, toast, closeSession]);
 
   const handleScanSuccess = useCallback((barcode: string) => {
     const product = products.find(p => p.barcodes.includes(barcode));
