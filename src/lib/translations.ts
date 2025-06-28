@@ -56,6 +56,10 @@ export const translations = {
       noProductsFound: "Aucun produit trouvé.",
       tryDifferentKeywords: "Essayez de rechercher avec d'autres mots-clés.",
       outOfStock: "En rupture de stock",
+      stockAdjustedTitle: "Stock ajusté",
+      stockAdjustedMessage: "La quantité pour {productName} a été ajustée à {newQty} en raison de changements de stock.",
+      productRemovedTitle: "Produit supprimé",
+      productRemovedMessage: "{productName} a été retiré du panier car il n'existe plus.",
     },
     products: {
       title: "Gestion des Produits",
@@ -406,6 +410,10 @@ export const translations = {
       noProductsFound: "لم يتم العثور على منتجات.",
       tryDifferentKeywords: "حاول البحث بكلمات مفتاحية مختلفة.",
       outOfStock: "نفذ من المخزون",
+      stockAdjustedTitle: "تم تعديل المخزون",
+      stockAdjustedMessage: "تم تعديل كمية {productName} إلى {newQty} بسبب تغيرات في المخزون.",
+      productRemovedTitle: "تمت إزالة المنتج",
+      productRemovedMessage: "تمت إزالة {productName} من السلة لأنه لم يعد موجودًا.",
     },
     products: {
       title: "إدارة المنتجات",
@@ -704,3 +712,5 @@ export const translations = {
     }
   },
 };
+
+    

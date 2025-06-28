@@ -125,7 +125,7 @@ export function PosView() {
 
   // Synchronize cart data with the master product list from context
   useEffect(() => {
-    if (sessions.length === 0) {
+    if (sessions.length === 0 || products.length === 0) {
       return;
     }
 
@@ -134,17 +134,19 @@ export function PosView() {
       const newSyncedSessions = currentSessions.map(session => {
         let sessionCartChanged = false;
 
+        const quantityAdjustments: { productName: string; oldQty: number; newQty: number }[] = [];
+        const deletedProductNames: string[] = [];
+        
         const newCart = session.cart
           .map(cartItem => {
             const productFromDb = products.find(p => p.id === cartItem.id);
 
-            // Case 1: Product has been deleted.
             if (!productFromDb) {
               sessionCartChanged = true;
-              return null; // Will be filtered out later.
+              deletedProductNames.push(cartItem.name);
+              return null;
             }
 
-            // Case 2: Product data is stale (name or stock has changed). Price changes should not affect an active cart.
             const isStale =
               productFromDb.name !== cartItem.name ||
               productFromDb.category !== cartItem.category ||
@@ -152,44 +154,65 @@ export function PosView() {
 
             if (isStale) {
               sessionCartChanged = true;
-              // If stock was reduced externally, cap the cart quantity.
               const newQuantity = Math.min(cartItem.quantity, productFromDb.stock);
-              // Return a merged item that preserves the original cart price,
-              // but takes updated info like name, category, and available stock.
+
+              if (newQuantity < cartItem.quantity) {
+                  quantityAdjustments.push({
+                      productName: productFromDb.name,
+                      oldQty: cartItem.quantity,
+                      newQty: newQuantity,
+                  });
+              }
+
               return { 
-                  ...productFromDb, // Get latest data like name, category, barcodes, etc.
-                  price: cartItem.price, // CRITICAL: Preserve the price from when it was added to the cart.
-                  stock: productFromDb.stock, // Update to the latest available stock.
-                  quantity: newQuantity, // Cap the quantity to the new available stock.
+                  ...productFromDb,
+                  price: cartItem.price,
+                  stock: productFromDb.stock,
+                  quantity: newQuantity,
               };
             }
 
-            // Case 3: Product is up-to-date.
             return cartItem;
           })
           .filter((item): item is CartItem => item !== null);
 
-        // Check if the cart has materially changed.
         if (newCart.length !== session.cart.length) {
             sessionCartChanged = true;
         }
 
         if (sessionCartChanged) {
             overallChanges = true;
+            quantityAdjustments.forEach(adj => {
+                toast({
+                    variant: 'destructive',
+                    title: t.pos.stockAdjustedTitle,
+                    description: t.pos.stockAdjustedMessage
+                        .replace('{productName}', adj.productName)
+                        .replace('{newQty}', String(adj.newQty)),
+                });
+            });
+            deletedProductNames.forEach(name => {
+                 toast({
+                    variant: 'destructive',
+                    title: t.pos.productRemovedTitle,
+                    description: t.pos.productRemovedMessage
+                        .replace('{productName}', name),
+                });
+            });
+
             return { ...session, cart: newCart };
         }
         
         return session;
       });
 
-      // Only trigger a re-render if any of the sessions were actually modified.
       if (overallChanges) {
         return newSyncedSessions;
       }
 
       return currentSessions;
     });
-  }, [products]);
+  }, [products, sessions, t.pos.stockAdjustedTitle, t.pos.stockAdjustedMessage, t.pos.productRemovedTitle, t.pos.productRemovedMessage, toast]);
 
   const activeSession = useMemo(() => {
     if (!activeSessionId) return undefined;
@@ -413,7 +436,6 @@ export function PosView() {
     const discount = activeSession?.discount || 0;
     
     const subtotalValue = cart.reduce((sum, item) => {
-      // Always use the canonical quantity from the session cart for calculations
       return sum + calculateItemTotal(item);
     }, 0);
 
@@ -483,17 +505,12 @@ export function PosView() {
   };
 
   const handleSaveProduct = async (productData: Omit<Product, 'id'>, productId?: string) => {
-    // This function is called from the AddProductDialog. In this context, we only add
-    // new products, so we ignore the productId, which is for signature compatibility.
     if (productId) return; 
     
-    // addProduct throws an error on failure, which is caught by the dialog,
-    // preventing it from closing. On success, we get the new product.
     const newProduct = await addProduct(productData);
 
     toast({ title: t.products.productAdded });
     
-    // Add the newly created product to the cart. The dialog will handle closing itself.
     addToCart(newProduct);
   };
   
@@ -870,3 +887,5 @@ export function PosView() {
     </div>
   );
 }
+
+    
