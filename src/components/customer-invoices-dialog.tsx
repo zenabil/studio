@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import type { Customer, SaleRecord } from '@/lib/data';
 import { format } from 'date-fns';
 import { useSettings } from '@/contexts/settings-context';
+import { useMemo } from 'react';
 
 interface CustomerInvoicesDialogProps {
   isOpen: boolean;
@@ -25,46 +26,52 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
   const { t } = useLanguage();
   const { settings } = useSettings();
 
-  if (!customer) return null;
-
-  const customerInvoices = salesHistory
-    .filter(sale => sale.customerId === customer.id)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-  // Calculate running balance history by working backwards from the current balance
-  const transactions = [];
-  let balanceBeforeTransaction = customer.balance;
-
-  for (const invoice of customerInvoices) {
-    const balanceAfterTransaction = balanceBeforeTransaction;
-    let debit = 0;
-    let credit = 0;
-    let description = '';
-
-    if (invoice.items.length > 0) { // It's a Sale
-      description = `${t.customers.saleInvoice} #${invoice.id.split('-')[1]}`;
-      debit = invoice.totals.total;
-      credit = invoice.totals.amountPaid;
-      // Calculate balance before this transaction by reversing the operation
-      balanceBeforeTransaction -= invoice.totals.balance;
-    } else { // It's a Payment
-      description = t.customers.paymentReceived;
-      credit = invoice.totals.amountPaid;
-      // Calculate balance before this transaction by reversing the operation
-      balanceBeforeTransaction += credit;
+  const { transactions, startingBalance } = useMemo(() => {
+    if (!customer) {
+      return { transactions: [], startingBalance: 0 };
     }
 
-    transactions.push({
-      id: invoice.id,
-      date: invoice.date,
-      description,
-      debit,
-      credit,
-      balance: balanceAfterTransaction,
+    const customerTransactions = salesHistory
+      .filter(sale => sale.customerId === customer.id)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const totalBalanceChange = customerTransactions.reduce((acc, tx) => acc + tx.totals.balance, 0);
+    let runningBalance = customer.balance - totalBalanceChange;
+    const startBalance = runningBalance;
+
+    const statement = customerTransactions.map(tx => {
+      let debit = 0;
+      let credit = 0;
+      let description = '';
+
+      if (tx.items.length > 0) { // Sale
+        const invoiceNumber = tx.id.startsWith('SALE-') ? tx.id.split('-')[1] : tx.id;
+        description = `${t.customers.saleInvoice} #${invoiceNumber}`;
+        debit = tx.totals.total;
+        credit = tx.totals.amountPaid;
+      } else { // Payment
+        description = t.customers.paymentReceived;
+        credit = tx.totals.amountPaid;
+      }
+
+      runningBalance += tx.totals.balance;
+
+      return {
+        id: tx.id,
+        date: tx.date,
+        description,
+        debit,
+        credit,
+        balance: runningBalance
+      };
     });
-  }
-  transactions.reverse(); // Reverse to show oldest first
-  const startingBalance = balanceBeforeTransaction;
+
+    return { transactions: statement, startingBalance: startBalance };
+
+  }, [customer, salesHistory, t.customers]);
+
+
+  if (!customer) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -73,7 +80,7 @@ export function CustomerInvoicesDialog({ isOpen, onClose, customer, salesHistory
           <DialogTitle>{t.customers.invoiceHistory} - {customer.name}</DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto p-1">
-          {transactions.length > 0 ? (
+          {transactions.length > 0 || startingBalance !== 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
