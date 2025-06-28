@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { SalesChart } from '@/components/reports/sales-chart';
-import { CustomerPaymentsChart } from '@/components/reports/customer-payments-chart';
+import { CustomerSalesChart } from '@/components/reports/customer-sales-chart';
 import { ProfitsChart } from '@/components/reports/profits-chart';
 import { SalesOverTimeChart } from '@/components/reports/sales-over-time-chart';
 import { CategorySalesChart } from '@/components/reports/category-sales-chart';
@@ -236,10 +236,10 @@ export default function ReportsPage() {
         </Card>
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>{t.reports.customerPayments}</CardTitle>
+            <CardTitle>{t.reports.customerSales}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CustomerPaymentsChart customers={customersInPeriod} />
+            <CustomerSalesChart customers={customersInPeriod} />
           </CardContent>
         </Card>
       </div>
