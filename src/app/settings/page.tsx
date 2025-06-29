@@ -1,7 +1,8 @@
 
 'use client';
 import React, { useEffect, useRef } from 'react';
-import { useSettings, type Settings, type Theme } from '@/contexts/settings-context';
+import { useSettings } from '@/contexts/settings-context';
+import type { Settings, Theme } from '@/contexts/settings-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Button } from '@/components/ui/button';

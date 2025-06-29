@@ -28,9 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={poppins.variable} suppressHydrationWarning>
       <head />
-      <body className="font-body antialiased">
+      <body className={cn("font-body antialiased", poppins.className)}>
         <NextTopLoader
-          color="#008080"
+          color="hsl(var(--primary))"
           initialPosition={0.08}
           crawlSpeed={200}
           height={3}
@@ -38,7 +38,7 @@ export default function RootLayout({
           showSpinner={false}
           easing="ease"
           speed={200}
-          shadow="0 0 10px #008080,0 0 5px #008080"
+          shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
         />
         <AppProviders>
           <SidebarProvider>

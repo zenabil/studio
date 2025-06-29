@@ -2,16 +2,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { 
-    type Product,
-    type Customer,
-    type SaleRecord,
-    type CartItem,
-    type BakeryOrder,
-    type Supplier,
-    type SupplierInvoice,
-    type SupplierInvoiceItem,
-    type Expense,
+import type { 
+    Product,
+    Customer,
+    SaleRecord,
+    CartItem,
+    BakeryOrder,
+    Supplier,
+    SupplierInvoice,
+    SupplierInvoiceItem,
+    Expense,
 } from '@/lib/data';
 import {
     getProducts,

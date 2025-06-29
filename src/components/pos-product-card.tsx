@@ -38,6 +38,7 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
             alt={product.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-110"
+            data-ai-hint="product object"
           />
            <div className="absolute top-2 right-2 bg-background/80 text-foreground text-xs font-bold px-2 py-1 rounded-full backdrop-blur-sm">
              {currency}{product.price.toFixed(2)}

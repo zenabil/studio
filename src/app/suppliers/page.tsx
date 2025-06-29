@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Supplier, type Product, type SupplierInvoice, SupplierInvoiceItem } from '@/lib/data';
+import type { Supplier, Product, SupplierInvoice, SupplierInvoiceItem } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
