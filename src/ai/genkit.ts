@@ -1,5 +1,6 @@
+'use server';
 import {genkit} from 'genkit';
-import {ollama} from 'genkitx-ollama';
+import ollama from 'genkitx-ollama';
 
 export const ai = genkit({
   plugins: [
