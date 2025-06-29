@@ -48,14 +48,30 @@ export const calculateDebtAlerts = (
 ): DebtAlert[] => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const allAlerts: { [customerId: string]: DebtAlert } = {};
+  const allAlerts: DebtAlert[] = [];
 
   const indebtedCustomers = customers.filter(c => c && c.balance > 0);
+  if (indebtedCustomers.length === 0) {
+    return [];
+  }
+
+  // Pre-group sales history by customer ID for efficiency
+  const salesByCustomer = salesHistory.reduce((acc, sale) => {
+    if (sale.customerId) {
+      if (!acc[sale.customerId]) {
+        acc[sale.customerId] = [];
+      }
+      acc[sale.customerId].push(sale);
+    }
+    return acc;
+  }, {} as Record<string, SaleRecord[]>);
 
   for (const customer of indebtedCustomers) {
-    const customerHistory = salesHistory
-      .filter(s => s.customerId === customer.id)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const customerHistory = (salesByCustomer[customer.id] || []).sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    if (customerHistory.length === 0) continue;
 
     let unpaidInvoices: { date: Date; balance: number }[] = [];
     let paymentsToApply: { amount: number }[] = [];
@@ -93,36 +109,31 @@ export const calculateDebtAlerts = (
       let alertDueDate: Date | null = null;
       
       if (customer.settlementDay && customer.settlementDay >= 1 && customer.settlementDay <= 31) {
-        // Due date is the customer's settlement day of the month of the invoice, or the next month if that day has passed.
         let relevantDueDate = set(debtOriginDate, { date: customer.settlementDay });
         if (isBefore(relevantDueDate, debtOriginDate)) {
           relevantDueDate = addMonths(relevantDueDate, 1);
         }
         alertDueDate = relevantDueDate;
       } else if (globalPaymentTermsDays > 0) {
-        // Due date is a number of days after the invoice date.
         alertDueDate = addDays(debtOriginDate, globalPaymentTermsDays);
       }
       
       if (alertDueDate) {
           const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
-          // Alert if overdue, due today, or due tomorrow.
           if (daysUntilDue <= 1) { 
-              if (!allAlerts[customer.id]) {
-                  allAlerts[customer.id] = {
-                      customerName: customer.name,
-                      balance: customer.balance, // The total balance is still what we show
-                      dueDate: alertDueDate,
-                      phone: customer.phone,
-                      isOverdue: daysUntilDue < 0,
-                  };
-              }
+              allAlerts.push({
+                  customerName: customer.name,
+                  balance: customer.balance,
+                  dueDate: alertDueDate,
+                  phone: customer.phone,
+                  isOverdue: daysUntilDue < 0,
+              });
           }
       }
     }
   }
 
-  return Object.values(allAlerts).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  return allAlerts.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 };
 
 
