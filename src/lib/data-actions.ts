@@ -144,9 +144,9 @@ async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
     const decrypted = decrypt(parsedContent);
     return JSON.parse(decrypted);
   } catch (error) {
-    console.error('\x1b[31m%s\x1b[0m', `FATAL: Decryption failed for ${filePath}. This is likely due to an incorrect or missing ENCRYPTION_KEY. Shutting down to prevent data loss.`);
-    console.error(error);
-    process.exit(1);
+    console.warn(`WARNING: Decryption failed for ${filePath}. This is expected if the ENCRYPTION_KEY has changed. Re-seeding file with initial data.`);
+    await writeData(filePath, initialData);
+    return initialData;
   }
 }
 
