@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview An AI agent for summarizing sales reports.
@@ -77,10 +76,6 @@ The tone should be professional, encouraging, and easy to understand for a non-e
 });
 
 export async function summarizeSalesFlow(input: SummarizeSalesInput): Promise<SummarizeSalesOutput> {
-  if (!process.env.GOOGLE_API_KEY) {
-    throw new Error('API key is not configured.');
-  }
-
   const { output } = await summarizeSalesPrompt(input);
   if (!output) {
       throw new Error('Failed to get a summary from the AI model.');

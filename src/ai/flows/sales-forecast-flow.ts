@@ -51,10 +51,6 @@ Your output must be a number representing the forecasted quantity and a brief re
 });
 
 export async function salesForecastFlow(input: SalesForecastInput): Promise<SalesForecastOutput> {
-  if (!process.env.GOOGLE_API_KEY) {
-    throw new Error('API key is not configured.');
-  }
-
   const { output } = await salesForecastPrompt(input);
   if (!output) {
       throw new Error('Failed to get a forecast from the AI model.');
