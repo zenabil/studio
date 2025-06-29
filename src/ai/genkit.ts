@@ -1,8 +1,12 @@
-import 'dotenv/config';
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {ollama} from 'genkitx-ollama';
 
 export const ai = genkit({
-  plugins: [googleAI({apiKey: process.env.GOOGLE_API_KEY})],
-  model: 'googleai/gemini-2.0-flash',
+  plugins: [
+    ollama({
+      models: [{name: 'gemma:2b'}],
+      serverAddress: 'http://127.0.0.1:11434',
+    }),
+  ],
+  model: 'ollama/gemma:2b',
 });

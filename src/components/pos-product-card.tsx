@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import type { Product } from '@/lib/data';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, WandSparkles, LoaderCircle, Box } from 'lucide-react';
+import { PlusCircle, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
-import { generateProductImage } from '@/ai/flows/generate-product-image-flow';
-import { useToast } from '@/hooks/use-toast';
 
 interface PosProductCardProps {
   product: Product;
@@ -18,62 +16,11 @@ interface PosProductCardProps {
   t: any;
 }
 
-const CACHE_PREFIX = 'product-image-';
 const PLACEHOLDER_IMG = 'https://placehold.co/400x400.png';
 
 const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAddToCart, currency, t }) => {
-  const { toast } = useToast();
   const isOutOfStock = product.stock <= 0;
-  
-  const [imageUrl, setImageUrl] = useState<string>(PLACEHOLDER_IMG);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [hasCachedImage, setHasCachedImage] = useState<boolean>(false);
-
   const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
-
-  useEffect(() => {
-    // This effect runs once on mount to check for a cached image in localStorage.
-    let isMounted = true;
-    try {
-      const cachedImage = localStorage.getItem(`${CACHE_PREFIX}${product.id}`);
-      if (isMounted && cachedImage) {
-        setImageUrl(cachedImage);
-        setHasCachedImage(true);
-      } else {
-          // Ensure placeholder is set if no cache
-          setImageUrl(PLACEHOLDER_IMG);
-          setHasCachedImage(false);
-      }
-    } catch (error) {
-        console.error("Could not access localStorage:", error);
-        setImageUrl(PLACEHOLDER_IMG);
-        setHasCachedImage(false);
-    }
-    return () => { isMounted = false; };
-  }, [product.id]);
-
-  const handleGenerateImage = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card's onClick from firing
-    if (isGenerating) return;
-
-    setIsGenerating(true);
-    try {
-      const generatedDataUri = await generateProductImage(product.name);
-      setImageUrl(generatedDataUri);
-      localStorage.setItem(`${CACHE_PREFIX}${product.id}`, generatedDataUri);
-      setHasCachedImage(true);
-    } catch (error) {
-      console.error("Image generation failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "";
-      toast({
-        variant: 'destructive',
-        title: t.errors.title,
-        description: errorMessage.includes('API key') ? t.errors.apiKeyMissing : t.errors.imageGenerationError,
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [isGenerating, product.name, product.id, t, toast]);
 
   return (
     <Card 
@@ -87,29 +34,11 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
     >
       <div className="aspect-video w-full overflow-hidden relative bg-muted">
           <Image
-            src={imageUrl}
+            src={PLACEHOLDER_IMG}
             alt={product.name}
             fill
-            className={cn(
-                "object-cover transition-transform duration-300 group-hover:scale-110",
-                isGenerating && "opacity-30 blur-sm"
-            )}
-            unoptimized={hasCachedImage} // Don't optimize base64 strings
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
           />
-           <Button
-             size="icon"
-             variant="secondary"
-             className={cn(
-                "absolute top-2 left-2 h-7 w-7 rounded-full transition-opacity opacity-0 group-hover:opacity-100",
-                isGenerating && "opacity-100"
-             )}
-             onClick={handleGenerateImage}
-             disabled={isGenerating || isOutOfStock}
-             title="Generate AI Image"
-           >
-            {isGenerating ? <LoaderCircle className="animate-spin" /> : <WandSparkles className="h-4 w-4" />}
-           </Button>
-
            <div className="absolute top-2 right-2 bg-background/80 text-foreground text-xs font-bold px-2 py-1 rounded-full backdrop-blur-sm">
              {currency}{product.price.toFixed(2)}
            </div>
