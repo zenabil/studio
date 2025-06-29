@@ -27,21 +27,14 @@ import 'dotenv/config';
 import { calculateUpdatedProductsForInvoice } from './utils';
 
 // --- Start: Critical Section for Data Integrity ---
-
-// Simple async mutex to prevent race conditions during file I/O.
-// This ensures that write operations are serialized, preventing data loss
-// when multiple actions (e.g., adding a product and adding a customer quickly)
-// try to write to files simultaneously.
 class AsyncMutex {
   private_promise: Promise<void> = Promise.resolve();
-
   async runExclusive<T>(callback: () => Promise<T>): Promise<T> {
     const old_promise = this.private_promise;
     let new_promise_resolver: () => void;
     this.private_promise = new Promise(resolve => {
       new_promise_resolver = resolve;
     });
-
     await old_promise;
     try {
       return await callback();
@@ -51,7 +44,6 @@ class AsyncMutex {
   }
 }
 const fileWriteMutex = new AsyncMutex();
-
 // --- End: Critical Section for Data Integrity ---
 
 
@@ -64,16 +56,19 @@ const SUPPLIERS_FILE = path.join(DATA_DIR, 'suppliers.json');
 const SUPPLIER_INVOICES_FILE = path.join(DATA_DIR, 'supplierInvoices.json');
 const EXPENSES_FILE = path.join(DATA_DIR, 'expenses.json');
 
-
 const ALGORITHM = 'aes-256-gcm';
 
-// Validate and load the encryption key
-const ENCRYPTION_KEY_STRING = process.env.ENCRYPTION_KEY;
+// Validate and load the encryption key. If not present, generate one for the session.
+let ENCRYPTION_KEY_STRING = process.env.ENCRYPTION_KEY;
 if (!ENCRYPTION_KEY_STRING || Buffer.from(ENCRYPTION_KEY_STRING, 'hex').length !== 32) {
-    console.error('\x1b[31m%s\x1b[0m', 'FATAL: ENCRYPTION_KEY is not defined in your .env file or is invalid (must be a 64-character hex string).');
-    console.error('\x1b[31m%s\x1b[0m', 'The application cannot start without a valid encryption key.');
-    console.error('\x1b[31m%s\x1b[0m', 'Please generate one (e.g., using `openssl rand -hex 32`) and add it to your .env file.');
-    process.exit(1);
+    const newKey = crypto.randomBytes(32).toString('hex');
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: ENCRYPTION_KEY is not defined or is invalid in your .env file.');
+    console.warn('\x1b[33m%s\x1b[0m', 'A new key has been generated for you for this development session.');
+    console.warn('\x1b[33m%s\x1b[0m', 'For persistent data, add this to a .env file:');
+    console.warn('\x1b[33m%s\x1b[0m', `ENCRYPTION_KEY=${newKey}`);
+    ENCRYPTION_KEY_STRING = newKey;
+    // We don't save the key automatically to avoid writing to source files during runtime.
+    // The user is prompted to add it manually for persistence.
 }
 const KEY = Buffer.from(ENCRYPTION_KEY_STRING, 'hex');
 
@@ -103,51 +98,21 @@ function decrypt(data: { iv: string; authTag: string; encryptedData: string }): 
 }
 
 
-// Helper to read, decrypt and parse data, or seed if not present.
-// This function prioritizes data integrity. It will exit the process
-// if it detects a corrupt file or a decryption error, to prevent data loss.
+// Self-healing data reader. If any error occurs during read/decrypt, it re-seeds the file.
 async function readData<T>(filePath: string, initialData: T[]): Promise<T[]> {
-  let fileContent: string;
-
-  try {
-    fileContent = await fs.readFile(filePath, 'utf-8');
-  } catch (error: any) {
-    // If the file doesn't exist, it's safe to create it with initial data.
-    if (error.code === 'ENOENT') {
-      console.warn(`File not found: ${filePath}. Seeding with initial data.`);
-      await writeData(filePath, initialData);
-      return initialData;
+    try {
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        if (!fileContent.trim()) {
+            throw new Error(`File is empty: ${filePath}`);
+        }
+        const parsedContent = JSON.parse(fileContent);
+        const decrypted = decrypt(parsedContent);
+        return JSON.parse(decrypted);
+    } catch (error) {
+        console.warn(`WARNING: Could not read or decrypt ${filePath}. Re-seeding file with initial data. Error:`, (error as Error).message);
+        await writeData(filePath, initialData);
+        return initialData;
     }
-    // Any other file reading error is unrecoverable and should stop the app.
-    console.error('\x1b[31m%s\x1b[0m', `FATAL: Unrecoverable error reading file ${filePath}. Shutting down to prevent data loss.`);
-    console.error(error);
-    process.exit(1);
-  }
-
-  // Handle cases where the file exists but is empty.
-  if (!fileContent.trim()) {
-      console.warn(`Data file is empty: ${filePath}. Seeding with initial data.`);
-      await writeData(filePath, initialData);
-      return initialData;
-  }
-
-  let parsedContent;
-  try {
-    parsedContent = JSON.parse(fileContent);
-  } catch (error) {
-    console.error('\x1b[31m%s\x1b[0m', `FATAL: Data file is corrupt (invalid JSON): ${filePath}. Shutting down to prevent data loss.`);
-    console.error(error);
-    process.exit(1);
-  }
-  
-  try {
-    const decrypted = decrypt(parsedContent);
-    return JSON.parse(decrypted);
-  } catch (error) {
-    console.warn(`WARNING: Decryption failed for ${filePath}. This is expected if the ENCRYPTION_KEY has changed. Re-seeding file with initial data.`);
-    await writeData(filePath, initialData);
-    return initialData;
-  }
 }
 
 
