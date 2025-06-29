@@ -1,6 +1,9 @@
 'use server';
 import {genkit} from 'genkit';
-import { ollama } from 'genkitx-ollama';
+
+// Using require for better CJS/ESM interop in Next.js server environment.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { ollama } = require('genkitx-ollama');
 
 export const ai = genkit({
   plugins: [
