@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/components/app-providers';
 import { AppLayout } from '@/components/app-layout';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { GeistSans } from 'geist/font/sans';
+import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import NextTopLoader from 'nextjs-toploader';
 
@@ -13,15 +13,22 @@ export const metadata: Metadata = {
   description: 'Point of Sale application for small businesses',
 };
 
+const poppins = Poppins({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-poppins',
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
+    <html lang="en" className={poppins.variable} suppressHydrationWarning>
       <head />
-      <body className="font-sans antialiased">
+      <body className="font-body antialiased">
         <NextTopLoader
           color="#008080"
           initialPosition={0.08}
