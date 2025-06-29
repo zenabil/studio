@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
     type Product,
     type Customer,
@@ -97,6 +97,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Refs to hold current state for stable callbacks, preventing unnecessary re-renders.
+    const productsRef = useRef(products);
+    useEffect(() => { productsRef.current = products; }, [products]);
+    const customersRef = useRef(customers);
+    useEffect(() => { customersRef.current = customers; }, [customers]);
+    const salesHistoryRef = useRef(salesHistory);
+    useEffect(() => { salesHistoryRef.current = salesHistory; }, [salesHistory]);
+    const bakeryOrdersRef = useRef(bakeryOrders);
+    useEffect(() => { bakeryOrdersRef.current = bakeryOrders; }, [bakeryOrders]);
+    const suppliersRef = useRef(suppliers);
+    useEffect(() => { suppliersRef.current = suppliers; }, [suppliers]);
+    const supplierInvoicesRef = useRef(supplierInvoices);
+    useEffect(() => { supplierInvoicesRef.current = supplierInvoices; }, [supplierInvoices]);
+    const expensesRef = useRef(expenses);
+    useEffect(() => { expensesRef.current = expenses; }, [expenses]);
+
+
     const syncData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -118,24 +135,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setExpenses(loadedExpenses);
         } catch (error) {
             console.error("Failed to sync data:", error);
-            // Don't toast here as it can be triggered by the key error which is handled in data-actions
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Initial data load
     useEffect(() => {
         syncData();
     }, [syncData]);
 
-    const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product> => {
+    const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<Product> => {
         const newProduct: Product = {
             id: `prod-${new Date().getTime()}`,
             ...productData,
         };
         
-        const previousProducts = products;
+        const previousProducts = productsRef.current;
         setProducts(current => [...current, newProduct]);
         try {
             await addProductInDB(newProduct);
@@ -145,10 +160,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save product.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const updateProduct = async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
-        const previousProducts = products;
+    const updateProduct = useCallback(async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
+        const previousProducts = productsRef.current;
         setProducts(current => current.map(p => p.id === productId ? { ...p, ...productData, id: productId } : p));
         try {
             await updateProductInDB(productId, productData);
@@ -157,15 +172,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update product.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const deleteProduct = async (productId: string) => {
-        if (salesHistory.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId))) {
+    const deleteProduct = useCallback(async (productId: string) => {
+        if (salesHistoryRef.current.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoicesRef.current.some(invoice => invoice.items.some(item => item.productId === productId))) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
         }
 
-        const previousProducts = products;
+        const previousProducts = productsRef.current;
         setProducts(current => current.filter(p => p.id !== productId));
         try {
             await deleteProductInDB(productId);
@@ -174,9 +189,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setProducts(previousProducts);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete product.'});
         }
-    };
-
-    const addCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<Customer> => {
+    }, [t, toast]);
+    
+    const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<Customer> => {
         const newCustomer: Customer = {
             id: `cust-${new Date().getTime()}`,
             spent: 0,
@@ -184,7 +199,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...customerData,
         };
         
-        const previousCustomers = customers;
+        const previousCustomers = customersRef.current;
         setCustomers(current => [...current, newCustomer]);
         try {
             await addCustomerInDB(newCustomer);
@@ -194,10 +209,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add customer.'});
             throw e;
         }
-    };
+    }, [t, toast]);
     
-    const updateCustomer = async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
-        const previousCustomers = customers;
+    const updateCustomer = useCallback(async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
+        const previousCustomers = customersRef.current;
         setCustomers(current => current.map(c => c.id === customerId ? { ...c, ...customerData, id: customerId } : c));
         try {
             await updateCustomerInDB(customerId, customerData);
@@ -206,15 +221,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update customer.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const deleteCustomer = async (customerId: string) => {
-        if (salesHistory.some(sale => sale.customerId === customerId)) {
+    const deleteCustomer = useCallback(async (customerId: string) => {
+        if (salesHistoryRef.current.some(sale => sale.customerId === customerId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
         }
 
-        const previousCustomers = customers;
+        const previousCustomers = customersRef.current;
         setCustomers(current => current.filter(c => c.id !== customerId));
         try {
             await deleteCustomerInDB(customerId);
@@ -223,14 +238,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setCustomers(previousCustomers);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete customer.'});
         }
-    };
+    }, [t, toast]);
     
-    const addSaleRecord = async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
+    const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         const newSale: SaleRecord = { id: `SALE-${new Date().getTime()}`, customerId, items: cart, totals, date: new Date().toISOString() };
 
-        const previousStates = { products, customers, salesHistory };
+        const previousStates = { products: productsRef.current, customers: customersRef.current, salesHistory: salesHistoryRef.current };
         
-        // Optimistic UI updates
         setProducts(current => current.map(p => {
             const itemInCart = cart.find(item => item.id === p.id);
             return itemInCart ? { ...p, stock: p.stock - itemInCart.quantity } : p;
@@ -247,14 +261,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setCustomers(previousStates.customers);
             setSalesHistory(previousStates.salesHistory);
             console.error("Sale completion failed:", error);
-            throw error; // Re-throw to be handled by the UI component
+            throw error;
         }
-    };
+    }, []);
     
-    const makePayment = async (customerId: string, amount: number) => {
+    const makePayment = useCallback(async (customerId: string, amount: number) => {
         const paymentRecord: SaleRecord = { id: `PAY-${new Date().getTime()}`, customerId, items: [], totals: { subtotal: 0, discount: 0, total: amount, amountPaid: amount, balance: -amount }, date: new Date().toISOString() };
 
-        const previousStates = { customers, salesHistory };
+        const previousStates = { customers: customersRef.current, salesHistory: salesHistoryRef.current };
 
         setCustomers(current => current.map(c => c.id === customerId ? { ...c, balance: c.balance - amount } : c));
         setSalesHistory(current => [...current, paymentRecord]);
@@ -267,11 +281,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to process payment:", error);
             toast({ variant: 'destructive', title: "Save Error", description: "Could not save payment data." });
         }
-    };
+    }, [toast]);
 
-    const addBakeryOrder = async (orderData: Omit<BakeryOrder, 'id'>) => {
+    const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
         const newOrder: BakeryOrder = { id: `b-order-${new Date().getTime()}`, ...orderData };
-        const previousOrders = bakeryOrders;
+        const previousOrders = bakeryOrdersRef.current;
         setBakeryOrdersState(current => [...current, newOrder]);
         try {
             await addBakeryOrderInDB(newOrder);
@@ -280,10 +294,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add bakery order.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const updateBakeryOrder = async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
-        const previousOrders = bakeryOrders;
+    const updateBakeryOrder = useCallback(async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
+        const previousOrders = bakeryOrdersRef.current;
         setBakeryOrdersState(current => current.map(o => o.id === orderId ? { ...o, ...orderData, id: orderId } : o));
         try {
             await updateBakeryOrderInDB(orderId, orderData);
@@ -292,10 +306,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update bakery order.'});
             throw e;
         }
-    };
+    }, [t, toast]);
     
-    const deleteBakeryOrder = async (orderId: string) => {
-        const previousOrders = bakeryOrders;
+    const deleteBakeryOrder = useCallback(async (orderId: string) => {
+        const previousOrders = bakeryOrdersRef.current;
         setBakeryOrdersState(current => current.filter(o => o.id !== orderId));
         try {
             await deleteBakeryOrderInDB(orderId);
@@ -304,10 +318,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete bakery order.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const deleteRecurringPattern = async (orderName: string) => {
-        const previousOrders = bakeryOrders;
+    const deleteRecurringPattern = useCallback(async (orderName: string) => {
+        const previousOrders = bakeryOrdersRef.current;
         setBakeryOrdersState(current => current.filter(o => !(o.name === orderName && o.isRecurring)));
         try {
             await deleteRecurringPatternInDB(orderName);
@@ -316,10 +330,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setBakeryOrdersState(previousOrders);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete recurring order pattern.' });
         }
-    };
+    }, [t, toast]);
 
-    const setBakeryOrders = async (orders: BakeryOrder[]) => {
-       const previousOrders = bakeryOrders;
+    const setBakeryOrders = useCallback(async (orders: BakeryOrder[]) => {
+       const previousOrders = bakeryOrdersRef.current;
        setBakeryOrdersState(orders);
        try {
            await saveBakeryOrders(orders);
@@ -328,11 +342,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save bakery orders.'});
            throw e;
        }
-    }
+    }, [t, toast]);
 
-    const setAsRecurringTemplate = async (templateId: string, isRecurring: boolean) => {
-        const previousOrders = bakeryOrders;
-        // Optimistic UI update
+    const setAsRecurringTemplate = useCallback(async (templateId: string, isRecurring: boolean) => {
+        const previousOrders = bakeryOrdersRef.current;
         setBakeryOrdersState(current => {
             const templateOrder = current.find(o => o.id === templateId);
             if (!templateOrder) return current;
@@ -356,11 +369,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update recurring status.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
+    const addSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
         const newSupplier: Supplier = { id: `supp-${new Date().getTime()}`, balance: 0, ...supplierData };
-        const previousSuppliers = suppliers;
+        const previousSuppliers = suppliersRef.current;
         setSuppliers(current => [...current, newSupplier]);
         try {
             await addSupplierInDB(newSupplier);
@@ -369,10 +382,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add supplier.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const updateSupplier = async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
-        const previousSuppliers = suppliers;
+    const updateSupplier = useCallback(async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
+        const previousSuppliers = suppliersRef.current;
         setSuppliers(current => current.map(s => s.id === supplierId ? { ...s, ...supplierData, id: supplierId } : s));
         try {
             await updateSupplierInDB(supplierId, supplierData);
@@ -381,14 +394,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update supplier.'});
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const deleteSupplier = async (supplierId: string) => {
-        if (supplierInvoices.some(invoice => invoice.supplierId === supplierId)) {
+    const deleteSupplier = useCallback(async (supplierId: string) => {
+        if (supplierInvoicesRef.current.some(invoice => invoice.supplierId === supplierId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.suppliers.deleteErrorInUse });
             return;
         }
-        const previousSuppliers = suppliers;
+        const previousSuppliers = suppliersRef.current;
         setSuppliers(current => current.filter(s => s.id !== supplierId));
         try {
             await deleteSupplierInDB(supplierId);
@@ -397,20 +410,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setSuppliers(previousSuppliers);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete supplier.'});
         }
-    };
+    }, [t, toast]);
     
-    const addSupplierInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
+    const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
         const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
         const newInvoice: SupplierInvoice = { id: `SINV-${new Date().getTime()}`, date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
         
-        const previousStates = { products, suppliers, supplierInvoices };
+        const previousStates = { products: productsRef.current, suppliers: suppliersRef.current, supplierInvoices: supplierInvoicesRef.current };
 
-        // Optimistic update
         setSupplierInvoices(current => [...current, newInvoice]);
         setSuppliers(current => current.map(s => s.id === invoiceData.supplierId ? { ...s, balance: (s.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0)) } : s));
         
-        // Use the centralized utility function for product updates
-        const updatedProducts = calculateUpdatedProductsForInvoice(products, invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
+        const updatedProducts = calculateUpdatedProductsForInvoice(productsRef.current, invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
         setProducts(updatedProducts);
 
         try {
@@ -422,12 +433,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to process supplier invoice:", error);
             toast({ variant: 'destructive', title: "Save Error", description: "Could not save supplier invoice." });
         }
-    };
+    }, [toast]);
     
-    const makePaymentToSupplier = async (supplierId: string, amount: number) => {
+    const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
         const paymentRecord: SupplierInvoice = { id: `SPAY-${new Date().getTime()}`, supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
         
-        const previousStates = { suppliers, supplierInvoices };
+        const previousStates = { suppliers: suppliersRef.current, supplierInvoices: supplierInvoicesRef.current };
         
         setSuppliers(current => current.map(s => s.id === supplierId ? { ...s, balance: s.balance - amount } : s));
         setSupplierInvoices(current => [...current, paymentRecord]);
@@ -440,11 +451,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to process supplier payment:", error);
             toast({ variant: 'destructive', title: "Save Error", description: "Could not save supplier payment." });
         }
-    };
+    }, [toast]);
 
-    const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
+    const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
         const newExpense: Expense = { id: `exp-${new Date().getTime()}`, ...expenseData };
-        const previousExpenses = expenses;
+        const previousExpenses = expensesRef.current;
         setExpenses(current => [...current, newExpense]);
         try {
             await addExpenseInDB(newExpense);
@@ -453,10 +464,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add expense.' });
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const updateExpense = async (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => {
-        const previousExpenses = expenses;
+    const updateExpense = useCallback(async (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => {
+        const previousExpenses = expensesRef.current;
         setExpenses(current => current.map(e => e.id === expenseId ? { ...e, ...expenseData, id: expenseId } : e));
         try {
             await updateExpenseInDB(expenseId, expenseData);
@@ -465,10 +476,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update expense.' });
             throw e;
         }
-    };
+    }, [t, toast]);
 
-    const deleteExpense = async (expenseId: string) => {
-        const previousExpenses = expenses;
+    const deleteExpense = useCallback(async (expenseId: string) => {
+        const previousExpenses = expensesRef.current;
         setExpenses(current => current.filter(e => e.id !== expenseId));
         try {
             await deleteExpenseInDB(expenseId);
@@ -477,9 +488,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             setExpenses(previousExpenses);
             toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete expense.' });
         }
-    };
+    }, [t, toast]);
 
-    const restoreData = async (data: any) => {
+    const restoreData = useCallback(async (data: any) => {
         setIsLoading(true);
         try {
             await restoreBackupData(data);
@@ -490,9 +501,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [syncData]);
 
-    const value = {
+    const value = useMemo(() => ({
         products,
         customers,
         salesHistory,
@@ -524,7 +535,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addExpense,
         updateExpense,
         deleteExpense,
-    };
+    }), [
+        products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses, isLoading,
+        addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
+        addSaleRecord, makePayment, restoreData, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
+        deleteRecurringPattern, setBakeryOrders, setAsRecurringTemplate, addSupplier, updateSupplier,
+        deleteSupplier, addSupplierInvoice, makePaymentToSupplier, addExpense, updateExpense, deleteExpense
+    ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
