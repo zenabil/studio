@@ -1,1 +1,1 @@
-// This flow has been removed because the new local AI model (Ollama) does not support image generation.
+// This file is no longer used as AI features have been removed.

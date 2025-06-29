@@ -1,3 +1,1 @@
-// Flows will be imported for their side effects in this file.
-import './flows/sales-forecast-flow';
-import './flows/summarize-sales-flow';
+// This file is no longer used as AI features have been removed.
