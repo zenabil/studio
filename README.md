@@ -1,3 +1,43 @@
+# Bienvenue sur Frucio POS
+
+Ce projet est une application de point de vente (POS) complète, construite avec Next.js, React et Tailwind CSS. Elle est conçue pour être rapide, facile à utiliser et personnalisable.
+
+## Prérequis
+
+Avant de commencer, assurez-vous d'avoir [Node.js](https://nodejs.org/) (version 20 ou plus récente) et npm installés sur votre ordinateur.
+
+## Comment exécuter le programme sur votre ordinateur
+
+Suivez ces étapes pour lancer l'application localement sur votre machine :
+
+1.  **Télécharger le code :**
+    Si vous avez lié le projet à GitHub, clonez le dépôt sur votre machine. Sinon, téléchargez les fichiers du projet.
+
+2.  **Installer les dépendances :**
+    Ouvrez un terminal dans le dossier du projet et exécutez la commande suivante pour installer tous les paquets requis :
+    ```bash
+    npm install
+    ```
+
+3.  **Lancer le serveur de développement :**
+    Une fois l'installation terminée, exécutez la commande suivante pour démarrer l'application en mode développement :
+    ```bash
+    npm run dev
+    ```
+
+4.  **Ouvrir l'application :**
+    L'application est maintenant en cours d'exécution. Ouvrez votre navigateur web et accédez à l'adresse suivante :
+    [http://localhost:9002](http://localhost:9002)
+
+## Commandes disponibles
+
+-   `npm run dev`: Lance l'application en mode développement avec rechargement automatique.
+-   `npm run build`: Construit une version de production de l'application.
+-   `npm run start`: Lance la version de production qui a été construite.
+-   `npm run lint`: Analyse le code pour identifier les erreurs potentielles.
+
+---
+
 # مرحبًا بك في Frucio POS
 
 هذا المشروع هو تطبيق نقاط بيع (POS) متكامل، تم بناؤه باستخدام Next.js و React و Tailwind CSS. تم تصميمه ليكون سريعًا وسهل الاستخدام وقابلاً للتخصيص.
