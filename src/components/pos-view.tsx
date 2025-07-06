@@ -494,11 +494,14 @@ export function PosView() {
       return sum + calculateItemTotal(item);
     }, 0);
 
-    const totalValue = Math.max(0, subtotalValue - discount);
-    return { subtotal: subtotalValue, total: totalValue };
+    const roundedSubtotal = parseFloat(subtotalValue.toFixed(2));
+    const totalValue = Math.max(0, roundedSubtotal - discount);
+    const roundedTotal = parseFloat(totalValue.toFixed(2));
+
+    return { subtotal: roundedSubtotal, total: roundedTotal };
   }, [activeSession?.cart, activeSession?.discount]);
 
-  const balance = total > 0 ? total - (activeSession?.amountPaid || 0) : 0;
+  const balance = total > 0 ? parseFloat((total - (activeSession?.amountPaid || 0)).toFixed(2)) : 0;
 
   const handleSaleCompletion = useCallback(async () => {
     if (isCompletingSale || !activeSession || activeSession.cart.length === 0 || !activeSessionId) {

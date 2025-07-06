@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
  * If the quantity qualifies for one or more full boxes, it charges the box price for those
  * and the standard unit price for any remaining items.
  * @param item The cart item to calculate the total for.
- * @returns The total calculated price for the item.
+ * @returns The total calculated price for the item, rounded to 2 decimal places.
  */
 export const calculateItemTotal = (item: CartItem): number => {
   const { quantity, price, quantityPerBox, boxPrice } = item;
@@ -26,11 +26,11 @@ export const calculateItemTotal = (item: CartItem): number => {
     const totalForBoxes = numberOfBoxes * boxPrice;
     const totalForRemaining = remainingUnits * price;
     
-    return totalForBoxes + totalForRemaining;
+    return parseFloat((totalForBoxes + totalForRemaining).toFixed(2));
   }
   
   // If no box pricing is applicable, use the standard unit price for all items.
-  return quantity * price;
+  return parseFloat((quantity * price).toFixed(2));
 };
 
 export interface DebtAlert {
@@ -48,7 +48,6 @@ export const calculateDebtAlerts = (
 ): DebtAlert[] => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const allAlerts: DebtAlert[] = [];
 
   const indebtedCustomers = customers.filter(c => c && c.balance > 0);
   if (indebtedCustomers.length === 0) {
@@ -66,6 +65,8 @@ export const calculateDebtAlerts = (
     return acc;
   }, {} as Record<string, SaleRecord[]>);
 
+  const allAlerts: DebtAlert[] = [];
+
   for (const customer of indebtedCustomers) {
     const customerHistory = (salesByCustomer[customer.id] || []).sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -73,36 +74,34 @@ export const calculateDebtAlerts = (
 
     if (customerHistory.length === 0) continue;
 
-    let unpaidInvoices: { date: Date; balance: number }[] = [];
-    let paymentsToApply: { amount: number }[] = [];
+    let debits: { date: Date; amount: number }[] = [];
+    let credits: { date: Date; amount: number }[] = [];
 
-    // Separate invoices and payments
+    // Separate all debits (invoice totals) and credits (all payments)
     customerHistory.forEach(tx => {
-      if (tx.items.length > 0) { // It's an invoice
-        unpaidInvoices.push({
-          date: new Date(tx.date),
-          balance: tx.totals.balance,
-        });
-      } else if (tx.totals.amountPaid > 0) { // It's a payment
-        paymentsToApply.push({ amount: tx.totals.amountPaid });
-      }
+        if (tx.items.length > 0) { // It's an invoice
+            debits.push({ date: new Date(tx.date), amount: tx.totals.total });
+        }
+        if (tx.totals.amountPaid > 0) { // Any transaction with a payment
+            credits.push({ date: new Date(tx.date), amount: tx.totals.amountPaid });
+        }
     });
 
-    // Apply payments to oldest invoices first (First-In, First-Out)
-    for (const payment of paymentsToApply) {
-      let paymentAmountLeft = payment.amount;
-      for (const invoice of unpaidInvoices) {
-        if (paymentAmountLeft <= 0) break;
-        if (invoice.balance > 0) {
-          const amountToPay = Math.min(paymentAmountLeft, invoice.balance);
-          invoice.balance -= amountToPay;
-          paymentAmountLeft -= amountToPay;
+    // Apply credits to debits in chronological order to find the oldest unpaid debt
+    for (const credit of credits) {
+      let creditAmountLeft = credit.amount;
+      for (const debit of debits) {
+        if (creditAmountLeft <= 0) break;
+        if (debit.amount > 0) {
+          const amountToPay = Math.min(creditAmountLeft, debit.amount);
+          debit.amount -= amountToPay;
+          creditAmountLeft -= amountToPay;
         }
       }
     }
     
-    // Find the oldest outstanding invoice for the alert
-    const firstOutstandingInvoice = unpaidInvoices.find(inv => inv.balance > 0);
+    // Find the first invoice that is not fully paid off
+    const firstOutstandingInvoice = debits.find(inv => inv.amount > 0);
 
     if (firstOutstandingInvoice) {
       const debtOriginDate = firstOutstandingInvoice.date;
@@ -120,6 +119,7 @@ export const calculateDebtAlerts = (
       
       if (alertDueDate) {
           const daysUntilDue = differenceInCalendarDays(alertDueDate, today);
+          // Alert if the due date is today, tomorrow, or in the past
           if (daysUntilDue <= 1) { 
               allAlerts.push({
                   customerName: customer.name,
