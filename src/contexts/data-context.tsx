@@ -175,6 +175,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [t, toast]);
 
     const deleteProduct = useCallback(async (productId: string) => {
+        // Client-side check for immediate feedback
         if (salesHistoryRef.current.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoicesRef.current.some(invoice => invoice.items.some(item => item.productId === productId))) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
@@ -185,9 +186,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         try {
             await deleteProductInDB(productId);
             toast({ title: t.products.productDeleted });
-        } catch (e) {
+        } catch (e: any) {
             setProducts(previousProducts);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete product.'});
+            // The server-side action throws a specific error if the product is in use.
+            const errorMessage = e.message || 'Failed to delete product.';
+            toast({ variant: 'destructive', title: t.errors.title, description: errorMessage});
         }
     }, [t, toast]);
     
@@ -224,6 +227,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [t, toast]);
 
     const deleteCustomer = useCallback(async (customerId: string) => {
+        // Client-side check
         if (salesHistoryRef.current.some(sale => sale.customerId === customerId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
@@ -234,9 +238,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         try {
             await deleteCustomerInDB(customerId);
             toast({ title: t.customers.customerDeleted });
-        } catch (e) {
+        } catch (e: any) {
             setCustomers(previousCustomers);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete customer.'});
+            const errorMessage = e.message || 'Failed to delete customer.';
+            toast({ variant: 'destructive', title: t.errors.title, description: errorMessage});
         }
     }, [t, toast]);
     
@@ -406,9 +411,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         try {
             await deleteSupplierInDB(supplierId);
             toast({ title: t.suppliers.supplierDeleted });
-        } catch (e) {
+        } catch (e: any) {
             setSuppliers(previousSuppliers);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete supplier.'});
+            const errorMessage = e.message || 'Failed to delete supplier.';
+            toast({ variant: 'destructive', title: t.errors.title, description: errorMessage});
         }
     }, [t, toast]);
     

@@ -416,27 +416,23 @@ export function PosView() {
     
     const newCart = [...activeSession.cart];
     const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
+    
+    const availableStock = product.stock - (newCart[existingItemIndex]?.quantity || 0);
+
+    if (quantityToAdd > availableStock) {
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.quantityExceedsStock
+                .replace('{productName}', product.name)
+                .replace('{stock}', String(product.stock)),
+        });
+        return;
+    }
   
     if (existingItemIndex > -1) {
-      const existingItem = newCart[existingItemIndex];
-      if (existingItem.quantity + quantityToAdd > product.stock) {
-          toast({
-              variant: 'destructive',
-              title: t.errors.title,
-              description: t.errors.outOfStock.replace('{productName}', product.name),
-          });
-          return;
-      }
       newCart[existingItemIndex].quantity += quantityToAdd;
     } else {
-      if (product.stock < quantityToAdd) {
-          toast({
-              variant: 'destructive',
-              title: t.errors.title,
-              description: t.errors.outOfStock.replace('{productName}', product.name),
-          });
-          return;
-      }
       newCart.push({ ...product, quantity: quantityToAdd });
     }
     updateActiveSession({ cart: newCart });
@@ -505,7 +501,7 @@ export function PosView() {
 
   const handleSaleCompletion = useCallback(async () => {
     if (isCompletingSale || !activeSession || activeSession.cart.length === 0 || !activeSessionId) {
-      if (!isCompletingSale) {
+      if (!isCompletingSale && (!activeSession || activeSession.cart.length === 0)) {
         toast({
           variant: "destructive",
           title: t.errors.title,

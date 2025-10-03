@@ -162,9 +162,18 @@ export async function updateProductInDB(productId: string, productData: Partial<
 }
 export async function deleteProductInDB(productId: string): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
-        let products = await getProducts();
-        products = products.filter(p => p.id !== productId);
-        await writeData(PRODUCTS_FILE, products);
+        const [products, salesHistory, supplierInvoices] = await Promise.all([
+            getProducts(),
+            getSalesHistory(),
+            getSupplierInvoices()
+        ]);
+        
+        if (salesHistory.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId))) {
+            throw new Error("This product cannot be deleted because it is linked to existing transactions (sales, supplier invoices, etc.).");
+        }
+
+        const updatedProducts = products.filter(p => p.id !== productId);
+        await writeData(PRODUCTS_FILE, updatedProducts);
     });
 }
 
@@ -184,9 +193,14 @@ export async function updateCustomerInDB(customerId: string, customerData: Parti
 }
 export async function deleteCustomerInDB(customerId: string): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
-        let customers = await getCustomers();
-        customers = customers.filter(c => c.id !== customerId);
-        await writeData(CUSTOMERS_FILE, customers);
+        const [customers, salesHistory] = await Promise.all([getCustomers(), getSalesHistory()]);
+        
+        if (salesHistory.some(sale => sale.customerId === customerId)) {
+            throw new Error("This customer cannot be deleted because they are linked to existing sales.");
+        }
+        
+        const updatedCustomers = customers.filter(c => c.id !== customerId);
+        await writeData(CUSTOMERS_FILE, updatedCustomers);
     });
 }
 
@@ -261,9 +275,14 @@ export async function updateSupplierInDB(supplierId: string, supplierData: Parti
 }
 export async function deleteSupplierInDB(supplierId: string): Promise<void> {
     return fileWriteMutex.runExclusive(async () => {
-        let suppliers = await getSuppliers();
-        suppliers = suppliers.filter(s => s.id !== supplierId);
-        await writeData(SUPPLIERS_FILE, suppliers);
+        const [suppliers, supplierInvoices] = await Promise.all([getSuppliers(), getSupplierInvoices()]);
+
+        if (supplierInvoices.some(invoice => invoice.supplierId === supplierId)) {
+            throw new Error("This supplier cannot be deleted because they are linked to existing invoices.");
+        }
+        
+        const updatedSuppliers = suppliers.filter(s => s.id !== supplierId);
+        await writeData(SUPPLIERS_FILE, updatedSuppliers);
     });
 }
 
@@ -321,8 +340,8 @@ export async function processSale(data: { saleRecord: SaleRecord; cart: CartItem
         if (data.saleRecord.customerId) {
             const customer = customers.find(c => c.id === data.saleRecord.customerId);
             if (customer) {
-                customer.spent += data.saleRecord.totals.total;
-                customer.balance += data.saleRecord.totals.balance;
+                customer.spent = parseFloat((customer.spent + data.saleRecord.totals.total).toFixed(2));
+                customer.balance = parseFloat((customer.balance + data.saleRecord.totals.balance).toFixed(2));
             }
         }
         
@@ -351,7 +370,7 @@ export async function processPayment(data: { customerId: string; amount: number;
         // 2. Update customer balance
         const customer = customers.find(c => c.id === data.customerId);
         if(customer) {
-            customer.balance -= data.amount;
+            customer.balance = parseFloat((customer.balance - data.amount).toFixed(2));
         }
         
         // 3. Write all changes
@@ -380,7 +399,7 @@ export async function processSupplierInvoice(data: { invoice: SupplierInvoice, p
         // Update supplier balance
         const supplier = suppliers.find(s => s.id === invoice.supplierId);
         if (supplier) {
-            supplier.balance = (supplier.balance || 0) + (invoice.totalAmount - (invoice.amountPaid || 0));
+            supplier.balance = parseFloat(((supplier.balance || 0) + (invoice.totalAmount - (invoice.amountPaid || 0))).toFixed(2));
         }
         
         await Promise.all([
@@ -402,7 +421,7 @@ export async function processSupplierPayment(data: { paymentRecord: SupplierInvo
         // 1. Update supplier balance
         const supplier = suppliers.find(s => s.id === paymentRecord.supplierId);
         if (supplier) {
-            supplier.balance -= paymentRecord.totalAmount;
+            supplier.balance = parseFloat((supplier.balance - paymentRecord.totalAmount).toFixed(2));
         }
 
         // 2. Create payment record
