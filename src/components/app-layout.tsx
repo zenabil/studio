@@ -2,18 +2,20 @@
 
 import { SidebarNav } from '@/components/sidebar-nav';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useLanguage } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
 import React from 'react';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isPinned, state } = useSidebar();
+  const { state } = useSidebar();
+  const { dir } = useLanguage();
   
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       <SidebarNav />
        <main className={cn(
-        "flex-1 flex-col transition-[margin-left] duration-300 ease-in-out",
-        state === 'expanded' ? 'md:ml-64' : 'md:ml-16'
+        "flex-1 flex-col transition-all duration-300 ease-in-out",
+        dir === 'ltr' ? (state === 'expanded' ? 'md:ml-64' : 'md:ml-16') : (state === 'expanded' ? 'md:mr-64' : 'md:mr-16')
       )}>
         <div className="p-4 md:p-8 mt-14 md:mt-0">
           {children}

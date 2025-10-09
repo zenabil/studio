@@ -47,7 +47,7 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
             className="w-full justify-between"
           >
             {selectedCustomer ? selectedCustomer.name : t.pos.selectCustomer}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 rtl:mr-2 rtl:ml-0" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
@@ -63,7 +63,7 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                   }}
                   className="text-primary"
                 >
-                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {t.customers.addCustomer}
                 </CommandItem>
                 <CommandItem
@@ -75,7 +75,7 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                 >
                   <Check
                     className={cn(
-                      'mr-2 h-4 w-4',
+                      'mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0',
                       !selectedCustomerId ? 'opacity-100' : 'opacity-0'
                     )}
                   />
@@ -93,7 +93,7 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                   >
                     <Check
                       className={cn(
-                        'mr-2 h-4 w-4',
+                        'mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0',
                         selectedCustomerId === customer.id
                           ? 'opacity-100'
                           : 'opacity-0'

@@ -674,19 +674,19 @@ export function PosView() {
           <CardHeader>
             <div className="flex flex-col gap-4">
                <div className="relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
                   <Input
                     ref={searchInputRef}
                     placeholder={`${t.pos.searchProducts} (F1)`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 rtl:pr-10 rtl:pl-10"
                   />
                   {searchTerm && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rtl:right-auto rtl:left-2"
                       onClick={() => setSearchTerm('')}
                     >
                       <X className="h-4 w-4" />
@@ -696,14 +696,14 @@ export function PosView() {
                <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-grow flex items-center gap-2">
                     <div className="relative flex-grow">
-                      <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
                       <Input
                         ref={barcodeInputRef}
                         placeholder={`${t.pos.scanBarcode} (F2)`}
                         value={barcodeInput}
                         onChange={(e) => setBarcodeInput(e.target.value)}
                         onKeyDown={handleBarcodeKeyDown}
-                        className="pl-10"
+                        className="pl-10 rtl:pr-10 rtl:pl-2"
                       />
                     </div>
                      <Button variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
@@ -801,7 +801,7 @@ export function PosView() {
                                                   disabled={isOutOfStock}
                                                   variant="outline"
                                               >
-                                                  <PlusCircle className="mr-2 h-4 w-4" />
+                                                  <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                                                   {t.pos.addToCart}
                                               </Button>
                                           </div>
@@ -827,7 +827,7 @@ export function PosView() {
                             setIsAddProductDialogOpen(true);
                           }}
                         >
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                          <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                           {t.pos.addProductButton.replace('{productName}', searchTerm)}
                         </Button>
                     )}
@@ -845,10 +845,10 @@ export function PosView() {
                 <div className="flex items-center gap-2">
                     <TabsList className="flex-grow justify-start h-auto p-1 overflow-x-auto">
                         {sessions.map(session => (
-                            <TabsTrigger key={session.id} value={session.id} className="relative pr-8">
+                            <TabsTrigger key={session.id} value={session.id} className="relative pr-8 rtl:pl-8 rtl:pr-2">
                                 {session.name}
                                 {sessions.length > 1 && (
-                                    <span onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20 cursor-pointer">
+                                    <span onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20 cursor-pointer rtl:right-auto rtl:left-1">
                                         <X className="h-3 w-3" />
                                     </span>
                                 )}
@@ -970,7 +970,7 @@ export function PosView() {
                     }
                     onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
                     />
-                    <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
+                    <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
                 </div>
                 <div className="relative">
                     <Input 
@@ -979,7 +979,7 @@ export function PosView() {
                         placeholder={t.pos.amountPaid} 
                         value={activeSession.amountPaid || ''} 
                         onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} 
-                        className="pr-9"
+                        className="pr-9 rtl:pl-9 rtl:pr-2"
                         onKeyDown={(e) => {
                             if (e.key === 'ArrowUp') {
                                 e.preventDefault();
@@ -988,13 +988,13 @@ export function PosView() {
                             }
                         }}
                     />
-                    <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F9</kbd>
+                    <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-2">F9</kbd>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
              </div>
              <div className="mt-4 grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}>
-                    <FileText className="h-4 w-4" />
+                    <FileText className="h-4 w-4"/>
                     {t.pos.invoice}
                 </Button>
                 <Button variant="destructive" onClick={resetSale}>

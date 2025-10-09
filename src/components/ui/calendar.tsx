@@ -6,6 +6,7 @@ import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
@@ -15,6 +16,8 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+    const { dir } = useLanguage();
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -29,8 +32,8 @@ function Calendar({
           buttonVariants({ variant: "outline" }),
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
         ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
+        nav_button_previous: "absolute left-1 rtl:right-1 rtl:left-auto",
+        nav_button_next: "absolute right-1 rtl:left-1 rtl:right-auto",
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
         head_cell:
@@ -54,12 +57,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
-        ),
+        IconLeft: ({ className, ...props }) => dir === 'rtl' ? <ChevronRight className={cn("h-4 w-4", className)} {...props} /> : <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+        IconRight: ({ className, ...props }) => dir === 'rtl' ? <ChevronLeft className={cn("h-4 w-4", className)} {...props} /> : <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
       }}
       {...props}
     />

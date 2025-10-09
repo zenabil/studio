@@ -295,12 +295,12 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                     <FormLabel>{t.products.barcodes}</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input placeholder={t.products.barcodePlaceholder} {...field} disabled={isSaving} className="pr-10"/>
+                        <Input placeholder={t.products.barcodePlaceholder} {...field} disabled={isSaving} className="pr-10 rtl:pl-10 rtl:pr-2"/>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8"
+                          className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8 rtl:right-auto rtl:left-1"
                           onClick={() => setIsScannerOpen(true)}
                           title={t.pos.scanBarcode.replace('...','')}
                         >

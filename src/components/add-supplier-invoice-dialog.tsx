@@ -248,10 +248,10 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
                                   <SelectContent>
                                     <div
                                       onPointerDown={(e) => e.preventDefault()}
-                                      className="relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-primary outline-none hover:bg-accent focus:bg-accent"
+                                      className="relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-primary outline-none hover:bg-accent focus:bg-accent rtl:pl-2 rtl:pr-8"
                                       onClick={() => setIsAddProductDialogOpen(true)}
                                     >
-                                      <PlusCircle className="absolute left-2 h-4 w-4" />
+                                      <PlusCircle className="absolute left-2 h-4 w-4 rtl:left-auto rtl:right-2" />
                                       <span>{t.suppliers.addNewProduct}</span>
                                     </div>
                                     <SelectSeparator />
@@ -356,6 +356,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
                   onClick={() => append({ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' })}
                   disabled={isSaving}
                 >
+                  <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {t.suppliers.addItem}
                 </Button>
               </ScrollArea>
