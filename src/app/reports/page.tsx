@@ -86,6 +86,7 @@ export default function ReportsPage() {
       });
       
       const filteredExpenses = expenses.filter(expense => {
+        if (!expense) return false;
         if (!dateRange?.from) return true;
         const expenseDate = new Date(expense.date);
         const fromDate = new Date(dateRange.from);

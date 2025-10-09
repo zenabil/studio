@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -662,7 +661,7 @@ export function PosView() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [products, selectedCategory, searchTerm]);
   
-  const selectedCustomer = customers.find(c => c && c.id === activeSession?.selectedCustomerId);
+  const selectedCustomer = useMemo(() => customers.find(c => c && c.id === activeSession?.selectedCustomerId), [customers, activeSession?.selectedCustomerId]);
 
   if (isLoading) return <Loading />;
   if (!activeSessionId || !activeSession) return <Loading />;

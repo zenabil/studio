@@ -3,6 +3,7 @@ import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend } from 'recha
 import { useLanguage } from '@/contexts/language-context';
 import { useSettings } from '@/contexts/settings-context';
 import { Users } from 'lucide-react';
+import type { Customer } from '@/lib/data';
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
