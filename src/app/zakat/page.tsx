@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import {
@@ -14,7 +15,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
-import { HandCoins, Info, Landmark, Coins, CircleDollarSign, Scale } from 'lucide-react';
+import { HandCoins, Info, Landmark, Coins, CircleDollarSign, Scale, Package } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function ZakatPage() {
@@ -31,21 +32,20 @@ export default function ZakatPage() {
   const inventoryValue = useMemo(() => {
     return products.reduce((total, product) => {
       if (!product || product.stock <= 0) return total;
-      return total + (product.purchasePrice * product.stock);
+      return total + ((product.purchasePrice || 0) * product.stock);
     }, 0);
   }, [products]);
 
   const accountsReceivable = useMemo(() => {
+    // Collect debts owed TO the business from customers
     return customers.reduce((total, customer) => {
-        if (!customer || customer.balance >= 0) return total;
-        // We only consider positive balances as receivable from our perspective, but customer balance is debt from their perspective.
-        // Assuming balance > 0 means customer owes us.
-        // Let's reconsider. customer.balance > 0 means they have a debt. These are our receivables.
-        return total + (customer.balance > 0 ? customer.balance : 0);
+      if (!customer || customer.balance <= 0) return total;
+      return total + customer.balance;
     }, 0);
   }, [customers]);
 
   const accountsPayable = useMemo(() => {
+    // Collect debts owed BY the business to suppliers
     return suppliers.reduce((total, supplier) => {
       if (!supplier || supplier.balance <= 0) return total;
       return total + supplier.balance;
