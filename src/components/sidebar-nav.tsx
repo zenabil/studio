@@ -31,6 +31,7 @@ import {
   Package,
   PanelLeft,
   Receipt,
+  HandCoins,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -75,6 +76,7 @@ export function SidebarNav() {
     { href: '/expenses', label: t.nav.expenses, icon: Receipt },
     { href: '/reports', label: t.nav.reports, icon: BarChartBig },
     { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
+    { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ], [t, totalAlertCount]);
 
