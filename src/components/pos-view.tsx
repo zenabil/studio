@@ -932,43 +932,43 @@ export function PosView() {
             </ScrollArea>
           </CardContent>
           <div className="mt-auto p-4 pt-0">
-             <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mb-4 font-bold text-primary text-3xl">
+            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mb-4 font-bold text-primary text-3xl">
               <span>{t.pos.grandTotal}</span>
               <span>{settings.currency}{total.toFixed(2)}</span>
             </div>
-            <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <span>{t.pos.discount}</span>
-                        <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
-                    </div>
-                    <Input 
-                        ref={discountInputRef} 
-                        type="number" 
-                        value={activeSession.discount || ''} 
-                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
-                        className="h-8 w-24 text-right" 
-                        onKeyDown={(e) => {
-                           if (e.key === 'ArrowUp') {
-                               e.preventDefault();
-                               const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
-                               if (lastCartItemIndex >= 0) {
-                                   quantityInputRefs.current[lastCartItemIndex]?.focus();
-                                   quantityInputRefs.current[lastCartItemIndex]?.select();
-                               }
-                           } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                               e.preventDefault();
-                               amountPaidInputRef.current?.focus();
-                               amountPaidInputRef.current?.select();
-                           }
-                        }}
-                    />
-                </div>
-            </div>
-            <Separator className="my-4" />
              <div className="space-y-4">
-                <div className="relative">
+                <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <span>{t.pos.discount}</span>
+                            <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
+                        </div>
+                        <Input 
+                            ref={discountInputRef} 
+                            type="number" 
+                            value={activeSession.discount || ''} 
+                            onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                            className="h-8 w-24 text-right" 
+                            onKeyDown={(e) => {
+                               if (e.key === 'ArrowUp') {
+                                   e.preventDefault();
+                                   const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
+                                   if (lastCartItemIndex >= 0) {
+                                       quantityInputRefs.current[lastCartItemIndex]?.focus();
+                                       quantityInputRefs.current[lastCartItemIndex]?.select();
+                                   }
+                               } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                   e.preventDefault();
+                                   amountPaidInputRef.current?.focus();
+                                   amountPaidInputRef.current?.select();
+                               }
+                            }}
+                        />
+                    </div>
+                </div>
+                <Separator/>
+                <div className="relative z-10">
                     <CustomerCombobox
                     ref={customerComboboxRef}
                     customers={customers}
@@ -1082,3 +1082,6 @@ export function PosView() {
 
     
 
+
+
+    
