@@ -680,6 +680,190 @@ export function PosView() {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:h-[calc(100vh-6rem)]">
+      <div className="lg:col-span-2">
+        <Card className="flex h-full flex-col">
+          <CardHeader>
+            <Tabs value={activeSessionId} onValueChange={setActiveSessionId} className="w-full">
+                <div className="flex items-center gap-2">
+                    <TabsList className="flex-grow justify-start h-auto p-1 overflow-x-auto">
+                        {sessions.map(session => (
+                            <TabsTrigger key={session.id} value={session.id} className="relative pr-8 rtl:pl-8 rtl:pr-2">
+                                {session.name}
+                                {sessions.length > 1 && (
+                                    <span onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20 cursor-pointer rtl:right-auto rtl:left-1">
+                                        <X className="h-3 w-3" />
+                                    </span>
+                                )}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <Button size="icon" variant="outline" onClick={addNewSession} className="h-9 w-9 flex-shrink-0">
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+            </Tabs>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <ScrollArea className="h-48">
+              {activeSession.cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
+                  <ShoppingCart className="w-12 h-12 mb-4" />
+                  <p>{t.pos.addToCart}...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t.pos.description}</TableHead>
+                      <TableHead className="text-center w-32">
+                        {t.pos.quantity}
+                        <kbd className="ml-2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F7</kbd>
+                      </TableHead>
+                      <TableHead className="text-right">{t.pos.total}</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeSession.cart.map((item, index) => {
+                      const isLastItem = index === activeSession.cart.length - 1;
+                      return (
+                      <TableRow key={item.id} ref={isLastItem ? cartEndRef : null}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>
+                           <div className="flex items-center justify-center gap-1 w-28 mx-auto">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleDecrementQuantity(item.id)}>
+                                    <MinusCircle className="h-4 w-4" />
+                                </Button>
+                                <Input
+                                    ref={(el) => (quantityInputRefs.current[index] = el)}
+                                    type="text"
+                                    value={cartQuantities[item.id] || ''}
+                                    onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
+                                    onBlur={() => handleQuantityInputBlur(item.id)}
+                                    onKeyDown={(e) => handleQuantityKeyDown(e, index)}
+                                    className="h-8 text-center w-full px-1 text-sm bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                                />
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleIncrementQuantity(item.id)}>
+                                    <PlusCircle className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {settings.currency}{calculateItemTotal(item).toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFromCart(item.id)}>
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )})}
+                  </TableBody>
+                </Table>
+              )}
+            </ScrollArea>
+          </CardContent>
+          <div className="mt-auto p-4 pt-0">
+            <Separator className="mb-4" />
+            <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <span>{t.pos.discount}</span>
+                        <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
+                    </div>
+                    <Input 
+                        ref={discountInputRef} 
+                        type="number" 
+                        value={activeSession.discount || ''} 
+                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                        className="h-8 w-24 text-right" 
+                        onKeyDown={(e) => {
+                           if (e.key === 'ArrowUp') {
+                               e.preventDefault();
+                               const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
+                               if (lastCartItemIndex >= 0) {
+                                   quantityInputRefs.current[lastCartItemIndex]?.focus();
+                                   quantityInputRefs.current[lastCartItemIndex]?.select();
+                               }
+                           } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                               e.preventDefault();
+                               amountPaidInputRef.current?.focus();
+                               amountPaidInputRef.current?.select();
+                           }
+                        }}
+                    />
+                </div>
+            </div>
+            <Separator className="my-4" />
+            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 font-bold text-primary text-3xl">
+              <span>{t.pos.grandTotal}</span>
+              <span>{settings.currency}{total.toFixed(2)}</span>
+            </div>
+            <Separator className="my-4" />
+             <div className="space-y-4">
+                <div className="relative">
+                    <CustomerCombobox
+                    ref={customerComboboxRef}
+                    customers={customers}
+                    selectedCustomerId={activeSession.selectedCustomerId}
+                    onSelectCustomer={(customerId) =>
+                        updateActiveSession({ selectedCustomerId: customerId })
+                    }
+                    onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
+                    />
+                    <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
+                </div>
+                <div className="relative">
+                    <Input 
+                        ref={amountPaidInputRef} 
+                        type="number" 
+                        placeholder={t.pos.amountPaid} 
+                        value={activeSession.amountPaid || ''} 
+                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                        className="pr-9 rtl:pl-9 rtl:pr-2"
+                        onKeyDown={(e) => {
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                discountInputRef.current?.focus();
+                                discountInputRef.current?.select();
+                            }
+                        }}
+                    />
+                    <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-2">F9</kbd>
+                </div>
+                <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
+             </div>
+             <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}>
+                    <FileText className="h-4 w-4"/>
+                    {t.pos.invoice}
+                </Button>
+                <Button variant="destructive" onClick={resetSale}>
+                    <XCircle className="h-4 w-4"/>
+                    <span>{t.pos.newSale}</span>
+                    <kbd className="rounded bg-background/20 text-destructive-foreground px-1.5 font-mono text-[10px] font-medium">F6</kbd>
+                </Button>
+             </div>
+             <div className="mt-2">
+                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={!activeSession || activeSession.cart.length === 0 || isCompletingSale}>
+                    {isCompletingSale ? (
+                        <>
+                            <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+                            {t.settings.saving.replace('...', '')}...
+                        </>
+                    ) : (
+                        <>
+                            <span>{t.pos.completeSale}</span>
+                            <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
+                        </>
+                    )}
+                </Button>
+             </div>
+          </div>
+        </Card>
+      </div>
+
       <div className="lg:col-span-3">
         <Card className="h-full flex flex-col">
           <CardHeader>
@@ -849,190 +1033,6 @@ export function PosView() {
         </Card>
       </div>
 
-      <div className="lg:col-span-2">
-        <Card className="flex h-full flex-col">
-          <CardHeader>
-            <Tabs value={activeSessionId} onValueChange={setActiveSessionId} className="w-full">
-                <div className="flex items-center gap-2">
-                    <TabsList className="flex-grow justify-start h-auto p-1 overflow-x-auto">
-                        {sessions.map(session => (
-                            <TabsTrigger key={session.id} value={session.id} className="relative pr-8 rtl:pl-8 rtl:pr-2">
-                                {session.name}
-                                {sessions.length > 1 && (
-                                    <span onClick={(e) => {e.stopPropagation(); handleCloseSession(session.id)}} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted-foreground/20 cursor-pointer rtl:right-auto rtl:left-1">
-                                        <X className="h-3 w-3" />
-                                    </span>
-                                )}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <Button size="icon" variant="outline" onClick={addNewSession} className="h-9 w-9 flex-shrink-0">
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                </div>
-            </Tabs>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <ScrollArea className="h-48">
-              {activeSession.cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                  <ShoppingCart className="w-12 h-12 mb-4" />
-                  <p>{t.pos.addToCart}...</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t.pos.description}</TableHead>
-                      <TableHead className="text-center w-32">
-                        {t.pos.quantity}
-                        <kbd className="ml-2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F7</kbd>
-                      </TableHead>
-                      <TableHead className="text-right">{t.pos.total}</TableHead>
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activeSession.cart.map((item, index) => {
-                      const isLastItem = index === activeSession.cart.length - 1;
-                      return (
-                      <TableRow key={item.id} ref={isLastItem ? cartEndRef : null}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell>
-                           <div className="flex items-center justify-center gap-1 w-28 mx-auto">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleDecrementQuantity(item.id)}>
-                                    <MinusCircle className="h-4 w-4" />
-                                </Button>
-                                <Input
-                                    ref={(el) => (quantityInputRefs.current[index] = el)}
-                                    type="text"
-                                    value={cartQuantities[item.id] || ''}
-                                    onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
-                                    onBlur={() => handleQuantityInputBlur(item.id)}
-                                    onKeyDown={(e) => handleQuantityKeyDown(e, index)}
-                                    className="h-8 text-center w-full px-1 text-sm bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                                />
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 rounded-full" onClick={() => handleIncrementQuantity(item.id)}>
-                                    <PlusCircle className="h-4 w-4"/>
-                                </Button>
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {settings.currency}{calculateItemTotal(item).toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFromCart(item.id)}>
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )})}
-                  </TableBody>
-                </Table>
-              )}
-            </ScrollArea>
-          </CardContent>
-          <div className="mt-auto p-4 pt-0">
-            <Separator className="mb-4" />
-            <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <span>{t.pos.discount}</span>
-                        <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
-                    </div>
-                    <Input 
-                        ref={discountInputRef} 
-                        type="number" 
-                        value={activeSession.discount || ''} 
-                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
-                        className="h-8 w-24 text-right" 
-                        onKeyDown={(e) => {
-                           if (e.key === 'ArrowUp') {
-                               e.preventDefault();
-                               const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
-                               if (lastCartItemIndex >= 0) {
-                                   quantityInputRefs.current[lastCartItemIndex]?.focus();
-                                   quantityInputRefs.current[lastCartItemIndex]?.select();
-                               }
-                           } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                               e.preventDefault();
-                               amountPaidInputRef.current?.focus();
-                               amountPaidInputRef.current?.select();
-                           }
-                        }}
-                    />
-                </div>
-            </div>
-            <Separator className="my-4" />
-            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 font-bold text-primary text-3xl">
-              <span>{t.pos.grandTotal}</span>
-              <span>{settings.currency}{total.toFixed(2)}</span>
-            </div>
-            <Separator className="my-4" />
-             <div className="space-y-4">
-                <div className="relative">
-                    <CustomerCombobox
-                    ref={customerComboboxRef}
-                    customers={customers}
-                    selectedCustomerId={activeSession.selectedCustomerId}
-                    onSelectCustomer={(customerId) =>
-                        updateActiveSession({ selectedCustomerId: customerId })
-                    }
-                    onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
-                    />
-                    <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
-                </div>
-                <div className="relative">
-                    <Input 
-                        ref={amountPaidInputRef} 
-                        type="number" 
-                        placeholder={t.pos.amountPaid} 
-                        value={activeSession.amountPaid || ''} 
-                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} 
-                        className="pr-9 rtl:pl-9 rtl:pr-2"
-                        onKeyDown={(e) => {
-                            if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                discountInputRef.current?.focus();
-                                discountInputRef.current?.select();
-                            }
-                        }}
-                    />
-                    <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-2">F9</kbd>
-                </div>
-                <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
-             </div>
-             <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}>
-                    <FileText className="h-4 w-4"/>
-                    {t.pos.invoice}
-                </Button>
-                <Button variant="destructive" onClick={resetSale}>
-                    <XCircle className="h-4 w-4"/>
-                    <span>{t.pos.newSale}</span>
-                    <kbd className="rounded bg-background/20 text-destructive-foreground px-1.5 font-mono text-[10px] font-medium">F6</kbd>
-                </Button>
-             </div>
-             <div className="mt-2">
-                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={activeSession.cart.length === 0 || isCompletingSale}>
-                    {isCompletingSale ? (
-                        <>
-                            <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
-                            {t.settings.saving.replace('...', '')}...
-                        </>
-                    ) : (
-                        <>
-                            <span>{t.pos.completeSale}</span>
-                            <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
-                        </>
-                    )}
-                </Button>
-             </div>
-          </div>
-        </Card>
-      </div>
-
       {isInvoiceOpen && <InvoiceDialog 
         isOpen={isInvoiceOpen}
         onClose={() => setIsInvoiceOpen(false)}
@@ -1080,5 +1080,7 @@ export function PosView() {
     </div>
   );
 }
+
+    
 
     
