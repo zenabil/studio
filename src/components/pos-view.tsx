@@ -412,13 +412,8 @@ export function PosView() {
 
   const addToCart = useCallback((product: Product, quantityToAdd: number = 1) => {
     if (!activeSession) return;
-    
-    const newCart = [...activeSession.cart];
-    const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
-    
-    const availableStock = product.stock - (newCart[existingItemIndex]?.quantity || 0);
 
-    if (quantityToAdd > availableStock) {
+    if (quantityToAdd > product.stock) {
         toast({
             variant: 'destructive',
             title: t.errors.title,
@@ -428,11 +423,26 @@ export function PosView() {
         });
         return;
     }
-  
+    
+    const newCart = [...activeSession.cart];
+    const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
+    
     if (existingItemIndex > -1) {
-      newCart[existingItemIndex].quantity += quantityToAdd;
+        const newQuantity = newCart[existingItemIndex].quantity + quantityToAdd;
+        if (newQuantity > product.stock) {
+             toast({
+                variant: 'destructive',
+                title: t.errors.title,
+                description: t.errors.quantityExceedsStock
+                    .replace('{productName}', product.name)
+                    .replace('{stock}', String(product.stock)),
+            });
+            newCart[existingItemIndex].quantity = product.stock;
+        } else {
+            newCart[existingItemIndex].quantity = newQuantity;
+        }
     } else {
-      newCart.push({ ...product, quantity: quantityToAdd });
+        newCart.push({ ...product, quantity: quantityToAdd });
     }
     updateActiveSession({ cart: newCart });
   }, [activeSession, updateActiveSession, t, toast]);
@@ -640,6 +650,7 @@ export function PosView() {
   const categories = useMemo(() => ['all', ...Array.from(new Set(products.filter(p => !!p).map((p) => p.category)))], [products]);
   
   const filteredProducts = useMemo(() => {
+    if (!products) return [];
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
     return products
@@ -668,175 +679,6 @@ export function PosView() {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:h-[calc(100vh-6rem)]">
-      <div className="lg:col-span-3">
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <div className="flex flex-col gap-4">
-               <div className="relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
-                  <Input
-                    ref={searchInputRef}
-                    placeholder={`${t.pos.searchProducts} (F1)`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-10 rtl:pr-10 rtl:pl-10"
-                  />
-                  {searchTerm && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rtl:right-auto rtl:left-2"
-                      onClick={() => setSearchTerm('')}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-               </div>
-               <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-grow flex items-center gap-2">
-                    <div className="relative flex-grow">
-                      <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
-                      <Input
-                        ref={barcodeInputRef}
-                        placeholder={`${t.pos.scanBarcode} (F2)`}
-                        value={barcodeInput}
-                        onChange={(e) => setBarcodeInput(e.target.value)}
-                        onKeyDown={handleBarcodeKeyDown}
-                        className="pl-10 rtl:pr-10 rtl:pl-2"
-                      />
-                    </div>
-                     <Button variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
-                       <Barcode className="h-5 w-5" />
-                     </Button>
-                  </div>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
-                      <SelectValue placeholder={t.pos.allCategories} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat === 'all' ? t.pos.allCategories : cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center rounded-md bg-muted p-1">
-                      <Button
-                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                        size="icon"
-                        onClick={() => setViewMode('grid')}
-                        className={`h-8 w-8 ${viewMode === 'grid' ? 'bg-background shadow-sm' : ''}`}
-                        title={t.pos.gridView}
-                      >
-                        <LayoutGrid className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                        size="icon"
-                        onClick={() => setViewMode('list')}
-                        className={`h-8 w-8 ${viewMode === 'list' ? 'bg-background shadow-sm' : ''}`}
-                        title={t.pos.listView}
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                  </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <ScrollArea className="h-[55vh] lg:h-full">
-              {filteredProducts.length > 0 ? (
-                viewMode === 'grid' ? (
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 pr-4">
-                    {filteredProducts.map((product) => (
-                      <PosProductCard
-                          key={product.id}
-                          product={product}
-                          onAddToCart={addToCart}
-                          currency={settings.currency}
-                          t={t}
-                        />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="pr-4">
-                      <Table>
-                          <TableHeader>
-                              <TableRow>
-                                  <TableHead>{t.products.name}</TableHead>
-                                  <TableHead>{t.products.category}</TableHead>
-                                  <TableHead className="text-right">{t.products.price}</TableHead>
-                                  <TableHead className="text-right">{t.products.stock}</TableHead>
-                                  <TableHead className="text-right">{t.products.actions}</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {filteredProducts.map((product) => {
-                                  const isOutOfStock = product.stock <= 0;
-                                  const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
-                                  return (
-                                  <TableRow key={product.id} className={cn(isOutOfStock && "opacity-60")}>
-                                      <TableCell className="font-medium">{product.name}</TableCell>
-                                      <TableCell>{product.category}</TableCell>
-                                      <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
-                                      <TableCell className="text-right">{product.stock}</TableCell>
-                                      <TableCell className="text-right">
-                                          <div className="flex justify-end items-center gap-2">
-                                              {canSellByBox && (
-                                                  <Button
-                                                      size="icon"
-                                                      variant="outline"
-                                                      onClick={() => addToCart(product, product.quantityPerBox!)}
-                                                      disabled={isOutOfStock || product.stock < product.quantityPerBox!}
-                                                      title={`${t.pos.addBox} (${product.quantityPerBox})`}
-                                                  >
-                                                      <Box className="h-4 w-4" />
-                                                  </Button>
-                                              )}
-                                              <Button
-                                                  size="sm"
-                                                  onClick={() => addToCart(product, 1)}
-                                                  disabled={isOutOfStock}
-                                                  variant="outline"
-                                              >
-                                                  <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                                                  {t.pos.addToCart}
-                                              </Button>
-                                          </div>
-                                      </TableCell>
-                                  </TableRow>
-                                  )
-                              })}
-                          </TableBody>
-                      </Table>
-                  </div>
-                )
-              ) : (
-                  <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground h-64">
-                    <Search className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="font-semibold text-lg">{t.pos.noProductsFound}</p>
-                    <p className="text-sm">{t.pos.tryDifferentKeywords}</p>
-                    {searchTerm && (
-                        <Button
-                          variant="outline"
-                          className="mt-4"
-                          onClick={() => {
-                            setNewProductName(searchTerm);
-                            setIsAddProductDialogOpen(true);
-                          }}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                          {t.pos.addProductButton.replace('{productName}', searchTerm)}
-                        </Button>
-                    )}
-                  </div>
-                )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="lg:col-span-2">
         <Card className="flex h-full flex-col">
           <CardHeader>
@@ -1020,6 +862,176 @@ export function PosView() {
           </div>
         </Card>
       </div>
+
+      <div className="lg:col-span-3">
+        <Card className="h-full flex flex-col">
+          <CardHeader>
+            <div className="flex flex-col gap-4">
+               <div className="relative">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder={`${t.pos.searchProducts} (F1)`}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-10 rtl:pr-10 rtl:pl-10"
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rtl:right-auto rtl:left-2"
+                      onClick={() => setSearchTerm('')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+               </div>
+               <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-grow flex items-center gap-2">
+                    <div className="relative flex-grow">
+                      <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
+                      <Input
+                        ref={barcodeInputRef}
+                        placeholder={`${t.pos.scanBarcode} (F2)`}
+                        value={barcodeInput}
+                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        onKeyDown={handleBarcodeKeyDown}
+                        className="pl-10 rtl:pr-10 rtl:pl-2"
+                      />
+                    </div>
+                     <Button variant="outline" size="icon" onClick={() => setIsScannerOpen(true)}>
+                       <Barcode className="h-5 w-5" />
+                     </Button>
+                  </div>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
+                      <SelectValue placeholder={t.pos.allCategories} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat === 'all' ? t.pos.allCategories : cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center rounded-md bg-muted p-1">
+                      <Button
+                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                        size="icon"
+                        onClick={() => setViewMode('grid')}
+                        className={`h-8 w-8 ${viewMode === 'grid' ? 'bg-background shadow-sm' : ''}`}
+                        title={t.pos.gridView}
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                        size="icon"
+                        onClick={() => setViewMode('list')}
+                        className={`h-8 w-8 ${viewMode === 'list' ? 'bg-background shadow-sm' : ''}`}
+                        title={t.pos.listView}
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                  </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <ScrollArea className="h-[55vh] lg:h-full">
+              {filteredProducts.length > 0 ? (
+                viewMode === 'grid' ? (
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 pr-4">
+                    {filteredProducts.map((product) => (
+                      <PosProductCard
+                          key={product.id}
+                          product={product}
+                          onAddToCart={addToCart}
+                          currency={settings.currency}
+                          t={t}
+                        />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="pr-4">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>{t.products.name}</TableHead>
+                                  <TableHead>{t.products.category}</TableHead>
+                                  <TableHead className="text-right">{t.products.price}</TableHead>
+                                  <TableHead className="text-right">{t.products.stock}</TableHead>
+                                  <TableHead className="text-right">{t.products.actions}</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {filteredProducts.map((product) => {
+                                  const isOutOfStock = product.stock <= 0;
+                                  const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
+                                  return (
+                                  <TableRow key={product.id} className={cn(isOutOfStock && "opacity-60")}>
+                                      <TableCell className="font-medium">{product.name}</TableCell>
+                                      <TableCell>{product.category}</TableCell>
+                                      <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right">{product.stock}</TableCell>
+                                      <TableCell className="text-right">
+                                          <div className="flex justify-end items-center gap-2">
+                                              {canSellByBox && (
+                                                  <Button
+                                                      size="icon"
+                                                      variant="outline"
+                                                      onClick={() => addToCart(product, product.quantityPerBox!)}
+                                                      disabled={isOutOfStock || product.stock < product.quantityPerBox!}
+                                                      title={`${t.pos.addBox} (${product.quantityPerBox})`}
+                                                  >
+                                                      <Box className="h-4 w-4" />
+                                                  </Button>
+                                              )}
+                                              <Button
+                                                  size="sm"
+                                                  onClick={() => addToCart(product, 1)}
+                                                  disabled={isOutOfStock}
+                                                  variant="outline"
+                                              >
+                                                  <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                                                  {t.pos.addToCart}
+                                              </Button>
+                                          </div>
+                                      </TableCell>
+                                  </TableRow>
+                                  )
+                              })}
+                          </TableBody>
+                      </Table>
+                  </div>
+                )
+              ) : (
+                  <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground h-64">
+                    <Search className="w-16 h-16 mb-4 opacity-50" />
+                    <p className="font-semibold text-lg">{t.pos.noProductsFound}</p>
+                    <p className="text-sm">{t.pos.tryDifferentKeywords}</p>
+                    {searchTerm && (
+                        <Button
+                          variant="outline"
+                          className="mt-4"
+                          onClick={() => {
+                            setNewProductName(searchTerm);
+                            setIsAddProductDialogOpen(true);
+                          }}
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                          {t.pos.addProductButton.replace('{productName}', searchTerm)}
+                        </Button>
+                    )}
+                  </div>
+                )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
       {isInvoiceOpen && <InvoiceDialog 
         isOpen={isInvoiceOpen}
         onClose={() => setIsInvoiceOpen(false)}
