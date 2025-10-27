@@ -930,21 +930,22 @@ export function PosView() {
                 </Table>
               )}
             </ScrollArea>
-            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mt-2 font-bold text-primary text-3xl">
-              <span>{t.pos.grandTotal}</span>
-              <span>{settings.currency}{total.toFixed(2)}</span>
+            <div className="mt-auto">
+                <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mt-4 font-bold text-primary text-3xl">
+                <span>{t.pos.grandTotal}</span>
+                <span>{settings.currency}{total.toFixed(2)}</span>
+                </div>
             </div>
           </CardContent>
-          <div className="mt-auto p-4 pt-0">
-            <div className="space-y-4">
-              <div className="space-y-2 text-sm">
+          <CardFooter className="flex-col items-stretch gap-4 pt-4">
+            <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                     <span>{t.pos.discount}</span>
                     <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
-                  </div>
-                  <Input 
+                    </div>
+                    <Input 
                     ref={discountInputRef} 
                     type="number" 
                     value={activeSession.discount || ''} 
@@ -964,21 +965,23 @@ export function PosView() {
                             amountPaidInputRef.current?.select();
                         }
                     }}
-                  />
+                    />
                 </div>
-              </div>
+                </div>
               <Separator/>
-              <div className="relative">
-                <CustomerCombobox
-                  ref={customerComboboxRef}
-                  customers={customers}
-                  selectedCustomerId={activeSession.selectedCustomerId}
-                  onSelectCustomer={(customerId) =>
-                    updateActiveSession({ selectedCustomerId: customerId })
-                  }
-                  onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
-                />
-                <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
+              <div className='z-10 relative'>
+                <div className="relative">
+                  <CustomerCombobox
+                    ref={customerComboboxRef}
+                    customers={customers}
+                    selectedCustomerId={activeSession.selectedCustomerId}
+                    onSelectCustomer={(customerId) =>
+                      updateActiveSession({ selectedCustomerId: customerId })
+                    }
+                    onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
+                  />
+                  <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
+                </div>
               </div>
               <div className="relative">
                 <Input 
@@ -999,8 +1002,7 @@ export function PosView() {
                 <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-2">F9</kbd>
               </div>
               <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}>
                 <FileText className="h-4 w-4"/>
                 {t.pos.invoice}
@@ -1026,7 +1028,7 @@ export function PosView() {
                 )}
               </Button>
             </div>
-          </div>
+          </CardFooter>
         </Card>
       </div>
 

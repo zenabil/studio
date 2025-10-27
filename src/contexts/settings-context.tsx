@@ -39,6 +39,7 @@ interface SettingsContextType {
 const SETTINGS_KEY = 'mercurio-pos-settings';
 
 const colorPresets: ColorPreset[] = [
+  { name: 'Slate', primary: { light: '215.2 21.1% 42.6%', dark: '215.2 21.1% 47.6%' }, accent: { light: '215.3 19.3% 53.7%', dark: '215.3 19.3% 58.7%' } },
   { name: 'Teal', primary: { light: '180 100% 25.1%', dark: '180 100% 30%' }, accent: { light: '39 100% 50%', dark: '39 100% 50%' } },
   { name: 'Green', primary: { light: '142.1 76.2% 36.3%', dark: '142.1 76.2% 46.3%' }, accent: { light: '142.1 70.2% 46.3%', dark: '142.1 70.2% 56.3%' } },
   { name: 'Blue', primary: { light: '217.2 91.2% 52.8%', dark: '217.2 91.2% 59.8%' }, accent: { light: '217.2 81.2% 62.8%', dark: '217.2 81.2% 69.8%' } },
@@ -46,7 +47,6 @@ const colorPresets: ColorPreset[] = [
   { name: 'Orange', primary: { light: '24.6 95% 53.1%', dark: '24.6 95% 58.1%' }, accent: { light: '24.6 85% 63.1%', dark: '24.6 85% 68.1%' } },
   { name: 'Violet', primary: { light: '262.1 83.3% 57.8%', dark: '262.1 83.3% 62.8%' }, accent: { light: '262.1 73.3% 67.8%', dark: '262.1 73.3% 72.8%' } },
   { name: 'Yellow', primary: { light: '47.9 95.8% 53.1%', dark: '47.9 95.8% 58.1%' }, accent: { light: '47.9 85.8% 63.1%', dark: '47.9 85.8% 68.1%' } },
-  { name: 'Slate', primary: { light: '215.2 21.1% 42.6%', dark: '215.2 21.1% 47.6%' }, accent: { light: '215.3 19.3% 53.7%', dark: '215.3 19.3% 58.7%' } },
 ];
 
 
@@ -66,8 +66,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       additionalInfo: '',
     },
     currency: '$',
-    theme: 'light',
-    colorPreset: 'Teal',
+    theme: 'dark',
+    colorPreset: 'Slate',
     paymentTermsDays: 30,
   });
   
