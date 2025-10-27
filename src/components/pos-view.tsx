@@ -414,7 +414,19 @@ export function PosView() {
   const addToCart = useCallback((product: Product, quantityToAdd: number = 1) => {
     if (!activeSession) return;
 
-    if (quantityToAdd > product.stock) {
+    if (product.stock <= 0) {
+       toast({
+         variant: 'destructive',
+         title: t.errors.title,
+         description: t.errors.outOfStock.replace('{productName}', product.name),
+       });
+       return;
+    }
+
+    const existingItem = activeSession.cart.find(item => item.id === product.id);
+    const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
+
+    if (currentQuantityInCart + quantityToAdd > product.stock) {
         toast({
             variant: 'destructive',
             title: t.errors.title,
@@ -429,19 +441,7 @@ export function PosView() {
     const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
     
     if (existingItemIndex > -1) {
-        const newQuantity = newCart[existingItemIndex].quantity + quantityToAdd;
-        if (newQuantity > product.stock) {
-             toast({
-                variant: 'destructive',
-                title: t.errors.title,
-                description: t.errors.quantityExceedsStock
-                    .replace('{productName}', product.name)
-                    .replace('{stock}', String(product.stock)),
-            });
-            newCart[existingItemIndex].quantity = product.stock;
-        } else {
-            newCart[existingItemIndex].quantity = newQuantity;
-        }
+        newCart[existingItemIndex].quantity += quantityToAdd;
     } else {
         newCart.push({ ...product, quantity: quantityToAdd });
     }
@@ -871,7 +871,7 @@ export function PosView() {
                 </div>
             </Tabs>
           </CardHeader>
-          <CardContent className="flex-grow">
+          <CardContent className="flex-grow flex flex-col">
             <ScrollArea className="h-48">
               {activeSession.cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
@@ -930,102 +930,102 @@ export function PosView() {
                 </Table>
               )}
             </ScrollArea>
-          </CardContent>
-          <div className="mt-auto p-4 pt-0">
-            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mb-4 font-bold text-primary text-3xl">
+            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mt-2 font-bold text-primary text-3xl">
               <span>{t.pos.grandTotal}</span>
               <span>{settings.currency}{total.toFixed(2)}</span>
             </div>
-             <div className="space-y-4">
-                <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <span>{t.pos.discount}</span>
-                            <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
-                        </div>
-                        <Input 
-                            ref={discountInputRef} 
-                            type="number" 
-                            value={activeSession.discount || ''} 
-                            onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
-                            className="h-8 w-24 text-right" 
-                            onKeyDown={(e) => {
-                               if (e.key === 'ArrowUp') {
-                                   e.preventDefault();
-                                   const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
-                                   if (lastCartItemIndex >= 0) {
-                                       quantityInputRefs.current[lastCartItemIndex]?.focus();
-                                       quantityInputRefs.current[lastCartItemIndex]?.select();
-                                   }
-                               } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                                   e.preventDefault();
-                                   amountPaidInputRef.current?.focus();
-                                   amountPaidInputRef.current?.select();
-                               }
-                            }}
-                        />
-                    </div>
-                </div>
-                <Separator/>
-                <div className="relative z-10">
-                    <CustomerCombobox
-                    ref={customerComboboxRef}
-                    customers={customers}
-                    selectedCustomerId={activeSession.selectedCustomerId}
-                    onSelectCustomer={(customerId) =>
-                        updateActiveSession({ selectedCustomerId: customerId })
-                    }
-                    onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
-                    />
-                    <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
-                </div>
-                <div className="relative">
-                    <Input 
-                        ref={amountPaidInputRef} 
-                        type="number" 
-                        placeholder={t.pos.amountPaid} 
-                        value={activeSession.amountPaid || ''} 
-                        onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} 
-                        className="pr-9 rtl:pl-9 rtl:pr-2"
-                        onKeyDown={(e) => {
-                            if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                discountInputRef.current?.focus();
-                                discountInputRef.current?.select();
+          </CardContent>
+          <div className="mt-auto p-4 pt-0">
+            <div className="space-y-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span>{t.pos.discount}</span>
+                    <kbd className="rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F8</kbd>
+                  </div>
+                  <Input 
+                    ref={discountInputRef} 
+                    type="number" 
+                    value={activeSession.discount || ''} 
+                    onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ discount: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                    className="h-8 w-24 text-right" 
+                    onKeyDown={(e) => {
+                        if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            const lastCartItemIndex = (activeSession?.cart?.length || 0) - 1;
+                            if (lastCartItemIndex >= 0) {
+                                quantityInputRefs.current[lastCartItemIndex]?.focus();
+                                quantityInputRefs.current[lastCartItemIndex]?.select();
                             }
-                        }}
-                    />
-                    <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-2">F9</kbd>
+                        } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            amountPaidInputRef.current?.focus();
+                            amountPaidInputRef.current?.select();
+                        }
+                    }}
+                  />
                 </div>
-                <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
-             </div>
-             <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}>
-                    <FileText className="h-4 w-4"/>
-                    {t.pos.invoice}
-                </Button>
-                <Button variant="destructive" onClick={resetSale}>
-                    <XCircle className="h-4 w-4"/>
-                    <span>{t.pos.newSale}</span>
-                    <kbd className="rounded bg-background/20 text-destructive-foreground px-1.5 font-mono text-[10px] font-medium">F6</kbd>
-                </Button>
-             </div>
-             <div className="mt-2">
-                <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={!activeSession || activeSession.cart.length === 0 || isCompletingSale}>
-                    {isCompletingSale ? (
-                        <>
-                            <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
-                            {t.settings.saving.replace('...', '')}...
-                        </>
-                    ) : (
-                        <>
-                            <span>{t.pos.completeSale}</span>
-                            <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
-                        </>
-                    )}
-                </Button>
-             </div>
+              </div>
+              <Separator/>
+              <div className="relative">
+                <CustomerCombobox
+                  ref={customerComboboxRef}
+                  customers={customers}
+                  selectedCustomerId={activeSession.selectedCustomerId}
+                  onSelectCustomer={(customerId) =>
+                    updateActiveSession({ selectedCustomerId: customerId })
+                  }
+                  onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
+                />
+                <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
+              </div>
+              <div className="relative">
+                <Input 
+                  ref={amountPaidInputRef} 
+                  type="number" 
+                  placeholder={t.pos.amountPaid} 
+                  value={activeSession.amountPaid || ''} 
+                  onChange={(e) => { const val = parseFloat(e.target.value); updateActiveSession({ amountPaid: Math.max(0, isNaN(val) ? 0 : val)})}} 
+                  className="pr-9 rtl:pl-9 rtl:pr-2"
+                  onKeyDown={(e) => {
+                      if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          discountInputRef.current?.focus();
+                          discountInputRef.current?.select();
+                      }
+                  }}
+                />
+                <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-2">F9</kbd>
+              </div>
+              <div className="flex justify-between text-sm font-medium text-destructive"><span>{t.pos.balance}</span><span>{settings.currency}{balance.toFixed(2)}</span></div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => setIsInvoiceOpen(true)} disabled={activeSession.cart.length === 0}>
+                <FileText className="h-4 w-4"/>
+                {t.pos.invoice}
+              </Button>
+              <Button variant="destructive" onClick={resetSale}>
+                <XCircle className="h-4 w-4"/>
+                <span>{t.pos.newSale}</span>
+                <kbd className="rounded bg-background/20 text-destructive-foreground px-1.5 font-mono text-[10px] font-medium">F6</kbd>
+              </Button>
+            </div>
+            <div className="mt-2">
+              <Button variant="accent" className="w-full h-12 text-lg" onClick={handleSaleCompletion} disabled={!activeSession || activeSession.cart.length === 0 || isCompletingSale}>
+                {isCompletingSale ? (
+                  <>
+                    <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+                    {t.settings.saving.replace('...', '')}...
+                  </>
+                ) : (
+                  <>
+                    <span>{t.pos.completeSale}</span>
+                    <kbd className="rounded bg-background/20 text-accent-foreground px-1.5 font-mono text-[10px] font-medium">F10</kbd>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
@@ -1083,5 +1083,7 @@ export function PosView() {
     
 
 
+
+    
 
     
