@@ -932,7 +932,10 @@ export function PosView() {
             </ScrollArea>
           </CardContent>
           <div className="mt-auto p-4 pt-0">
-            <Separator className="mb-4" />
+             <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 mb-4 font-bold text-primary text-3xl">
+              <span>{t.pos.grandTotal}</span>
+              <span>{settings.currency}{total.toFixed(2)}</span>
+            </div>
             <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span>{t.pos.subtotal}</span><span>{settings.currency}{subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between items-center">
@@ -962,11 +965,6 @@ export function PosView() {
                         }}
                     />
                 </div>
-            </div>
-            <Separator className="my-4" />
-            <div className="flex justify-between items-center rounded-lg bg-primary/10 p-3 font-bold text-primary text-3xl">
-              <span>{t.pos.grandTotal}</span>
-              <span>{settings.currency}{total.toFixed(2)}</span>
             </div>
             <Separator className="my-4" />
              <div className="space-y-4">
@@ -1083,3 +1081,4 @@ export function PosView() {
     
 
     
+
