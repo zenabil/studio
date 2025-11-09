@@ -7,12 +7,16 @@ import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 // Custom hook to manage auth state
-function useAuthState(auth: Auth) {
+function useAuthState(auth: Auth | null) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!auth) {
+        setIsLoading(false);
+        return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setIsLoading(false);
@@ -30,9 +34,9 @@ function useAuthState(auth: Auth) {
 
 interface FirebaseProviderProps {
   children: ReactNode;
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
+  firebaseApp: FirebaseApp | null;
+  firestore: Firestore | null;
+  auth: Auth | null;
 }
 
 // Combined state for the Firebase context
@@ -145,11 +149,21 @@ export const useFirebaseApp = (): FirebaseApp => {
 
 type MemoFirebase <T> = T & {__memo?: boolean};
 
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
+/**
+ * A hook that memoizes a Firestore query or document reference.
+ * It's crucial to use this to prevent re-renders and potential infinite loops
+ * when passing queries or references to hooks like `useCollection` or `useDoc`.
+ * 
+ * @param factory A function that returns the Firestore query or reference.
+ * @param deps An array of dependencies for the `useMemo` hook.
+ * @returns The memoized Firestore query or reference.
+ */
+export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
   const memoized = useMemo(factory, deps);
   
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
+  if(memoized !== null && typeof memoized === 'object') {
+    (memoized as MemoFirebase<T>).__memo = true;
+  }
   
   return memoized;
 }

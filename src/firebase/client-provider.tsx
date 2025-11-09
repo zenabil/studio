@@ -11,7 +11,13 @@ interface FirebaseClientProviderProps {
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
     // Initialize Firebase on the client side, once per component mount.
-    return initializeFirebase();
+    try {
+        return initializeFirebase();
+    } catch (e) {
+        console.error("Firebase initialization failed:", e);
+        // Return null for all services if initialization fails
+        return { firebaseApp: null, auth: null, firestore: null };
+    }
   }, []); // Empty dependency array ensures this runs only once on mount
 
   return (

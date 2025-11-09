@@ -81,7 +81,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const firestore = useFirestore();
 
     const getCollectionRef = useCallback((collectionName: string) => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return collection(firestore, 'users', user.uid, collectionName) as CollectionReference;
     }, [firestore, user]);
 
@@ -125,13 +125,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<Product>) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/products/${productId}`);
         updateDocumentNonBlocking(docRef, productData);
     }, [firestore, user]);
 
     const deleteProduct = useCallback(async (productId: string) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         if (salesHistory.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId))) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
@@ -155,13 +155,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef]);
     
     const updateCustomer = useCallback(async (customerId: string, customerData: Partial<Customer>) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/customers/${customerId}`);
         updateDocumentNonBlocking(docRef, customerData);
     }, [firestore, user]);
 
     const deleteCustomer = useCallback(async (customerId: string) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         if (salesHistory.some(sale => sale.customerId === customerId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
@@ -172,7 +172,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [firestore, user, salesHistory, t.errors.title, t.customers.deleteErrorInUse, t.customers.customerDeleted, toast]);
     
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
-        if (!user) throw new Error("User not authenticated.");
+        if (!user || !firestore) throw new Error("User not authenticated.");
         const batch = writeBatch(firestore);
 
         const saleRef = doc(collection(firestore, `users/${user.uid}/sales`));
@@ -210,7 +210,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [user, firestore, products, customers]);
     
     const makePayment = useCallback(async (customerId: string, amount: number) => {
-        if (!user) throw new Error("User not authenticated.");
+        if (!user || !firestore) throw new Error("User not authenticated.");
         const batch = writeBatch(firestore);
 
         const paymentRef = doc(collection(firestore, `users/${user.uid}/sales`));
@@ -239,19 +239,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef]);
 
     const updateBakeryOrder = useCallback(async (orderId: string, orderData: Partial<BakeryOrder>) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/bakeryOrders/${orderId}`);
         updateDocumentNonBlocking(docRef, orderData);
     }, [firestore, user]);
     
     const deleteBakeryOrder = useCallback(async (orderId: string) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/bakeryOrders/${orderId}`);
         deleteDocumentNonBlocking(docRef);
     }, [firestore, user]);
 
     const deleteRecurringPattern = useCallback(async (orderName: string) => {
-        if (!user) throw new Error("User not authenticated.");
+        if (!user || !firestore) throw new Error("User not authenticated.");
         const q = query(collection(firestore, `users/${user.uid}/bakeryOrders`), where("name", "==", orderName), where("isRecurring", "==", true));
         const querySnapshot = await getDocs(q);
         const batch = writeBatch(firestore);
@@ -263,7 +263,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [user, firestore, t, toast]);
 
     const setAsRecurringTemplate = useCallback(async (templateId: string, isRecurring: boolean) => {
-        if (!user) throw new Error("User not authenticated.");
+        if (!user || !firestore) throw new Error("User not authenticated.");
         const docRef = doc(firestore, `users/${user.uid}/bakeryOrders/${templateId}`);
         const templateOrder = bakeryOrders.find(o => o.id === templateId);
 
@@ -293,13 +293,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef]);
 
     const updateSupplier = useCallback(async (supplierId: string, supplierData: Partial<Supplier>) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/suppliers/${supplierId}`);
         updateDocumentNonBlocking(docRef, supplierData);
     }, [firestore, user]);
 
     const deleteSupplier = useCallback(async (supplierId: string) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         if (supplierInvoices.some(invoice => invoice.supplierId === supplierId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.suppliers.deleteErrorInUse });
             return;
@@ -310,7 +310,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [firestore, user, supplierInvoices, t, toast]);
     
     const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
-        if (!user) throw new Error("User not authenticated.");
+        if (!user || !firestore) throw new Error("User not authenticated.");
         const batch = writeBatch(firestore);
         
         const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
@@ -341,7 +341,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [user, firestore, products, suppliers]);
     
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
-        if (!user) throw new Error("User not authenticated.");
+        if (!user || !firestore) throw new Error("User not authenticated.");
         const batch = writeBatch(firestore);
 
         const paymentRef = doc(collection(firestore, `users/${user.uid}/supplierInvoices`));
@@ -364,20 +364,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef]);
 
     const updateExpense = useCallback(async (expenseId: string, expenseData: Partial<Expense>) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/expenses/${expenseId}`);
         updateDocumentNonBlocking(docRef, expenseData);
     }, [firestore, user]);
 
     const deleteExpense = useCallback(async (expenseId: string) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const docRef = doc(firestore, `users/${user.uid}/expenses/${expenseId}`);
         deleteDocumentNonBlocking(docRef);
         toast({ title: t.expenses.expenseDeleted });
     }, [firestore, user, t, toast]);
     
     const restoreData = useCallback(async (data: any) => {
-        if (!user) {
+        if (!user || !firestore) {
             throw new Error("User not authenticated.");
         }
         const batch = writeBatch(firestore);
