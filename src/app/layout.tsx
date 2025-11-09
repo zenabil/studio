@@ -7,6 +7,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import NextTopLoader from 'nextjs-toploader';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Frucio',
@@ -40,12 +41,14 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
         />
-        <AppProviders>
-          <SidebarProvider>
-            <AppLayout>{children}</AppLayout>
-          </SidebarProvider>
-          <Toaster />
-        </AppProviders>
+        <FirebaseClientProvider>
+          <AppProviders>
+            <SidebarProvider>
+              <AppLayout>{children}</AppLayout>
+            </SidebarProvider>
+            <Toaster />
+          </AppProviders>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

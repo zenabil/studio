@@ -1,7 +1,21 @@
-
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
+import {
+    useUser,
+    useFirestore,
+    useCollection,
+    useMemoFirebase,
+} from '@/firebase';
+import {
+    collection,
+    doc,
+    writeBatch,
+    serverTimestamp,
+    query,
+    where,
+    getDocs,
+} from 'firebase/firestore';
 import type { 
     Product,
     Customer,
@@ -13,65 +27,39 @@ import type {
     SupplierInvoiceItem,
     Expense,
 } from '@/lib/data';
-import {
-    getProducts,
-    getCustomers,
-    getSalesHistory,
-    getBakeryOrders,
-    getSuppliers,
-    getSupplierInvoices,
-    getExpenses,
-    restoreBackupData,
-    addProductInDB,
-    updateProductInDB,
-    deleteProductInDB,
-    addCustomerInDB,
-    updateCustomerInDB,
-    deleteCustomerInDB,
-    processSale,
-    processPayment,
-    addBakeryOrderInDB,
-    updateBakeryOrderInDB,
-    deleteBakeryOrderInDB,
-    saveBakeryOrders,
-    addSupplierInDB,
-    updateSupplierInDB,
-    deleteSupplierInDB,
-    processSupplierInvoice,
-    processSupplierPayment,
-    setAsRecurringTemplateInDB,
-    deleteRecurringPatternInDB,
-    addExpenseInDB,
-    updateExpenseInDB,
-    deleteExpenseInDB,
-} from '@/lib/data-actions';
+
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
-import { calculateUpdatedProductsForInvoice } from '@/lib/utils';
+import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
+import {
+    setDocumentNonBlocking,
+    addDocumentNonBlocking,
+    updateDocumentNonBlocking,
+    deleteDocumentNonBlocking,
+} from '@/firebase/non-blocking-updates';
+
 
 interface DataContextType {
-    products: Product[];
-    customers: Customer[];
-    salesHistory: SaleRecord[];
-    bakeryOrders: BakeryOrder[];
-    suppliers: Supplier[];
-    supplierInvoices: SupplierInvoice[];
-    expenses: Expense[];
+    products: WithId<Product>[];
+    customers: WithId<Customer>[];
+    salesHistory: WithId<SaleRecord>[];
+    bakeryOrders: WithId<BakeryOrder>[];
+    suppliers: WithId<Supplier>[];
+    supplierInvoices: WithId<SupplierInvoice>[];
+    expenses: WithId<Expense>[];
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id'>) => Promise<Product>;
+    addProduct: (productData: Omit<Product, 'id'>) => Promise<WithId<Product>>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
-    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<Customer>;
+    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<WithId<Customer>>;
     updateCustomer: (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => Promise<void>;
     deleteCustomer: (customerId: string) => Promise<void>;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
     makePayment: (customerId: string, amount: number) => Promise<void>;
-    restoreData: (data: { products: Product[]; customers: Customer[]; salesHistory: SaleRecord[]; bakeryOrders: BakeryOrder[]; suppliers: Supplier[]; supplierInvoices: SupplierInvoice[]; expenses: Expense[]; }) => Promise<void>;
     addBakeryOrder: (orderData: Omit<BakeryOrder, 'id'>) => Promise<void>;
     updateBakeryOrder: (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => Promise<void>;
     deleteBakeryOrder: (orderId: string) => Promise<void>;
     deleteRecurringPattern: (orderName: string) => Promise<void>;
-    setBakeryOrders: (orders: BakeryOrder[]) => Promise<void>;
     setAsRecurringTemplate: (templateId: string, isRecurring: boolean) => Promise<void>;
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
@@ -81,6 +69,7 @@ interface DataContextType {
     addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
+    restoreData: (data: any) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -88,426 +77,314 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const [products, setProducts] = useState<Product[]>([]);
-    const [customers, setCustomers] = useState<Customer[]>([]);
-    const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
-    const [bakeryOrders, setBakeryOrdersState] = useState<BakeryOrder[]>([]);
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([]);
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
 
-    // Refs to hold current state for stable callbacks, preventing unnecessary re-renders.
-    const productsRef = useRef(products);
-    useEffect(() => { productsRef.current = products; }, [products]);
-    const customersRef = useRef(customers);
-    useEffect(() => { customersRef.current = customers; }, [customers]);
-    const salesHistoryRef = useRef(salesHistory);
-    useEffect(() => { salesHistoryRef.current = salesHistory; }, [salesHistory]);
-    const bakeryOrdersRef = useRef(bakeryOrders);
-    useEffect(() => { bakeryOrdersRef.current = bakeryOrders; }, [bakeryOrders]);
-    const suppliersRef = useRef(suppliers);
-    useEffect(() => { suppliersRef.current = suppliers; }, [suppliers]);
-    const supplierInvoicesRef = useRef(supplierInvoices);
-    useEffect(() => { supplierInvoicesRef.current = supplierInvoices; }, [supplierInvoices]);
-    const expensesRef = useRef(expenses);
-    useEffect(() => { expensesRef.current = expenses; }, [expenses]);
+    const getCollectionRef = useCallback((collectionName: string) => {
+        if (!user) return null;
+        return collection(firestore, 'users', user.uid, collectionName);
+    }, [firestore, user]);
 
+    const { data: products = [], isLoading: productsLoading } = useCollection<Product>(getCollectionRef('products'));
+    const { data: customers = [], isLoading: customersLoading } = useCollection<Customer>(getCollectionRef('customers'));
+    const { data: salesHistory = [], isLoading: salesLoading } = useCollection<SaleRecord>(getCollectionRef('sales'));
+    const { data: bakeryOrders = [], isLoading: bakeryOrdersLoading } = useCollection<BakeryOrder>(getCollectionRef('bakeryOrders'));
+    const { data: suppliers = [], isLoading: suppliersLoading } = useCollection<Supplier>(getCollectionRef('suppliers'));
+    const { data: supplierInvoices = [], isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(getCollectionRef('supplierInvoices'));
+    const { data: expenses = [], isLoading: expensesLoading } = useCollection<Expense>(getCollectionRef('expenses'));
 
-    const syncData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const [loadedProducts, loadedCustomers, loadedSalesHistory, loadedBakeryOrders, loadedSuppliers, loadedSupplierInvoices, loadedExpenses] = await Promise.all([
-                getProducts(),
-                getCustomers(),
-                getSalesHistory(),
-                getBakeryOrders(),
-                getSuppliers(),
-                getSupplierInvoices(),
-                getExpenses(),
-            ]);
-            setProducts(loadedProducts);
-            setCustomers(loadedCustomers);
-            setSalesHistory(loadedSalesHistory);
-            setBakeryOrdersState(loadedBakeryOrders);
-            setSuppliers(loadedSuppliers);
-            setSupplierInvoices(loadedSupplierInvoices);
-            setExpenses(loadedExpenses);
-        } catch (error) {
-            console.error("Failed to sync data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || expensesLoading;
 
-    useEffect(() => {
-        syncData();
-    }, [syncData]);
+    const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
+        const collectionRef = getCollectionRef('products');
+        if (!collectionRef) throw new Error("User not authenticated.");
 
-    const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<Product> => {
-        const newProduct: Product = {
-            id: `prod-${new Date().getTime()}`,
+        const newProductData = {
             ...productData,
+            createdAt: serverTimestamp(),
         };
-        
-        const previousProducts = productsRef.current;
-        setProducts(current => [...current, newProduct]);
-        try {
-            await addProductInDB(newProduct);
-            return newProduct;
-        } catch (e) {
-            setProducts(previousProducts);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save product.'});
-            throw e;
-        }
-    }, [t, toast]);
 
-    const updateProduct = useCallback(async (productId: string, productData: Partial<Omit<Product, 'id'>>) => {
-        const previousProducts = productsRef.current;
-        setProducts(current => current.map(p => p.id === productId ? { ...p, ...productData, id: productId } : p));
-        try {
-            await updateProductInDB(productId, productData);
-        } catch (e) {
-            setProducts(previousProducts);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update product.'});
-            throw e;
-        }
-    }, [t, toast]);
+        const docRef = await addDocumentNonBlocking(collectionRef, newProductData);
+        return { id: docRef.id, ...productData };
+    }, [getCollectionRef]);
+
+    const updateProduct = useCallback(async (productId: string, productData: Partial<Product>) => {
+        const docRef = doc(firestore, `users/${user!.uid}/products/${productId}`);
+        updateDocumentNonBlocking(docRef, productData);
+    }, [firestore, user]);
 
     const deleteProduct = useCallback(async (productId: string) => {
-        // Client-side check for immediate feedback
-        if (salesHistoryRef.current.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoicesRef.current.some(invoice => invoice.items.some(item => item.productId === productId))) {
+        if (salesHistory.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId))) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
         }
-
-        const previousProducts = productsRef.current;
-        setProducts(current => current.filter(p => p.id !== productId));
-        try {
-            await deleteProductInDB(productId);
-            toast({ title: t.products.productDeleted });
-        } catch (e: any) {
-            setProducts(previousProducts);
-            // The server-side action throws a specific error if the product is in use.
-            const errorMessage = e.message || 'Failed to delete product.';
-            toast({ variant: 'destructive', title: t.errors.title, description: errorMessage});
-        }
-    }, [t, toast]);
+        const docRef = doc(firestore, `users/${user!.uid}/products/${productId}`);
+        deleteDocumentNonBlocking(docRef);
+        toast({ title: t.products.productDeleted });
+    }, [firestore, user, salesHistory, supplierInvoices, t.errors.title, t.products.deleteErrorInUse, t.products.productDeleted, toast]);
     
-    const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<Customer> => {
-        const newCustomer: Customer = {
-            id: `cust-${new Date().getTime()}`,
+    const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<WithId<Customer>> => {
+        const collectionRef = getCollectionRef('customers');
+        if (!collectionRef) throw new Error("User not authenticated.");
+
+        const newCustomerData: Customer = {
+            ...customerData,
             spent: 0,
             balance: 0,
-            ...customerData,
         };
-        
-        const previousCustomers = customersRef.current;
-        setCustomers(current => [...current, newCustomer]);
-        try {
-            await addCustomerInDB(newCustomer);
-            return newCustomer;
-        } catch (e) {
-            setCustomers(previousCustomers);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add customer.'});
-            throw e;
-        }
-    }, [t, toast]);
+        const docRef = await addDocumentNonBlocking(collectionRef, newCustomerData);
+        return { id: docRef.id, ...newCustomerData };
+    }, [getCollectionRef]);
     
-    const updateCustomer = useCallback(async (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => {
-        const previousCustomers = customersRef.current;
-        setCustomers(current => current.map(c => c.id === customerId ? { ...c, ...customerData, id: customerId } : c));
-        try {
-            await updateCustomerInDB(customerId, customerData);
-        } catch (e) {
-            setCustomers(previousCustomers);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update customer.'});
-            throw e;
-        }
-    }, [t, toast]);
+    const updateCustomer = useCallback(async (customerId: string, customerData: Partial<Customer>) => {
+        const docRef = doc(firestore, `users/${user!.uid}/customers/${customerId}`);
+        updateDocumentNonBlocking(docRef, customerData);
+    }, [firestore, user]);
 
     const deleteCustomer = useCallback(async (customerId: string) => {
-        // Client-side check
-        if (salesHistoryRef.current.some(sale => sale.customerId === customerId)) {
+        if (salesHistory.some(sale => sale.customerId === customerId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
         }
-
-        const previousCustomers = customersRef.current;
-        setCustomers(current => current.filter(c => c.id !== customerId));
-        try {
-            await deleteCustomerInDB(customerId);
-            toast({ title: t.customers.customerDeleted });
-        } catch (e: any) {
-            setCustomers(previousCustomers);
-            const errorMessage = e.message || 'Failed to delete customer.';
-            toast({ variant: 'destructive', title: t.errors.title, description: errorMessage});
-        }
-    }, [t, toast]);
+        const docRef = doc(firestore, `users/${user!.uid}/customers/${customerId}`);
+        deleteDocumentNonBlocking(docRef);
+        toast({ title: t.customers.customerDeleted });
+    }, [firestore, user, salesHistory, t.errors.title, t.customers.deleteErrorInUse, t.customers.customerDeleted, toast]);
     
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
-        const newSale: SaleRecord = { id: `SALE-${new Date().getTime()}`, customerId, items: cart, totals, date: new Date().toISOString() };
+        if (!user) throw new Error("User not authenticated.");
+        const batch = writeBatch(firestore);
 
-        const previousStates = { products: productsRef.current, customers: customersRef.current, salesHistory: salesHistoryRef.current };
-        
-        setProducts(current => current.map(p => {
-            const itemInCart = cart.find(item => item.id === p.id);
-            return itemInCart ? { ...p, stock: p.stock - itemInCart.quantity } : p;
-        }));
+        // 1. Create Sale Record
+        const saleRef = doc(collection(firestore, `users/${user.uid}/sales`));
+        const newSale: SaleRecord = { 
+            id: saleRef.id, 
+            customerId, 
+            items: cart, 
+            totals, 
+            date: new Date().toISOString() 
+        };
+        batch.set(saleRef, newSale);
+
+        // 2. Update Product Stock
+        for (const item of cart) {
+            const productRef = doc(firestore, `users/${user.uid}/products/${item.id}`);
+            const product = products.find(p => p.id === item.id);
+            if (product) {
+                if (product.stock < item.quantity) {
+                    throw new Error(`Not enough stock for '${product.name}'.`);
+                }
+                batch.update(productRef, { stock: product.stock - item.quantity });
+            }
+        }
+
+        // 3. Update Customer Balance
         if (customerId) {
-            setCustomers(current => current.map(c => c.id === customerId ? { ...c, spent: c.spent + totals.total, balance: c.balance + totals.balance } : c));
+            const customerRef = doc(firestore, `users/${user.uid}/customers/${customerId}`);
+            const customer = customers.find(c => c.id === customerId);
+            if (customer) {
+                const newSpent = customer.spent + totals.total;
+                const newBalance = customer.balance + totals.balance;
+                batch.update(customerRef, { spent: newSpent, balance: newBalance });
+            }
         }
-        setSalesHistory(current => [...current, newSale]);
+        
+        await batch.commit();
 
-        try {
-            await processSale({ saleRecord: newSale, cart });
-        } catch (error) {
-            setProducts(previousStates.products);
-            setCustomers(previousStates.customers);
-            setSalesHistory(previousStates.salesHistory);
-            console.error("Sale completion failed:", error);
-            throw error;
-        }
-    }, []);
+    }, [user, firestore, products, customers]);
     
     const makePayment = useCallback(async (customerId: string, amount: number) => {
-        const paymentRecord: SaleRecord = { id: `PAY-${new Date().getTime()}`, customerId, items: [], totals: { subtotal: 0, discount: 0, total: amount, amountPaid: amount, balance: -amount }, date: new Date().toISOString() };
+        if (!user) throw new Error("User not authenticated.");
+        const batch = writeBatch(firestore);
 
-        const previousStates = { customers: customersRef.current, salesHistory: salesHistoryRef.current };
+        // 1. Create Payment Record
+        const paymentRef = doc(collection(firestore, `users/${user.uid}/sales`));
+        const paymentRecord: SaleRecord = { 
+            id: paymentRef.id, 
+            customerId, 
+            items: [], 
+            totals: { subtotal: 0, discount: 0, total: amount, amountPaid: amount, balance: -amount }, 
+            date: new Date().toISOString() 
+        };
+        batch.set(paymentRef, paymentRecord);
 
-        setCustomers(current => current.map(c => c.id === customerId ? { ...c, balance: c.balance - amount } : c));
-        setSalesHistory(current => [...current, paymentRecord]);
-
-        try {
-            await processPayment({ customerId, amount, paymentRecord });
-        } catch (error) {
-            setCustomers(previousStates.customers);
-            setSalesHistory(previousStates.salesHistory);
-            console.error("Failed to process payment:", error);
-            toast({ variant: 'destructive', title: "Save Error", description: "Could not save payment data." });
+        // 2. Update Customer Balance
+        const customerRef = doc(firestore, `users/${user.uid}/customers/${customerId}`);
+        const customer = customers.find(c => c.id === customerId);
+        if (customer) {
+            const newBalance = customer.balance - amount;
+            batch.update(customerRef, { balance: newBalance });
         }
-    }, [toast]);
+
+        await batch.commit();
+    }, [user, firestore, customers]);
 
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
-        const newOrder: BakeryOrder = { id: `b-order-${new Date().getTime()}`, ...orderData };
-        const previousOrders = bakeryOrdersRef.current;
-        setBakeryOrdersState(current => [...current, newOrder]);
-        try {
-            await addBakeryOrderInDB(newOrder);
-        } catch (e) {
-            setBakeryOrdersState(previousOrders);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add bakery order.'});
-            throw e;
-        }
-    }, [t, toast]);
+        const collectionRef = getCollectionRef('bakeryOrders');
+        if (!collectionRef) throw new Error("User not authenticated.");
+        await addDocumentNonBlocking(collectionRef, { ...orderData, createdAt: serverTimestamp() });
+    }, [getCollectionRef]);
 
-    const updateBakeryOrder = useCallback(async (orderId: string, orderData: Partial<Omit<BakeryOrder, 'id'>>) => {
-        const previousOrders = bakeryOrdersRef.current;
-        setBakeryOrdersState(current => current.map(o => o.id === orderId ? { ...o, ...orderData, id: orderId } : o));
-        try {
-            await updateBakeryOrderInDB(orderId, orderData);
-        } catch (e) {
-            setBakeryOrdersState(previousOrders);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update bakery order.'});
-            throw e;
-        }
-    }, [t, toast]);
+    const updateBakeryOrder = useCallback(async (orderId: string, orderData: Partial<BakeryOrder>) => {
+        const docRef = doc(firestore, `users/${user!.uid}/bakeryOrders/${orderId}`);
+        updateDocumentNonBlocking(docRef, orderData);
+    }, [firestore, user]);
     
     const deleteBakeryOrder = useCallback(async (orderId: string) => {
-        const previousOrders = bakeryOrdersRef.current;
-        setBakeryOrdersState(current => current.filter(o => o.id !== orderId));
-        try {
-            await deleteBakeryOrderInDB(orderId);
-        } catch (e) {
-            setBakeryOrdersState(previousOrders);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete bakery order.'});
-            throw e;
-        }
-    }, [t, toast]);
+        const docRef = doc(firestore, `users/${user!.uid}/bakeryOrders/${orderId}`);
+        deleteDocumentNonBlocking(docRef);
+    }, [firestore, user]);
 
     const deleteRecurringPattern = useCallback(async (orderName: string) => {
-        const previousOrders = bakeryOrdersRef.current;
-        setBakeryOrdersState(current => current.filter(o => !(o.name === orderName && o.isRecurring)));
-        try {
-            await deleteRecurringPatternInDB(orderName);
-            toast({ title: t.bakeryOrders.patternDeleted });
-        } catch (e) {
-            setBakeryOrdersState(previousOrders);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete recurring order pattern.' });
-        }
-    }, [t, toast]);
-
-    const setBakeryOrders = useCallback(async (orders: BakeryOrder[]) => {
-       const previousOrders = bakeryOrdersRef.current;
-       setBakeryOrdersState(orders);
-       try {
-           await saveBakeryOrders(orders);
-       } catch (e) {
-           setBakeryOrdersState(previousOrders);
-           toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to save bakery orders.'});
-           throw e;
-       }
-    }, [t, toast]);
+        if (!user) throw new Error("User not authenticated.");
+        const q = query(collection(firestore, `users/${user.uid}/bakeryOrders`), where("name", "==", orderName), where("isRecurring", "==", true));
+        const querySnapshot = await getDocs(q);
+        const batch = writeBatch(firestore);
+        querySnapshot.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        toast({ title: t.bakeryOrders.patternDeleted });
+    }, [user, firestore, t, toast]);
 
     const setAsRecurringTemplate = useCallback(async (templateId: string, isRecurring: boolean) => {
-        const previousOrders = bakeryOrdersRef.current;
-        setBakeryOrdersState(current => {
-            const templateOrder = current.find(o => o.id === templateId);
-            if (!templateOrder) return current;
-    
-            if (isRecurring) {
-                return current.map(o => {
-                    if (o.name === templateOrder.name) {
-                        return { ...o, isRecurring: o.id === templateId };
-                    }
-                    return o;
-                });
-            } else {
-                return current.map(o => (o.id === templateId ? { ...o, isRecurring: false } : o));
-            }
-        });
-    
-        try {
-            await setAsRecurringTemplateInDB(templateId, isRecurring);
-        } catch (e) {
-            setBakeryOrdersState(previousOrders);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update recurring status.'});
-            throw e;
+        if (!user) throw new Error("User not authenticated.");
+        const docRef = doc(firestore, `users/${user!.uid}/bakeryOrders/${templateId}`);
+        const templateOrder = bakeryOrders.find(o => o.id === templateId);
+
+        if (!templateOrder) return;
+
+        const batch = writeBatch(firestore);
+        batch.update(docRef, { isRecurring });
+
+        if (isRecurring) {
+            const q = query(collection(firestore, `users/${user.uid}/bakeryOrders`), where("name", "==", templateOrder.name), where("isRecurring", "==", true));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach((doc) => {
+                if (doc.id !== templateId) {
+                    batch.update(doc.ref, { isRecurring: false });
+                }
+            });
         }
-    }, [t, toast]);
+        
+        await batch.commit();
+    }, [user, firestore, bakeryOrders]);
 
     const addSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
-        const newSupplier: Supplier = { id: `supp-${new Date().getTime()}`, balance: 0, ...supplierData };
-        const previousSuppliers = suppliersRef.current;
-        setSuppliers(current => [...current, newSupplier]);
-        try {
-            await addSupplierInDB(newSupplier);
-        } catch (e) {
-            setSuppliers(previousSuppliers);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add supplier.'});
-            throw e;
-        }
-    }, [t, toast]);
+        const collectionRef = getCollectionRef('suppliers');
+        if (!collectionRef) throw new Error("User not authenticated.");
+        const newSupplierData = { ...supplierData, balance: 0 };
+        await addDocumentNonBlocking(collectionRef, newSupplierData);
+    }, [getCollectionRef]);
 
-    const updateSupplier = useCallback(async (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => {
-        const previousSuppliers = suppliersRef.current;
-        setSuppliers(current => current.map(s => s.id === supplierId ? { ...s, ...supplierData, id: supplierId } : s));
-        try {
-            await updateSupplierInDB(supplierId, supplierData);
-        } catch (e) {
-            setSuppliers(previousSuppliers);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update supplier.'});
-            throw e;
-        }
-    }, [t, toast]);
+    const updateSupplier = useCallback(async (supplierId: string, supplierData: Partial<Supplier>) => {
+        const docRef = doc(firestore, `users/${user!.uid}/suppliers/${supplierId}`);
+        updateDocumentNonBlocking(docRef, supplierData);
+    }, [firestore, user]);
 
     const deleteSupplier = useCallback(async (supplierId: string) => {
-        if (supplierInvoicesRef.current.some(invoice => invoice.supplierId === supplierId)) {
+        if (supplierInvoices.some(invoice => invoice.supplierId === supplierId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.suppliers.deleteErrorInUse });
             return;
         }
-        const previousSuppliers = suppliersRef.current;
-        setSuppliers(current => current.filter(s => s.id !== supplierId));
-        try {
-            await deleteSupplierInDB(supplierId);
-            toast({ title: t.suppliers.supplierDeleted });
-        } catch (e: any) {
-            setSuppliers(previousSuppliers);
-            const errorMessage = e.message || 'Failed to delete supplier.';
-            toast({ variant: 'destructive', title: t.errors.title, description: errorMessage});
-        }
-    }, [t, toast]);
+        const docRef = doc(firestore, `users/${user!.uid}/suppliers/${supplierId}`);
+        deleteDocumentNonBlocking(docRef);
+        toast({ title: t.suppliers.supplierDeleted });
+    }, [firestore, user, supplierInvoices, t, toast]);
     
     const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
+        if (!user) throw new Error("User not authenticated.");
+        const batch = writeBatch(firestore);
+        
+        // 1. Create Invoice Record
         const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
-        const newInvoice: SupplierInvoice = { id: `SINV-${new Date().getTime()}`, date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
-        
-        const previousStates = { products: productsRef.current, suppliers: suppliersRef.current, supplierInvoices: supplierInvoicesRef.current };
+        const invoiceRef = doc(collection(firestore, `users/${user.uid}/supplierInvoices`));
+        const newInvoice: SupplierInvoice = { id: invoiceRef.id, date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
+        batch.set(invoiceRef, newInvoice);
 
-        setSupplierInvoices(current => [...current, newInvoice]);
-        setSuppliers(current => current.map(s => s.id === invoiceData.supplierId ? { ...s, balance: (s.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0)) } : s));
-        
-        const updatedProducts = calculateUpdatedProductsForInvoice(productsRef.current, invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
-        setProducts(updatedProducts);
+        // 2. Update Product Stock and Prices
+        const updatedProducts = calculateUpdatedProductsForInvoice(products, invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
+        invoiceData.items.forEach(item => {
+            const productRef = doc(firestore, `users/${user.uid}/products/${item.productId}`);
+            const updatedProductData = updatedProducts.find(p => p.id === item.productId);
+            if(updatedProductData) {
+                batch.update(productRef, {
+                    stock: updatedProductData.stock,
+                    purchasePrice: updatedProductData.purchasePrice,
+                });
+            }
+        });
 
-        try {
-            await processSupplierInvoice({ invoice: newInvoice, priceUpdateStrategy: invoiceData.priceUpdateStrategy });
-        } catch (error) {
-            setProducts(previousStates.products);
-            setSuppliers(previousStates.suppliers);
-            setSupplierInvoices(previousStates.supplierInvoices);
-            console.error("Failed to process supplier invoice:", error);
-            toast({ variant: 'destructive', title: "Save Error", description: "Could not save supplier invoice." });
+        // 3. Update Supplier Balance
+        const supplierRef = doc(firestore, `users/${user.uid}/suppliers/${invoiceData.supplierId}`);
+        const supplier = suppliers.find(s => s.id === invoiceData.supplierId);
+        if (supplier) {
+            const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
+            batch.update(supplierRef, { balance: newBalance });
         }
-    }, [toast]);
+        
+        await batch.commit();
+    }, [user, firestore, products, suppliers]);
     
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
-        const paymentRecord: SupplierInvoice = { id: `SPAY-${new Date().getTime()}`, supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
-        
-        const previousStates = { suppliers: suppliersRef.current, supplierInvoices: supplierInvoicesRef.current };
-        
-        setSuppliers(current => current.map(s => s.id === supplierId ? { ...s, balance: s.balance - amount } : s));
-        setSupplierInvoices(current => [...current, paymentRecord]);
+        if (!user) throw new Error("User not authenticated.");
+        const batch = writeBatch(firestore);
 
-        try {
-            await processSupplierPayment({ paymentRecord });
-        } catch (error) {
-            setSuppliers(previousStates.suppliers);
-            setSupplierInvoices(previousStates.supplierInvoices);
-            console.error("Failed to process supplier payment:", error);
-            toast({ variant: 'destructive', title: "Save Error", description: "Could not save supplier payment." });
+        // 1. Create Payment Record
+        const paymentRef = doc(collection(firestore, `users/${user.uid}/supplierInvoices`));
+        const paymentRecord: SupplierInvoice = { id: paymentRef.id, supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
+        batch.set(paymentRef, paymentRecord);
+        
+        // 2. Update Supplier Balance
+        const supplierRef = doc(firestore, `users/${user.uid}/suppliers/${supplierId}`);
+        const supplier = suppliers.find(s => s.id === supplierId);
+        if(supplier) {
+            batch.update(supplierRef, { balance: supplier.balance - amount });
         }
-    }, [toast]);
+
+        await batch.commit();
+    }, [user, firestore, suppliers]);
 
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
-        const newExpense: Expense = { id: `exp-${new Date().getTime()}`, ...expenseData };
-        const previousExpenses = expensesRef.current;
-        setExpenses(current => [...current, newExpense]);
-        try {
-            await addExpenseInDB(newExpense);
-        } catch (e) {
-            setExpenses(previousExpenses);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to add expense.' });
-            throw e;
-        }
-    }, [t, toast]);
+        const collectionRef = getCollectionRef('expenses');
+        if (!collectionRef) throw new Error("User not authenticated.");
+        await addDocumentNonBlocking(collectionRef, { ...expenseData, createdAt: serverTimestamp() });
+    }, [getCollectionRef]);
 
-    const updateExpense = useCallback(async (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => {
-        const previousExpenses = expensesRef.current;
-        setExpenses(current => current.map(e => e.id === expenseId ? { ...e, ...expenseData, id: expenseId } : e));
-        try {
-            await updateExpenseInDB(expenseId, expenseData);
-        } catch (e) {
-            setExpenses(previousExpenses);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to update expense.' });
-            throw e;
-        }
-    }, [t, toast]);
+    const updateExpense = useCallback(async (expenseId: string, expenseData: Partial<Expense>) => {
+        const docRef = doc(firestore, `users/${user!.uid}/expenses/${expenseId}`);
+        updateDocumentNonBlocking(docRef, expenseData);
+    }, [firestore, user]);
 
     const deleteExpense = useCallback(async (expenseId: string) => {
-        const previousExpenses = expensesRef.current;
-        setExpenses(current => current.filter(e => e.id !== expenseId));
-        try {
-            await deleteExpenseInDB(expenseId);
-            toast({ title: t.expenses.expenseDeleted });
-        } catch (e) {
-            setExpenses(previousExpenses);
-            toast({ variant: 'destructive', title: t.errors.title, description: 'Failed to delete expense.' });
-        }
-    }, [t, toast]);
-
+        const docRef = doc(firestore, `users/${user!.uid}/expenses/${expenseId}`);
+        deleteDocumentNonBlocking(docRef);
+        toast({ title: t.expenses.expenseDeleted });
+    }, [firestore, user, t, toast]);
+    
     const restoreData = useCallback(async (data: any) => {
-        setIsLoading(true);
-        try {
-            await restoreBackupData(data);
-            await syncData();
-        } catch(error) {
-            console.error("Failed to restore data:", error);
-            throw error; 
-        } finally {
-            setIsLoading(false);
+        if (!user) {
+            throw new Error("User not authenticated.");
         }
-    }, [syncData]);
+        const batch = writeBatch(firestore);
+
+        const collections = ['products', 'customers', 'salesHistory', 'bakeryOrders', 'suppliers', 'supplierInvoices', 'expenses'];
+
+        for (const collectionName of collections) {
+            if (data[collectionName] && Array.isArray(data[collectionName])) {
+                const currentCollectionQuery = query(collection(firestore, `users/${user.uid}/${collectionName}`));
+                const currentDocsSnapshot = await getDocs(currentCollectionQuery);
+                currentDocsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+                for (const item of data[collectionName]) {
+                    const docRef = doc(collection(firestore, `users/${user.uid}/${collectionName}`));
+                    batch.set(docRef, { ...item, id: docRef.id });
+                }
+            }
+        }
+
+        await batch.commit();
+    }, [user, firestore]);
 
     const value = useMemo(() => ({
         products,
@@ -526,12 +403,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteCustomer,
         addSaleRecord,
         makePayment,
-        restoreData,
         addBakeryOrder,
         updateBakeryOrder,
         deleteBakeryOrder,
         deleteRecurringPattern,
-        setBakeryOrders,
         setAsRecurringTemplate,
         addSupplier,
         updateSupplier,
@@ -541,12 +416,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addExpense,
         updateExpense,
         deleteExpense,
+        restoreData,
     }), [
         products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses, isLoading,
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
-        addSaleRecord, makePayment, restoreData, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
-        deleteRecurringPattern, setBakeryOrders, setAsRecurringTemplate, addSupplier, updateSupplier,
-        deleteSupplier, addSupplierInvoice, makePaymentToSupplier, addExpense, updateExpense, deleteExpense
+        addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
+        deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
+        deleteSupplier, addSupplierInvoice, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
+        restoreData,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

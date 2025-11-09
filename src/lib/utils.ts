@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export type WithId<T> = T & { id: string };
+
 /**
  * Calculates the total price for a cart item, applying box pricing logic.
  * If the quantity qualifies for one or more full boxes, it charges the box price for those
@@ -42,8 +44,8 @@ export interface DebtAlert {
 }
 
 export const calculateDebtAlerts = (
-  customers: Customer[],
-  salesHistory: SaleRecord[],
+  customers: WithId<Customer>[],
+  salesHistory: WithId<SaleRecord>[],
   globalPaymentTermsDays: number
 ): DebtAlert[] => {
   const today = new Date();
@@ -63,7 +65,7 @@ export const calculateDebtAlerts = (
       acc[sale.customerId].push(sale);
     }
     return acc;
-  }, {} as Record<string, SaleRecord[]>);
+  }, {} as Record<string, WithId<SaleRecord>[]>);
 
   const allAlerts: DebtAlert[] = [];
 
@@ -138,12 +140,12 @@ export const calculateDebtAlerts = (
 
 
 export const calculateUpdatedProductsForInvoice = (
-  currentProducts: Product[],
+  currentProducts: WithId<Product>[],
   invoiceItems: SupplierInvoiceItem[],
   priceUpdateStrategy: 'master' | 'average' | 'none'
-): Product[] => {
+): WithId<Product>[] => {
   // Create a deep copy to avoid modifying the original array in memory.
-  const updatedProducts = JSON.parse(JSON.stringify(currentProducts)) as Product[];
+  const updatedProducts = JSON.parse(JSON.stringify(currentProducts)) as WithId<Product>[];
 
   invoiceItems.forEach(item => {
     // Find the product to update in our new array.
