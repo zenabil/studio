@@ -33,6 +33,7 @@ import {
   HandCoins,
   LogOut,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -46,19 +47,29 @@ import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { useAuth, useUser } from '@/firebase';
 import { AdminUserSwitcher } from './admin-user-switcher';
+import { format } from 'date-fns';
+import { fr, ar } from 'date-fns/locale';
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { t, dir } = useLanguage();
+  const { t, language, dir } = useLanguage();
   const { products, customers, salesHistory, isLoading, isAdmin } = useData();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const auth = useAuth();
   const { user } = useUser();
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   useEffect(() => {
     setIsMounted(true);
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000); // Update every second
+
+    return () => clearInterval(timer);
   }, []);
+
+  const dateLocale = useMemo(() => (language === 'ar' ? ar : fr), [language]);
 
   const lowStockCount = useMemo(() => {
     if (isLoading) return 0;
@@ -110,10 +121,17 @@ export function SidebarNav() {
             strokeLinejoin="round"
             className="h-10 w-10 text-primary transition-transform duration-300 group-hover:scale-110"
         >
-            <path d="M7 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7Z" />
-            <path d="M16 2v4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
+            <path d="M7 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2-0 0 1-2 2H7Z" />
+            <path d="M16 2v4a2 2-0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
             <path d="M12 18h.01" />
         </svg>
+    </div>
+  );
+
+  const ClockDisplay = () => (
+    <div className="group-data-[collapsible=icon]:hidden px-2 text-center">
+        <p className="font-semibold text-lg">{format(currentDateTime, 'HH:mm:ss')}</p>
+        <p className="text-xs text-muted-foreground">{format(currentDateTime, 'PPPP', { locale: dateLocale })}</p>
     </div>
   );
 
@@ -184,6 +202,8 @@ export function SidebarNav() {
                         </SidebarMenu>
                     </SidebarContent>
                     <SidebarFooter>
+                        <ClockDisplay />
+                        <Separator className="my-2" />
                         <LanguageSwitcher />
                         <Separator className="my-2" />
                         <SidebarMenu>
@@ -243,6 +263,8 @@ export function SidebarNav() {
       </SidebarContent>
       <SidebarFooter className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
          <div className="group-data-[collapsible=icon]:hidden w-full">
+            <ClockDisplay />
+            <Separator className="my-2" />
             <LanguageSwitcher />
         </div>
         <Separator className="my-2 group-data-[collapsible=icon]:hidden" />
