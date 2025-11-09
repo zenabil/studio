@@ -1,7 +1,7 @@
 'use client';
-import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
+import { useUser, useDoc, useMemoFirebase, useFirestore, useFirebase, FirebaseContextState, FirebaseContext } from "@/firebase";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import Loading from "@/app/loading";
 import { doc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,10 +67,31 @@ function PendingApprovalScreen() {
 
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading: isAuthLoading } = useUser();
-  const firestore = useFirestore();
+  const firebaseContext = useContext(FirebaseContext);
+
+  // If the context is not yet available, we are in a loading state.
+  if (!firebaseContext) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  // Destructure after ensuring context is not undefined.
+  const { areServicesAvailable, user, isUserLoading } = firebaseContext;
+  const firestore = useFirestore(); // Safe to call now.
   const router = useRouter();
   const pathname = usePathname();
+
+  // Show a loader if Firebase services are not yet initialized.
+  if (!areServicesAvailable) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
 
   const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -80,7 +101,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
   const { data: userDoc, isLoading: isUserDocLoading } = useDoc<{ approved: boolean }>(userDocRef);
 
   useEffect(() => {
-    if (isAuthLoading || isUserDocLoading) {
+    // We can be sure services are available here.
+    if (isUserLoading || (user && isUserDocLoading)) {
       return; // Wait until all user data is loaded
     }
 
@@ -91,9 +113,9 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
     } else if (!user && !isAuthPage) {
       router.push('/login');
     }
-  }, [user, isAuthLoading, isUserDocLoading, router, pathname]);
+  }, [user, isUserLoading, isUserDocLoading, router, pathname]);
 
-  if (isAuthLoading || (user && isUserDocLoading)) {
+  if (isUserLoading || (user && isUserDocLoading)) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">
         <Loading />
