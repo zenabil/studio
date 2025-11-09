@@ -1,6 +1,6 @@
 # Bienvenue sur Frucio POS
 
-Ce projet est une application de point de vente (POS) complète, construite avec Next.js, React et Tailwind CSS. Elle est conçue pour être rapide, facile à utiliser et personnalisable.
+Ce projet est une application de point de vente (POS) complète, construite avec Next.js, React, Firebase et Tailwind CSS. Elle est conçue pour être rapide, facile à utiliser et personnalisable.
 
 ## Prérequis
 
@@ -13,21 +13,28 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 1.  **Télécharger le code :**
     Si vous avez lié le projet à GitHub, clonez le dépôt sur votre machine. Sinon, téléchargez les fichiers du projet.
 
-2.  **Installer les dépendances :**
+2.  **Configuration de Firebase :**
+    Cette application utilise Firebase pour l'authentification et la base de données Firestore.
+    - Créez un projet sur la [console Firebase](https://console.firebase.google.com/).
+    - Dans les paramètres de votre projet, créez une application web et copiez les informations de configuration (apiKey, authDomain, etc.).
+    - Créez un fichier `.env` à la racine de votre projet et collez-y vos identifiants Firebase.
+
+3.  **Installer les dépendances :**
     Ouvrez un terminal dans le dossier du projet et exécutez la commande suivante pour installer tous les paquets requis :
     ```bash
     npm install
     ```
 
-3.  **Lancer le serveur de développement :**
+4.  **Lancer le serveur de développement :**
     Une fois l'installation terminée, exécutez la commande suivante pour démarrer l'application en mode développement :
     ```bash
     npm run dev
     ```
 
-4.  **Ouvrir l'application :**
+5.  **Ouvrir l'application :**
     L'application est maintenant en cours d'exécution. Ouvrez votre navigateur web et accédez à l'adresse suivante :
     [http://localhost:9002](http://localhost:9002)
+
 
 ## Commandes disponibles
 
@@ -40,7 +47,7 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 
 # مرحبًا بك في Frucio POS
 
-هذا المشروع هو تطبيق نقاط بيع (POS) متكامل، تم بناؤه باستخدام Next.js و React و Tailwind CSS. تم تصميمه ليكون سريعًا وسهل الاستخدام وقابلاً للتخصيص.
+هذا المشروع هو تطبيق نقاط بيع (POS) متكامل، تم بناؤه باستخدام Next.js و React و Firebase و Tailwind CSS. تم تصميمه ليكون سريعًا وسهل الاستخدام وقابلاً للتخصيص.
 
 ## المتطلبات الأساسية
 
@@ -53,19 +60,25 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 1.  **تحميل الكود:**
     إذا قمت بربط المشروع بـ GitHub، قم باستنساخ (clone) المستودع إلى جهازك. وإلا، قم بتنزيل ملفات المشروع.
 
-2.  **تثبيت الاعتماديات:**
+2.  **إعداد Firebase:**
+    يستخدم هذا التطبيق Firebase للمصادقة وقاعدة بيانات Firestore.
+    - أنشئ مشروعًا على [وحدة تحكم Firebase](https://console.firebase.google.com/).
+    - في إعدادات مشروعك، أنشئ تطبيق ويب وانسخ معلومات التكوين (apiKey, authDomain, إلخ).
+    - أنشئ ملفًا باسم `.env` في المجلد الرئيسي لمشروعك والصق فيه بيانات اعتماد Firebase الخاصة بك.
+
+3.  **تثبيت الاعتماديات:**
     افتح الطرفية (Terminal) في مجلد المشروع وقم بتشغيل الأمر التالي لتثبيت جميع الحزم المطلوبة:
     ```bash
     npm install
     ```
 
-3.  **تشغيل خادم التطوير:**
+4.  **تشغيل خادم التطوير:**
     بعد اكتمال التثبيت، قم بتشغيل الأمر التالي لبدء تشغيل التطبيق في وضع التطوير:
     ```bash
     npm run dev
     ```
 
-4.  **فتح التطبيق:**
+5.  **فتح التطبيق:**
     سيتم تشغيل التطبيق الآن. افتح متصفح الويب الخاص بك وانتقل إلى العنوان التالي:
     [http://localhost:9002](http://localhost:9002)
 
@@ -85,7 +98,7 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 #### **1. نظرة عامة على المشروع**
 
 *   **اسم المشروع:** Frucio POS
-*   **الهدف الأساسي:** توفير نظام نقاط بيع شامل، سهل الاستخدام، وسريع، يعمل محليًا على حاسوب المستخدم لإدارة المبيعات، المخزون، العملاء، والموردين.
+*   **الهدف الأساسي:** توفير نظام نقاط بيع شامل، سهل الاستخدام، وسريع، يعمل عبر الإنترنت لإدارة المبيعات، المخزون، العملاء، والموردين.
 *   **الجمهور المستهدف:** المتاجر الصغيرة، المقاهي، المخابز، وأي نشاط تجاري يحتاج إلى نظام بسيط لإدارة عملياته اليومية.
 
 #### **2. التقنيات المستخدمة (Tech Stack)**
@@ -95,7 +108,7 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 *   **لغة البرمجة:** TypeScript
 *   **التصميم والواجهة:** Tailwind CSS
 *   **مكونات الواجهة (UI Components):** ShadCN UI (مكتبة مكونات مبنية فوق Tailwind CSS و Radix UI)
-*   **إدارة البيانات:** ملفات JSON محلية مشفرة. تتم جميع عمليات القراءة والكتابة عبر "Server Actions" في Next.js.
+*   **قاعدة البيانات والمصادقة:** Firebase (Firestore & Authentication)
 *   **الرسوم البيانية:** Recharts
 
 #### **3. الميزات والوظائف الأساسية**
@@ -164,9 +177,9 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 
 #### **4. إدارة البيانات (Data Management)**
 
-*   **التخزين:** يتم تخزين جميع البيانات (المنتجات، العملاء، المبيعات، إلخ) في ملفات JSON داخل مجلد `data/` في المشروع.
-*   **الأمان:** يتم تشفير محتوى هذه الملفات باستخدام مفتاح تشفير (`ENCRYPTION_KEY`) محدد في ملف `.env`. هذا يضمن عدم إمكانية قراءة البيانات مباشرة من الملفات.
-*   **الوصول للبيانات:** تتم جميع عمليات القراءة والكتابة من وإلى هذه الملفات من خلال "Server Actions" فقط، مما يضمن أمان ومركزية التعامل مع البيانات.
+*   **التخزين:** يتم تخزين جميع البيانات (المنتجات، العملاء، المبيعات، إلخ) في قاعدة بيانات Firestore.
+*   **الأمان:** يتم تأمين الوصول إلى البيانات من خلال قواعد أمان Firestore (`firestore.rules`)، والتي تضمن أن كل مستخدم يمكنه الوصول إلى بياناته الخاصة فقط، مع منح المشرف صلاحيات إضافية.
+*   **هيكل البيانات:** يتم تعريف هيكل البيانات في ملف `docs/backend.json`، والذي يعمل كمخطط لقاعدة البيانات.
 *   **النسخ الاحتياطي:** يوفر التطبيق وظيفة لتصدير جميع البيانات بالإضافة إلى الإعدادات في ملف JSON واحد، واستيرادها مرة أخرى.
 
 #### **5. مبادئ التصميم الأساسية**
@@ -174,3 +187,4 @@ Suivez ces étapes pour lancer l'application localement sur votre machine :
 *   **متعدد اللغات:** يدعم التطبيق اللغتين الفرنسية والعربية، مع إمكانية التبديل بينهما. يتم تحميل ملفات الترجمة المناسبة وتطبيق اتجاه النص (LTR/RTL) تلقائيًا.
 *   **تصميم متجاوب (Responsive):** الواجهة مصممة للعمل بشكل جيد على الشاشات المختلفة، من الحواسيب المكتبية إلى الأجهزة اللوحية.
 *   **الأداء:** تم التركيز على تحسين الأداء من خلال تقنيات مثل `useCallback` و `useMemo` لتقليل عمليات إعادة العرض غير الضرورية، واستخدام مؤشر تحميل لتحسين تجربة المستخدم أثناء التنقل.
+*   **تطبيق ويب تقدمي (PWA):** التطبيق مصمم ليكون قابلاً للتثبيت على الأجهزة المكتبية والمحمولة للوصول السريع والعمل دون اتصال بالإنترنت.
