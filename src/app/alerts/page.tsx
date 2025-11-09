@@ -25,18 +25,14 @@ import { Button } from '@/components/ui/button';
 import Loading from '@/app/loading';
 import { cn } from '@/lib/utils';
 import { calculateDebtAlerts } from '@/lib/utils';
-import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
-import type { Product, Supplier, SupplierInvoiceItem } from '@/lib/data';
+import type { Product, SupplierInvoiceItem } from '@/lib/data';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { products, customers, salesHistory, isLoading, suppliers, addSupplierInvoice } = useData();
   const { settings } = useSettings();
-  
-  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
-  const [supplierForInvoice, setSupplierForInvoice] = useState<Supplier | null>(null);
-  const [initialInvoiceItems, setInitialInvoiceItems] = useState<SupplierInvoiceItem[]>([]);
+  const [orderingProductId, setOrderingProductId] = useState<string | null>(null);
 
   const lowStockProducts = useMemo(() => {
     return products
@@ -48,44 +44,60 @@ export default function AlertsPage() {
     return calculateDebtAlerts(customers, salesHistory, settings.paymentTermsDays);
   }, [customers, salesHistory, settings.paymentTermsDays]);
 
-  const handleCreatePurchaseOrder = (product: Product) => {
-    const supplier = suppliers.find(s => s.productCategory === product.category);
-    if (!supplier) {
+  const handleCreatePurchaseOrder = async (product: Product) => {
+    setOrderingProductId(product.id);
+    try {
+      const supplier = suppliers.find(s => s.productCategory === product.category);
+      if (!supplier) {
+        toast({
+          variant: 'destructive',
+          title: t.errors.title,
+          description: t.alerts.noSupplierForCategory.replace('{category}', product.category),
+        });
+        return;
+      }
+
+      const needed = (product.minStock || 0) - product.stock;
+      let quantityToOrder = needed > 0 ? needed : (product.minStock || 1);
+
+      if (product.quantityPerBox && product.quantityPerBox > 0) {
+        const numBoxes = Math.ceil(quantityToOrder / product.quantityPerBox);
+        quantityToOrder = numBoxes * product.quantityPerBox;
+      }
+
+      const newItem: SupplierInvoiceItem = {
+        productId: product.id,
+        productName: product.name,
+        quantity: quantityToOrder,
+        purchasePrice: product.purchasePrice || 0,
+        boxPrice: product.boxPrice,
+        quantityPerBox: product.quantityPerBox,
+        barcode: (product.barcodes || []).join(', '),
+      };
+
+      const invoiceData = {
+        supplierId: supplier.id,
+        items: [newItem],
+        amountPaid: 0,
+        priceUpdateStrategy: 'average', // Default strategy
+      };
+
+      await addSupplierInvoice(invoiceData);
+      toast({
+        title: t.suppliers.invoiceAdded,
+        description: `${quantityToOrder} x ${product.name} ${t.pos.addedToCart.replace('au panier', `pour ${supplier.name}`)}`,
+      });
+
+    } catch (error) {
+      console.error("Failed to create purchase order:", error);
       toast({
         variant: 'destructive',
         title: t.errors.title,
-        description: t.alerts.noSupplierForCategory.replace('{category}', product.category),
+        description: t.errors.unknownError,
       });
-      return;
+    } finally {
+      setOrderingProductId(null);
     }
-
-    const needed = (product.minStock || 0) - product.stock;
-    let quantityToOrder = needed > 0 ? needed : (product.minStock || 1);
-
-    if (product.quantityPerBox && product.quantityPerBox > 0) {
-      const numBoxes = Math.ceil(quantityToOrder / product.quantityPerBox);
-      quantityToOrder = numBoxes * product.quantityPerBox;
-    }
-
-    const newItem: SupplierInvoiceItem = {
-      productId: product.id,
-      productName: product.name,
-      quantity: quantityToOrder,
-      purchasePrice: product.purchasePrice || 0,
-      boxPrice: product.boxPrice,
-      quantityPerBox: product.quantityPerBox,
-      barcode: (product.barcodes || []).join(', '),
-    };
-    
-    setSupplierForInvoice(supplier);
-    setInitialInvoiceItems([newItem]);
-    setIsInvoiceDialogOpen(true);
-  };
-
-  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
-      await addSupplierInvoice(invoiceData);
-      toast({ title: t.suppliers.invoiceAdded });
-      setIsInvoiceDialogOpen(false);
   };
 
   const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
@@ -121,114 +133,107 @@ export default function AlertsPage() {
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold font-headline">{t.alerts.title}</h1>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.alerts.lowStockAlertsTitle}</CardTitle>
-            <CardDescription>{t.alerts.lowStockAlertsDescription}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {lowStockProducts.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.products.name}</TableHead>
-                    <TableHead>{t.products.category}</TableHead>
-                    <TableHead className="text-right">{t.alerts.currentStock}</TableHead>
-                    <TableHead className="text-right">{t.products.minStock}</TableHead>
-                    <TableHead className="text-right">{t.products.actions}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lowStockProducts.map((product) => (
-                    <TableRow key={product.id} className="bg-destructive/10 hover:bg-destructive/20">
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell className="text-right font-bold text-destructive">
-                        {product.stock}
-                      </TableCell>
-                      <TableCell className="text-right">{product.minStock || 0}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleCreatePurchaseOrder(product)}>
-                          <Truck className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                          {t.alerts.orderStock}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-                <TriangleAlert className="h-16 w-16 text-muted-foreground/50" />
-                <p className="text-muted-foreground">{t.alerts.noAlerts}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-              <CardTitle>{t.alerts.debtAlertsTitle}</CardTitle>
-              <CardDescription>{t.alerts.debtAlertsDescription}</CardDescription>
-          </CardHeader>
-          <CardContent>
-              {debtAlerts.length > 0 ? (
-                  <Table>
-                      <TableHeader>
-                          <TableRow>
-                              <TableHead>{t.alerts.customer}</TableHead>
-                              <TableHead className="text-right">{t.alerts.balanceDue}</TableHead>
-                              <TableHead className="text-right">{t.alerts.dueDate}</TableHead>
-                              <TableHead className="text-right">{t.products.actions}</TableHead>
-                          </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                          {debtAlerts.map((alert, index) => (
-                              <TableRow key={index} className={cn(alert.isOverdue ? 'bg-destructive/20 hover:bg-destructive/30' : 'bg-destructive/10 hover:bg-destructive/20')}>
-                                  <TableCell className="font-medium">{alert.customerName}</TableCell>
-                                  <TableCell className="text-right font-bold text-destructive">
-                                      {settings.currency}{alert.balance.toFixed(2)}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                      <div className='flex items-center justify-end gap-2'>
-                                        <span>{format(alert.dueDate, 'PP')}</span>
-                                        {alert.isOverdue && <span className="text-xs font-bold text-destructive">({t.alerts.overdue})</span>}
-                                      </div>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" title={t.alerts.sendSms} onClick={() => handleSendSms(alert)}>
-                                        <MessageSquare className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                              </TableRow>
-                          ))}
-                      </TableBody>
-                  </Table>
-              ) : (
-                  <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-                      <CalendarClock className="h-16 w-16 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">{t.alerts.noDebtAlerts}</p>
-                  </div>
-              )}
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold font-headline">{t.alerts.title}</h1>
       </div>
 
-      {supplierForInvoice && (
-        <AddSupplierInvoiceDialog
-            isOpen={isInvoiceDialogOpen}
-            onClose={() => setIsInvoiceDialogOpen(false)}
-            onSave={handleSaveInvoice}
-            supplier={supplierForInvoice}
-            initialItems={initialInvoiceItems}
-        />
-      )}
-    </>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.alerts.lowStockAlertsTitle}</CardTitle>
+          <CardDescription>{t.alerts.lowStockAlertsDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {lowStockProducts.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.products.name}</TableHead>
+                  <TableHead>{t.products.category}</TableHead>
+                  <TableHead className="text-right">{t.alerts.currentStock}</TableHead>
+                  <TableHead className="text-right">{t.products.minStock}</TableHead>
+                  <TableHead className="text-right">{t.products.actions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lowStockProducts.map((product) => (
+                  <TableRow key={product.id} className="bg-destructive/10 hover:bg-destructive/20">
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell className="text-right font-bold text-destructive">
+                      {product.stock}
+                    </TableCell>
+                    <TableCell className="text-right">{product.minStock || 0}</TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleCreatePurchaseOrder(product)}
+                        disabled={orderingProductId === product.id}
+                      >
+                        <Truck className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                        {orderingProductId === product.id ? `${t.settings.saving}...` : t.alerts.orderStock}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <TriangleAlert className="h-16 w-16 text-muted-foreground/50" />
+              <p className="text-muted-foreground">{t.alerts.noAlerts}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>{t.alerts.debtAlertsTitle}</CardTitle>
+            <CardDescription>{t.alerts.debtAlertsDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {debtAlerts.length > 0 ? (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t.alerts.customer}</TableHead>
+                            <TableHead className="text-right">{t.alerts.balanceDue}</TableHead>
+                            <TableHead className="text-right">{t.alerts.dueDate}</TableHead>
+                            <TableHead className="text-right">{t.products.actions}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {debtAlerts.map((alert, index) => (
+                            <TableRow key={index} className={cn(alert.isOverdue ? 'bg-destructive/20 hover:bg-destructive/30' : 'bg-destructive/10 hover:bg-destructive/20')}>
+                                <TableCell className="font-medium">{alert.customerName}</TableCell>
+                                <TableCell className="text-right font-bold text-destructive">
+                                    {settings.currency}{alert.balance.toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className='flex items-center justify-end gap-2'>
+                                      <span>{format(alert.dueDate, 'PP')}</span>
+                                      {alert.isOverdue && <span className="text-xs font-bold text-destructive">({t.alerts.overdue})</span>}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button variant="ghost" size="icon" title={t.alerts.sendSms} onClick={() => handleSendSms(alert)}>
+                                      <MessageSquare className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            ) : (
+                <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                    <CalendarClock className="h-16 w-16 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">{t.alerts.noDebtAlerts}</p>
+                </div>
+            )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
