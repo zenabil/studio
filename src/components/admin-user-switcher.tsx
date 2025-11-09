@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useData } from '@/contexts/data-context';

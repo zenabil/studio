@@ -575,7 +575,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         restoreData,
     }), [
         products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses, isLoading,
-        isAdmin, allUsers, selectedUserId, setSelectedUserId,
+        isAdmin, allUsers, selectedUserId, 
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
