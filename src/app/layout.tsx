@@ -13,6 +13,7 @@ import { AuthLayout } from '@/components/auth-layout';
 export const metadata: Metadata = {
   title: 'Frucio',
   description: 'Point of Sale application for small businesses',
+  manifest: '/manifest.json',
 };
 
 const poppins = Poppins({
