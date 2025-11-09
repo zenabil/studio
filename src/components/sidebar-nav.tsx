@@ -45,6 +45,7 @@ import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { useAuth, useUser } from '@/firebase';
+import { AdminUserSwitcher } from './admin-user-switcher';
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -149,7 +150,9 @@ export function SidebarNav() {
                         </div>
                         </div>
                     </SidebarHeader>
-                    <SidebarContent>
+                    <SidebarContent className="flex flex-col">
+                        <AdminUserSwitcher />
+                        <Separator className="my-2" />
                         <SidebarMenu>
                         {navItems.map((item) => (
                             <SidebarMenuItem key={item.href}>
@@ -204,7 +207,9 @@ export function SidebarNav() {
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="flex flex-col">
+        <AdminUserSwitcher />
+        <Separator className="my-2" />
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>

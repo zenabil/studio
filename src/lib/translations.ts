@@ -1,3 +1,4 @@
+
 export type Translation = {
   [key: string]: any;
 };
@@ -35,6 +36,9 @@ export const translations = {
       emailInUse: "Cette adresse e-mail est déjà utilisée.",
       weakPassword: "Le mot de passe doit comporter au moins 6 caractères.",
       genericError: "Une erreur s'est produite. Veuillez réessayer.",
+      viewingAs: "Affichage des données de",
+      selectUser: "Sélectionner un utilisateur",
+      you: "vous",
     },
     pos: {
       searchProducts: "Rechercher des produits...",
@@ -491,6 +495,9 @@ export const translations = {
       emailInUse: "عنوان البريد الإلكتروني هذا مستخدم بالفعل.",
       weakPassword: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.",
       genericError: "حدث خطأ. الرجاء معاودة المحاولة.",
+      viewingAs: "عرض بيانات",
+      selectUser: "اختر مستخدم",
+      you: "أنت",
     },
     pos: {
       searchProducts: "البحث عن المنتجات...",
