@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
-import type { Expense } from '@/lib/data';
+import type { Expense } from '@/contexts/data-context';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { AddExpenseDialog } from '@/components/add-expense-dialog';

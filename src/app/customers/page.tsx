@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import {
@@ -12,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Customer } from '@/lib/data';
+import type { Customer } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
@@ -192,34 +193,42 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedCustomers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.phone}</TableCell>
-                  <TableCell className="text-center">{customer.settlementDay || '-'}</TableCell>
-                  <TableCell className="text-right">{settings.currency}{customer.spent.toFixed(2)}</TableCell>
-                  <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-success'}`}>
-                    {settings.currency}{customer.balance.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="flex justify-end">
-                    {customer.balance > 0 && (
-                      <Button variant="ghost" size="icon" title={t.customers.makePayment} onClick={() => setPayingCustomer(customer)}>
-                          <Wallet className="h-4 w-4" />
+              {filteredAndSortedCustomers.length > 0 ? (
+                filteredAndSortedCustomers.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell className="text-center">{customer.settlementDay || '-'}</TableCell>
+                    <TableCell className="text-right">{settings.currency}{customer.spent.toFixed(2)}</TableCell>
+                    <TableCell className={`text-right font-bold ${customer.balance > 0 ? 'text-destructive' : 'text-success'}`}>
+                      {settings.currency}{customer.balance.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="flex justify-end">
+                      {customer.balance > 0 && (
+                        <Button variant="ghost" size="icon" title={t.customers.makePayment} onClick={() => setPayingCustomer(customer)}>
+                            <Wallet className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" title={t.customers.viewInvoices} onClick={() => setViewingInvoicesFor(customer)}>
+                          <FileSearch className="h-4 w-4" />
                       </Button>
-                    )}
-                    <Button variant="ghost" size="icon" title={t.customers.viewInvoices} onClick={() => setViewingInvoicesFor(customer)}>
-                        <FileSearch className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title={t.customers.editCustomer} onClick={() => handleOpenAddDialog(customer)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title={t.customers.delete} onClick={() => handleOpenDeleteDialog(customer)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Button variant="ghost" size="icon" title={t.customers.editCustomer} onClick={() => handleOpenAddDialog(customer)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title={t.customers.delete} onClick={() => handleOpenDeleteDialog(customer)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+               ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    {searchTerm ? t.customers.noCustomerFound : t.customers.noCustomerFound.replace('.', '')}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

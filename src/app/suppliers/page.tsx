@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import {
@@ -12,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Supplier, Product, SupplierInvoice, SupplierInvoiceItem } from '@/lib/data';
+import type { Supplier, Product, SupplierInvoiceItem } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,7 @@ type SortableKeys = keyof Pick<Supplier, 'name' | 'phone' | 'productCategory' | 
 export default function SuppliersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, supplierInvoices, products, isLoading, makePaymentToSupplier } = useData();
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, products, isLoading, makePaymentToSupplier } = useData();
   const { settings } = useSettings();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +60,7 @@ export default function SuppliersPage() {
   });
 
   const filteredAndSortedSuppliers = useMemo(() => {
-    let sortableSuppliers = [...suppliers];
+    let sortableSuppliers = suppliers.filter(s => !!s);
     
     sortableSuppliers = sortableSuppliers.filter(supplier =>
       (supplier.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
