@@ -5,10 +5,28 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useLanguage } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { useUser } from '@/firebase';
+import { usePathname } from 'next/navigation';
+import Loading from '@/app/loading';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { state } = useSidebar();
   const { dir } = useLanguage();
+  const { isUserLoading } = useUser();
+  const pathname = usePathname();
+
+  if (isUserLoading && pathname !== '/login' && pathname !== '/signup') {
+    return (
+        <div className="flex min-h-screen w-full items-center justify-center">
+            <Loading />
+        </div>
+    );
+  }
+
+  // Render children without the main app layout for auth pages
+  if (pathname === '/login' || pathname === '/signup') {
+    return <>{children}</>;
+  }
   
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">

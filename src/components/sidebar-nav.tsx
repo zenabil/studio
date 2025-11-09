@@ -32,6 +32,7 @@ import {
   PanelLeft,
   Receipt,
   HandCoins,
+  LogOut,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -43,6 +44,7 @@ import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
+import { useAuth, useUser } from '@/firebase';
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -50,6 +52,8 @@ export function SidebarNav() {
   const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
+  const auth = useAuth();
+  const { user } = useUser();
 
   useEffect(() => {
     setIsMounted(true);
@@ -79,6 +83,10 @@ export function SidebarNav() {
     { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ], [t, totalAlertCount]);
+
+  const handleSignOut = () => {
+    auth.signOut();
+  };
 
   if (!isMounted) {
     return (
@@ -161,6 +169,15 @@ export function SidebarNav() {
                     </SidebarContent>
                     <SidebarFooter>
                         <LanguageSwitcher />
+                        <Separator className="my-2" />
+                        <SidebarMenu>
+                          <SidebarMenuItem>
+                            <SidebarMenuButton onClick={handleSignOut} variant="ghost">
+                              <LogOut className="h-5 w-5" />
+                              <span>{t.auth.signOut}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        </SidebarMenu>
                     </SidebarFooter>
                 </div>
             </SheetContent>
@@ -225,6 +242,15 @@ export function SidebarNav() {
          <div className="group-data-[collapsible=icon]:hidden w-full">
             <LanguageSwitcher />
         </div>
+        <Separator className="my-2 group-data-[collapsible=icon]:hidden" />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleSignOut} tooltip={t.auth.signOut} variant="ghost">
+                <LogOut className="h-5 w-5" />
+                <span className="group-data-[collapsible=icon]:hidden">{t.auth.signOut}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
     </>
