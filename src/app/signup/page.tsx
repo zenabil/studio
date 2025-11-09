@@ -52,22 +52,23 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
 
-      // Check if the admin config document exists
       const adminConfigRef = doc(firestore, 'config', 'admin');
       const adminConfigSnap = await getDoc(adminConfigRef);
 
+      let isFirstUser = false;
       if (!adminConfigSnap.exists()) {
         // This is the first user, make them an admin
         await setDoc(adminConfigRef, { uid: user.uid });
+        isFirstUser = true;
       }
 
-      // Create a user document
+      // Create a user document with an approval status
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, {
         email: user.email,
         createdAt: new Date().toISOString(),
+        approved: isFirstUser, // The first user is automatically approved
       });
-
 
       router.push('/');
     } catch (error) {

@@ -1,4 +1,3 @@
-
 export type Translation = {
   [key: string]: any;
 };
@@ -17,6 +16,7 @@ export const translations = {
       suppliers: "Fournisseurs",
       expenses: "Dépenses",
       zakat: "Zakat",
+      userManagement: "Utilisateurs",
     },
     auth: {
       loginTitle: "Connexion",
@@ -39,6 +39,21 @@ export const translations = {
       viewingAs: "Affichage des données de",
       selectUser: "Sélectionner un utilisateur",
       you: "vous",
+      pendingApprovalTitle: "Compte en attente d'approbation",
+      pendingApprovalDescription: "Votre compte a été créé avec succès et attend l'approbation de l'administrateur.",
+      pendingApprovalContact: "Veuillez contacter l'administrateur de votre système pour activer votre compte.",
+    },
+    users: {
+        title: "Gestion des utilisateurs",
+        description: "Gérez les utilisateurs et leurs permissions ici.",
+        email: "Email",
+        status: "Statut",
+        approved: "Approuvé",
+        pending: "En attente",
+        actions: "Actions",
+        approve: "Approuver",
+        revoke: "Révoquer",
+        approvalUpdated: "Le statut de l'utilisateur a été mis à jour.",
     },
     pos: {
       searchProducts: "Rechercher des produits...",
@@ -476,6 +491,7 @@ export const translations = {
       suppliers: "الموردون",
       expenses: "المصروفات",
       zakat: "الزكاة",
+      userManagement: "إدارة المستخدمين",
     },
     auth: {
       loginTitle: "تسجيل الدخول",
@@ -498,6 +514,21 @@ export const translations = {
       viewingAs: "عرض بيانات",
       selectUser: "اختر مستخدم",
       you: "أنت",
+      pendingApprovalTitle: "الحساب في انتظار الموافقة",
+      pendingApprovalDescription: "تم إنشاء حسابك بنجاح وهو في انتظار موافقة المسؤول.",
+      pendingApprovalContact: "يرجى الاتصال بمسؤول النظام لتفعيل حسابك.",
+    },
+    users: {
+        title: "إدارة المستخدمين",
+        description: "إدارة المستخدمين وأذوناتهم من هنا.",
+        email: "البريد الإلكتروني",
+        status: "الحالة",
+        approved: "مُوافق عليه",
+        pending: "قيد الانتظار",
+        actions: "الإجراءات",
+        approve: "موافقة",
+        revoke: "إلغاء",
+        approvalUpdated: "تم تحديث حالة المستخدم بنجاح.",
     },
     pos: {
       searchProducts: "البحث عن المنتجات...",

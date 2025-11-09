@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -33,11 +32,12 @@ import {
   Receipt,
   HandCoins,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
 import { useData } from '@/contexts/data-context';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from './ui/badge';
 import { useState, useEffect, useMemo } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import { Skeleton } from './ui/skeleton';
@@ -50,7 +50,7 @@ import { AdminUserSwitcher } from './admin-user-switcher';
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, dir } = useLanguage();
-  const { products, customers, salesHistory, isLoading } = useData();
+  const { products, customers, salesHistory, isLoading, isAdmin } = useData();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const auth = useAuth();
@@ -72,18 +72,27 @@ export function SidebarNav() {
 
   const totalAlertCount = lowStockCount + debtAlertCount;
   
-  const navItems = useMemo(() => [
-    { href: '/', label: t.nav.reports, icon: BarChartBig },
-    { href: '/pos', label: t.nav.pos, icon: CircleDollarSign },
-    { href: '/products', label: t.nav.products, icon: Package },
-    { href: '/customers', label: t.nav.customers, icon: UsersRound },
-    { href: '/suppliers', label: t.nav.suppliers, icon: Truck },
-    { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Croissant },
-    { href: '/expenses', label: t.nav.expenses, icon: Receipt },
-    { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
-    { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
-    { href: '/settings', label: t.nav.settings, icon: Settings },
-  ], [t, totalAlertCount]);
+  const navItems = useMemo(() => {
+    const items = [
+      { href: '/', label: t.nav.reports, icon: BarChartBig },
+      { href: '/pos', label: t.nav.pos, icon: CircleDollarSign },
+      { href: '/products', label: t.nav.products, icon: Package },
+      { href: '/customers', label: t.nav.customers, icon: UsersRound },
+      { href: '/suppliers', label: t.nav.suppliers, icon: Truck },
+      { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Croissant },
+      { href: '/expenses', label: t.nav.expenses, icon: Receipt },
+      { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
+      { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
+    ];
+
+    if (isAdmin) {
+      items.push({ href: '/users', label: t.nav.userManagement, icon: ShieldCheck });
+    }
+
+    items.push({ href: '/settings', label: t.nav.settings, icon: Settings });
+    
+    return items;
+  }, [t, totalAlertCount, isAdmin]);
 
   const handleSignOut = () => {
     auth.signOut();

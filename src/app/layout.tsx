@@ -30,7 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={poppins.variable} suppressHydrationWarning>
-      <head />
+      <head>
+         <link rel="manifest" href="/manifest.json" />
+         <meta name="theme-color" content="#000000" />
+      </head>
       <body className={cn("font-body antialiased", poppins.className)}>
         <NextTopLoader
           color="hsl(var(--primary))"

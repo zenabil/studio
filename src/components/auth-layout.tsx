@@ -1,49 +1,82 @@
 'use client';
-import { useUser } from "@/firebase";
+import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Loading from "@/app/loading";
+import { doc } from "firebase/firestore";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "./ui/button";
+import { useLanguage } from "@/contexts/language-context";
+import { AlertCircle, Clock } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
+
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userDoc, isLoading: isUserDocLoading } = useDoc<{ approved: boolean }>(userDocRef);
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Wait until user status is determined
+    if (isAuthLoading || isUserDocLoading) {
+      return; // Wait until all user data is loaded
     }
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
     if (user && isAuthPage) {
-      // If user is logged in and tries to access login/signup, redirect to home
       router.push('/');
     } else if (!user && !isAuthPage) {
-      // If user is not logged in and not on an auth page, redirect to login
       router.push('/login');
     }
-  }, [user, isUserLoading, router, pathname]);
+  }, [user, isAuthLoading, isUserDocLoading, router, pathname]);
 
-
-  if (isUserLoading) {
+  if (isAuthLoading || (user && isUserDocLoading)) {
     return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loading />
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  // If user is logged in but not approved and not an admin trying to access the app
+  if (user && userDoc && !userDoc.approved) {
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
+             <Card className="w-full max-w-md">
+                <CardHeader className="text-center">
+                    <div className="mx-auto bg-primary/10 p-3 rounded-full mb-4">
+                        <Clock className="w-10 h-10 text-primary" />
+                    </div>
+                    <CardTitle className="text-2xl">{t.auth.pendingApprovalTitle}</CardTitle>
+                    <CardDescription>{t.auth.pendingApprovalDescription}</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                    <p className="text-muted-foreground">{t.auth.pendingApprovalContact}</p>
+                    <Button variant="link" onClick={() => auth.signOut()} className="mt-4">{t.auth.signOut}</Button>
+                </CardContent>
+            </Card>
         </div>
     );
   }
 
-  // Render children only if auth status allows (or still loading)
   const isAuthPage = pathname === '/login' || pathname === '/signup';
-  if (user || isAuthPage) {
+  if ((user && userDoc?.approved) || isAuthPage) {
     return <>{children}</>;
   }
   
-  // While redirecting, show a loader
+  // While redirecting or for non-approved users, show a loader
   return (
     <div className="flex min-h-screen w-full items-center justify-center">
-        <Loading />
+      <Loading />
     </div>
   );
 }

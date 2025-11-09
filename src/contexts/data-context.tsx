@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -124,6 +122,7 @@ export type SaleRecord = {
 export interface UserDoc {
     email: string;
     createdAt: string;
+    approved: boolean;
 }
 
 interface AdminState {
@@ -165,6 +164,7 @@ interface DataContextType extends AdminState {
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
+    updateUserApproval: (userId: string, approved: boolean) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -192,11 +192,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return user?.uid;
     }, [isAdmin, selectedUserId, user?.uid]);
 
+    // This is to check if the current logged-in user is approved.
+    const currentUserDocRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, `users/${user.uid}`) : null, [firestore, user]);
+    const { data: currentUserDoc } = useDoc<UserDoc>(currentUserDocRef);
+    const isCurrentUserApproved = currentUserDoc?.approved ?? false;
+
+
     const getCollectionRef = useCallback((collectionName: string) => {
-        if (!dataUserId || !firestore) return null;
-        const path = `users/${dataUserId}/${collectionName}`;
+        if (!dataUserId || !firestore || (!isCurrentUserApproved && !isAdmin)) return null;
+        const path = collectionName === 'users' ? 'users' : `users/${dataUserId}/${collectionName}`;
         return collection(firestore, path) as CollectionReference;
-    }, [firestore, dataUserId]);
+    }, [firestore, dataUserId, isCurrentUserApproved, isAdmin]);
 
     const productsRef = useMemoFirebase(() => getCollectionRef('products'), [getCollectionRef]);
     const customersRef = useMemoFirebase(() => getCollectionRef('customers'), [getCollectionRef]);
@@ -223,6 +229,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const expenses = useMemo(() => expensesData || [], [expensesData]);
 
     const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || expensesLoading;
+    
+    const updateUserApproval = useCallback(async (userIdToUpdate: string, approved: boolean) => {
+        if (!firestore || !isAdmin) return;
+        const userDocRef = doc(firestore, 'users', userIdToUpdate);
+        await updateDoc(userDocRef, { approved }).catch(error => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userDocRef.path, operation: 'update', requestResourceData: { approved } }));
+        });
+    }, [firestore, isAdmin]);
 
     const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
         const collectionRef = getCollectionRef('products');
@@ -631,6 +645,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updateExpense,
         deleteExpense,
         restoreData,
+        updateUserApproval,
     }), [
         products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses, isLoading,
         isAdmin, allUsers, selectedUserId, 
@@ -638,7 +653,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
         deleteSupplier, addSupplierInvoice, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
-        restoreData,
+        restoreData, updateUserApproval,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

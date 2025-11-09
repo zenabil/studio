@@ -12,29 +12,44 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/config/admin).data.uid;
+      // Check if the user's UID matches the UID stored in the admin config document.
+      return isSignedIn() && exists(/databases/$(database)/documents/config/admin) &&
+             request.auth.uid == get(/databases/$(database)/documents/config/admin).data.uid;
     }
 
-    // A user can create their own user document
+    function isApproved(userId) {
+      // Check if the user's 'approved' field is true in their user document.
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.approved == true;
+    }
+
     match /users/{userId} {
+      // A user can create their own user document upon signup.
       allow create: if isOwner(userId);
-      // Only the admin can read other user docs
+      // A user can read their own document (e.g., to check their approval status).
+      // The admin can read any user document.
       allow read: if isOwner(userId) || isAdmin();
+      // Only the admin can update a user document (e.g., to approve them).
+      // A user cannot change their own approval status.
+      allow update: if isAdmin();
+      // No one can delete user documents for now.
+      allow delete: if false;
     }
     
     match /config/admin {
-      // Anyone can read the admin config to check who is the admin
+      // Anyone can read the admin config to check who is the admin.
       allow read: if true;
-      // Only allow creation if the document doesn't exist yet (i.e., first user sign-up)
+      // Only allow creation if the document doesn't exist yet (i.e., the very first user signup).
       allow create: if !exists(/databases/$(database)/documents/config/admin);
-      // No one can update or delete the admin document
+      // No one can update or delete the admin document to prevent privilege escalation.
       allow update, delete: if false;
     }
 
-    // Generic rule for user-partitioned data
+    // Generic rule for all other user-partitioned data.
     match /{collection}/{userId}/{docId} {
-      allow read, write: if isOwner(userId);
-      // Admin can read data from any user's collection but cannot write to it
+      // Allow read/write only if the user is the owner AND is approved.
+      allow read, write: if isOwner(userId) && isApproved(userId);
+      // The admin can read data from any user's collection but cannot write to it directly.
       allow read: if isAdmin();
     }
   }
