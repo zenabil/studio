@@ -233,7 +233,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const updateUserApproval = useCallback(async (userIdToUpdate: string, approved: boolean) => {
         if (!firestore || !isAdmin) return;
         const userDocRef = doc(firestore, 'users', userIdToUpdate);
-        await updateDoc(userDocRef, { approved }).catch(error => {
+        updateDoc(userDocRef, { approved }).catch(error => {
              errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userDocRef.path, operation: 'update', requestResourceData: { approved } }));
         });
     }, [firestore, isAdmin]);
@@ -247,18 +247,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             createdAt: serverTimestamp(),
         };
 
-        try {
-            const docRef = await addDoc(collectionRef, newProductData)
-             .catch(error => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
-                throw error;
-            });
-            return { id: docRef.id, ...productData };
-        } catch (error) {
-            toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
+        const docRef = await addDoc(collectionRef, newProductData)
+            .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
             throw error;
-        }
-    }, [getCollectionRef, t.errors.title, t.errors.unknownError, toast]);
+            });
+        return { id: docRef.id, ...productData };
+        
+    }, [getCollectionRef]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<Product>) => {
         const collectionRef = getCollectionRef('products');
@@ -292,17 +288,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             spent: 0,
             balance: 0,
         };
-        try {
-            const docRef = await addDoc(collectionRef, newCustomerData).catch(error => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newCustomerData }));
-                throw error;
-            });
-            return { id: docRef.id, ...newCustomerData, spent: 0, balance: 0 };
-        } catch (error) {
-             toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
-             throw error;
-        }
-    }, [getCollectionRef, t.errors.title, t.errors.unknownError, toast]);
+
+        const docRef = await addDoc(collectionRef, newCustomerData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newCustomerData }));
+            throw error;
+        });
+        return { id: docRef.id, ...newCustomerData, spent: 0, balance: 0 };
+        
+    }, [getCollectionRef]);
     
     const updateCustomer = useCallback(async (customerId: string, customerData: Partial<Customer>) => {
         const collectionRef = getCollectionRef('customers');
@@ -666,3 +659,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    
