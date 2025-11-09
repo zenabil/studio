@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -347,7 +348,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
         }
         
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { cart, customerId, totals } }));
+            throw error;
+        });
 
     }, [firestore, dataUserId, products, customers]);
     
@@ -372,7 +376,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             batch.update(customerRef, { balance: newBalance });
         }
 
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { payment: { customerId, amount } } }));
+            throw error;
+        });
     }, [firestore, dataUserId, customers]);
 
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
@@ -404,14 +411,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const deleteRecurringPattern = useCallback(async (orderName: string) => {
         const collectionRef = getCollectionRef('bakeryOrders');
-        if (!collectionRef) throw new Error("User not authenticated or data path not available.");
+        if (!collectionRef || !firestore) throw new Error("User not authenticated or data path not available.");
         const q = query(collectionRef, where("name", "==", orderName), where("isRecurring", "==", true));
         const querySnapshot = await getDocs(q);
         const batch = writeBatch(firestore);
         querySnapshot.forEach((doc) => {
             batch.delete(doc.ref);
         });
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'delete', requestResourceData: { name: orderName, isRecurring: true } }));
+            throw error;
+        });
         toast({ title: t.bakeryOrders.patternDeleted });
     }, [getCollectionRef, firestore, t, toast]);
 
@@ -437,7 +447,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             });
         }
         
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { isRecurring } }));
+            throw error;
+        });
     }, [getCollectionRef, firestore, bakeryOrders]);
 
     const addSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
@@ -500,7 +513,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             batch.update(supplierRef, { balance: newBalance });
         }
         
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
+            throw error;
+        });
     }, [firestore, dataUserId, products, suppliers]);
     
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
@@ -517,7 +533,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             batch.update(supplierRef, { balance: supplier.balance - amount });
         }
 
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { supplierPayment: { supplierId, amount } } }));
+            throw error;
+        });
     }, [firestore, dataUserId, suppliers]);
 
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
@@ -571,7 +590,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             }
         }
 
-        await batch.commit();
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { restoreData: true } }));
+            throw error;
+        });
     }, [dataUserId, firestore]);
 
     const value = useMemo(() => ({
