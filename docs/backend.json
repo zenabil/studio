@@ -1,0 +1,298 @@
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product sold in the store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the product."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the product image.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "price"
+      ]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the customer."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the customer."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the customer.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the customer."
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the customer."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Invoice": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Invoice",
+      "type": "object",
+      "description": "Represents an invoice.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the invoice."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer. (Relationship: Customer 1:N Invoice)"
+        },
+        "invoiceDate": {
+          "type": "string",
+          "description": "Date the invoice was issued.",
+          "format": "date-time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total amount due on the invoice."
+        },
+        "amountPaid": {
+          "type": "number",
+          "description": "Amount paid towards the invoice."
+        },
+        "remainingBalance": {
+          "type": "number",
+          "description": "Remaining balance due on the invoice."
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "invoiceDate",
+        "totalAmount",
+        "amountPaid",
+        "remainingBalance"
+      ]
+    },
+    "InvoiceItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InvoiceItem",
+      "type": "object",
+      "description": "Represents an item on an invoice.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the invoice item."
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Reference to Invoice. (Relationship: Invoice 1:N InvoiceItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N InvoiceItem)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product on the invoice."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Price of one unit of the product at the time of the invoice."
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount applied to the item."
+        }
+      },
+      "required": [
+        "id",
+        "invoiceId",
+        "productId",
+        "quantity",
+        "unitPrice"
+      ]
+    },
+    "Payment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Payment",
+      "type": "object",
+      "description": "Represents a payment made towards an invoice.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the payment."
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Reference to Invoice. (Relationship: Invoice 1:N Payment)"
+        },
+        "paymentDate": {
+          "type": "string",
+          "description": "Date the payment was made.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the payment."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment Method (e.g. Cash, Credit Card)"
+        }
+      },
+      "required": [
+        "id",
+        "invoiceId",
+        "paymentDate",
+        "amount",
+        "paymentMethod"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product details.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "Unique identifier for the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores customer details.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "Unique identifier for the customer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/invoices/{invoiceId}",
+        "definition": {
+          "entityName": "Invoice",
+          "schema": {
+            "$ref": "#/backend/entities/Invoice"
+          },
+          "description": "Stores invoice details. Path based ownership.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "Unique identifier for the customer."
+            },
+            {
+              "name": "invoiceId",
+              "description": "Unique identifier for the invoice."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/invoices/{invoiceId}/invoice_items/{invoiceItemId}",
+        "definition": {
+          "entityName": "InvoiceItem",
+          "schema": {
+            "$ref": "#/backend/entities/InvoiceItem"
+          },
+          "description": "Stores invoice item details. Path based ownership.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "Unique identifier for the customer."
+            },
+            {
+              "name": "invoiceId",
+              "description": "Unique identifier for the invoice."
+            },
+            {
+              "name": "invoiceItemId",
+              "description": "Unique identifier for the invoice item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/invoices/{invoiceId}/payments/{paymentId}",
+        "definition": {
+          "entityName": "Payment",
+          "schema": {
+            "$ref": "#/backend/entities/Payment"
+          },
+          "description": "Stores payment details. Path based ownership.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "Unique identifier for the customer."
+            },
+            {
+              "name": "invoiceId",
+              "description": "Unique identifier for the invoice."
+            },
+            {
+              "name": "paymentId",
+              "description": "Unique identifier for the payment."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to efficiently manage products, customers, invoices, invoice items, and payments for the Mercurio POS application. The structure prioritizes Authorization Independence by avoiding hierarchical `get()` calls in security rules, ensuring atomic operations and simplified debugging. Path-based ownership is used for customer-owned data (invoices, payments). Structural Segregation ensures that documents within the same collection share identical security requirements.  Specifically:\n\n1.  **Products:** Products are stored in a flat `/products` collection. No ownership concerns are attached to products, they are global entities in this context.\n2.  **Customers:** Customers are stored in a flat `/customers` collection. The `id` field will correspond to the `customerId` in invoices.\n3.  **Invoices:** Invoices are stored within a subcollection of the specific customer document `/customers/{customerId}/invoices/{invoiceId}`. This enforces path-based ownership, where only the customer (or authorized personnel) can access their invoices.\n4.  **Invoice Items:** Invoice items are stored within a subcollection of their parent invoice `/customers/{customerId}/invoices/{invoiceId}/invoice_items/{invoiceItemId}`. This continues the ownership pattern, and allows for quick retrieval of all items associated with an invoice.\n5.  **Payments:** Payments are stored within a subcollection of the corresponding invoice `/customers/{customerId}/invoices/{invoiceId}/payments/{paymentId}`. This maintains the customer-invoice-payment hierarchy for easy querying and data integrity.\n\nThis design ensures that the list operations (QAPs) are secure. For instance, listing invoices is done within the `/customers/{customerId}/invoices` collection, which inherently limits results to invoices associated with that customer, without needing filtering in rules.\n\nAuthorization Independence is achieved since we are not using `get()` in rules. The path `/customers/{customerId}/invoices/{invoiceId}` implicitly authenticates that the user has the `customerId` to access the invoices"
+  }
+}
