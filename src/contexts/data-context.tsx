@@ -277,7 +277,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.products.productDeleted });
-    }, [getCollectionRef, salesHistory, supplierInvoices, t.errors.title, t.products.deleteErrorInUse, t.products.productDeleted, toast]);
+    }, [getCollectionRef, salesHistory, supplierInvoices, t, toast]);
     
     const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<WithId<Customer>> => {
         const collectionRef = getCollectionRef('customers');
@@ -318,7 +318,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.customers.customerDeleted });
-    }, [getCollectionRef, salesHistory, t.errors.title, t.customers.deleteErrorInUse, t.customers.customerDeleted, toast]);
+    }, [getCollectionRef, salesHistory, t, toast]);
     
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -659,5 +659,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    
