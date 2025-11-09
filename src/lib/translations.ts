@@ -1,3 +1,4 @@
+
 export type Translation = {
   [key: string]: any;
 };
@@ -23,6 +24,8 @@ export const translations = {
       loginDescription: "Connectez-vous à votre compte pour continuer.",
       email: "Email",
       password: "Mot de passe",
+      confirmPassword: "Confirmer le mot de passe",
+      passwordsDoNotMatch: "Les mots de passe ne correspondent pas.",
       loginButton: "Se connecter",
       goToSignup: "Vous n'avez pas de compte ?",
       signupLink: "Inscrivez-vous",
@@ -498,6 +501,8 @@ export const translations = {
       loginDescription: "سجل الدخول إلى حسابك للمتابعة.",
       email: "البريد الإلكتروني",
       password: "كلمة المرور",
+      confirmPassword: "تأكيد كلمة المرور",
+      passwordsDoNotMatch: "كلمتا المرور غير متطابقتين.",
       loginButton: "تسجيل الدخول",
       goToSignup: "ليس لديك حساب؟",
       signupLink: "أنشئ حسابًا",

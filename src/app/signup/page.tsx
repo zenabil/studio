@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -29,13 +30,19 @@ export default function SignupPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
-  const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const formSchema = z.object({
-    email: z.string().email({ message: t.auth.emailInvalid }),
-    password: z.string().min(6, { message: t.auth.weakPassword }),
-  });
+  const formSchema = z
+    .object({
+      email: z.string().email({ message: t.auth.emailInvalid }),
+      password: z.string().min(6, { message: t.auth.weakPassword }),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t.auth.passwordsDoNotMatch,
+      path: ['confirmPassword'],
+    });
 
   const {
     register,
@@ -43,11 +50,16 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    setFirebaseError(null);
+    setError(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
@@ -57,17 +69,15 @@ export default function SignupPage() {
 
       let isFirstUser = false;
       if (!adminConfigSnap.exists()) {
-        // This is the first user, make them an admin
         await setDoc(adminConfigRef, { uid: user.uid });
         isFirstUser = true;
       }
 
-      // Create a user document with an approval status
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, {
         email: user.email,
         createdAt: new Date().toISOString(),
-        approved: isFirstUser, // The first user is automatically approved
+        approved: isFirstUser,
       });
 
       router.push('/');
@@ -75,22 +85,24 @@ export default function SignupPage() {
       if (error instanceof FirebaseError) {
         switch (error.code) {
           case 'auth/email-already-in-use':
-            setFirebaseError(t.auth.emailInUse);
+            setError(t.auth.emailInUse);
             break;
           case 'auth/weak-password':
-            setFirebaseError(t.auth.weakPassword);
+            setError(t.auth.weakPassword);
             break;
           default:
-            setFirebaseError(t.auth.genericError);
+            setError(t.auth.genericError);
             break;
         }
       } else {
-        setFirebaseError(t.auth.genericError);
+        setError(t.auth.genericError);
       }
     } finally {
       setIsLoading(false);
     }
   };
+
+  const combinedError = error || errors.email?.message || errors.password?.message || errors.confirmPassword?.message;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -104,11 +116,11 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-             {firebaseError && (
+             {combinedError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>{t.errors.title}</AlertTitle>
-                <AlertDescription>{firebaseError}</AlertDescription>
+                <AlertDescription>{combinedError}</AlertDescription>
               </Alert>
             )}
             <div className="grid gap-2">
@@ -120,16 +132,14 @@ export default function SignupPage() {
                 {...register('email')}
                 disabled={isLoading}
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">{t.auth.password}</Label>
               <Input id="password" type="password" {...register('password')} disabled={isLoading}/>
-               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
+            </div>
+             <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">{t.auth.confirmPassword}</Label>
+              <Input id="confirmPassword" type="password" {...register('confirmPassword')} disabled={isLoading}/>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
                {isLoading ? (
