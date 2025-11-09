@@ -976,18 +976,15 @@ export function PosView() {
                 </div>
               <Separator/>
               <div className='z-10 relative'>
-                <div className="relative">
-                  <CustomerCombobox
-                    ref={customerComboboxRef}
-                    customers={customers}
-                    selectedCustomerId={activeSession.selectedCustomerId}
-                    onSelectCustomer={(customerId) =>
-                      updateActiveSession({ selectedCustomerId: customerId })
-                    }
-                    onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
-                  />
-                  <kbd className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground rtl:right-auto rtl:left-8">F4</kbd>
-                </div>
+                <CustomerCombobox
+                  ref={customerComboboxRef}
+                  customers={customers}
+                  selectedCustomerId={activeSession.selectedCustomerId}
+                  onSelectCustomer={(customerId) =>
+                    updateActiveSession({ selectedCustomerId: customerId })
+                  }
+                  onAddNewCustomer={() => setIsAddCustomerDialogOpen(true)}
+                />
               </div>
               <div className="relative">
                 <Input 
@@ -1085,5 +1082,7 @@ export function PosView() {
     </div>
   );
 }
+
+    
 
     

@@ -1,8 +1,8 @@
+
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
-
+import { Check, PlusCircle, User, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/popover';
 import type { Customer } from '@/lib/data';
 import { useLanguage } from '@/contexts/language-context';
+import { useSettings } from '@/contexts/settings-context';
+import { Badge } from './ui/badge';
 
 interface CustomerComboboxProps {
   customers: Customer[];
@@ -31,30 +33,64 @@ interface CustomerComboboxProps {
 export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComboboxProps>(
   ({ customers, selectedCustomerId, onSelectCustomer, onAddNewCustomer }, ref) => {
     const { t } = useLanguage();
+    const { settings } = useSettings();
     const [open, setOpen] = React.useState(false);
+    const [searchValue, setSearchValue] = React.useState('');
 
     const selectedCustomer =
       customers.find((c) => c.id === selectedCustomerId) || null;
 
+    const handleSelect = (customerId: string | null) => {
+      onSelectCustomer(customerId);
+      setOpen(false);
+      setSearchValue('');
+    };
+
+    const ComboboxTrigger = () => (
+      <PopoverTrigger asChild>
+        <Button
+          ref={ref}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-start"
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          <User className="mr-2 h-4 w-4 shrink-0 opacity-50 rtl:ml-2 rtl:mr-0" />
+          {t.pos.customer}
+          <kbd className="pointer-events-none ml-auto rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">F4</kbd>
+        </Button>
+      </PopoverTrigger>
+    );
+
+    const SelectedCustomerDisplay = () => (
+       <div className="flex items-center gap-2 rounded-md border border-input p-2">
+            <div className="flex-grow">
+                <p className="text-sm font-medium">{selectedCustomer?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                    {t.customers.balance}: <span className={cn('font-semibold', selectedCustomer && selectedCustomer.balance > 0 ? "text-destructive" : "text-success")}>{settings.currency}{selectedCustomer?.balance.toFixed(2)}</span>
+                </p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onSelectCustomer(null)}>
+                <X className="h-4 w-4" />
+            </Button>
+       </div>
+    );
+
     return (
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            ref={ref}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            {selectedCustomer ? selectedCustomer.name : t.pos.selectCustomer}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 rtl:mr-2 rtl:ml-0" />
-          </Button>
-        </PopoverTrigger>
+        {selectedCustomer ? <SelectedCustomerDisplay /> : <ComboboxTrigger />}
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command>
-            <CommandInput placeholder={t.customers.searchCustomers} />
+            <CommandInput 
+                placeholder={t.customers.searchCustomers} 
+                value={searchValue}
+                onValueChange={setSearchValue}
+            />
             <CommandList>
-              <CommandEmpty>{t.customers.noCustomerFound}</CommandEmpty>
+              <CommandEmpty>
+                <div className="p-4 text-center text-sm">{t.customers.noCustomerFound}</div>
+              </CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   onSelect={() => {
@@ -68,10 +104,7 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                 </CommandItem>
                 <CommandItem
                   value="no-customer"
-                  onSelect={() => {
-                    onSelectCustomer(null);
-                    setOpen(false);
-                  }}
+                  onSelect={() => handleSelect(null)}
                 >
                   <Check
                     className={cn(
@@ -84,12 +117,8 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                 {customers.map((customer) => (
                   <CommandItem
                     key={customer.id}
-                    value={`${customer.name}---${customer.id}`}
-                    onSelect={(currentValue) => {
-                      const customerId = currentValue.split('---')[1];
-                      onSelectCustomer(customerId);
-                      setOpen(false);
-                    }}
+                    value={customer.name}
+                    onSelect={() => handleSelect(customer.id)}
                   >
                     <Check
                       className={cn(
@@ -99,7 +128,8 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                           : 'opacity-0'
                       )}
                     />
-                    {customer.name}
+                    <span>{customer.name}</span>
+                     {customer.balance > 0 && <Badge variant="destructive" className="ml-auto">{settings.currency}{customer.balance.toFixed(2)}</Badge>}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -111,3 +141,5 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
   }
 );
 CustomerCombobox.displayName = 'CustomerCombobox';
+
+    
