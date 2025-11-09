@@ -1,4 +1,3 @@
-
 export type Translation = {
   [key: string]: any;
 };
