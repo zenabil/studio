@@ -1,0 +1,8 @@
+{
+  "productCard": {
+    "seed": 100,
+    "width": 400,
+    "height": 400,
+    "hint": "product object"
+  }
+}

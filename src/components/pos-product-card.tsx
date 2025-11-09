@@ -9,6 +9,8 @@ import { PlusCircle, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
+import placeholderImageData from '@/app/lib/placeholder-images.json';
+
 
 interface PosProductCardProps {
   product: Product;
@@ -17,11 +19,14 @@ interface PosProductCardProps {
   t: any;
 }
 
-const PLACEHOLDER_IMG = 'https://placehold.co/400x400.png';
-
 const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAddToCart, currency, t }) => {
   const isOutOfStock = product.stock <= 0;
   const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
+  const { seed, width, height, hint } = placeholderImageData.productCard;
+  
+  // Create a somewhat unique seed for each product based on its ID
+  const productSeed = seed + (product.id.charCodeAt(0) || 0) + (product.id.charCodeAt(1) || 0);
+  const imageUrl = `https://picsum.photos/seed/${productSeed}/${width}/${height}`;
 
   return (
     <Card 
@@ -35,11 +40,12 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
     >
       <div className="aspect-square w-full overflow-hidden relative bg-muted">
           <Image
-            src={PLACEHOLDER_IMG}
+            src={imageUrl}
             alt={product.name}
-            fill
+            width={width}
+            height={height}
             className="object-cover transition-transform duration-300 group-hover:scale-110"
-            data-ai-hint="product object"
+            data-ai-hint={hint}
             unoptimized
           />
            {isOutOfStock && (
