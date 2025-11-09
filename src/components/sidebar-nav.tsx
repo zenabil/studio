@@ -72,13 +72,13 @@ export function SidebarNav() {
   const totalAlertCount = lowStockCount + debtAlertCount;
   
   const navItems = useMemo(() => [
-    { href: '/', label: t.nav.pos, icon: CircleDollarSign },
+    { href: '/', label: t.nav.reports, icon: BarChartBig },
+    { href: '/pos', label: t.nav.pos, icon: CircleDollarSign },
     { href: '/products', label: t.nav.products, icon: Package },
     { href: '/customers', label: t.nav.customers, icon: UsersRound },
     { href: '/suppliers', label: t.nav.suppliers, icon: Truck },
     { href: '/bakery-orders', label: t.nav.bakeryOrders, icon: Croissant },
     { href: '/expenses', label: t.nav.expenses, icon: Receipt },
-    { href: '/reports', label: t.nav.reports, icon: BarChartBig },
     { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
     { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
     { href: '/settings', label: t.nav.settings, icon: Settings },
