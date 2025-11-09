@@ -33,7 +33,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
 import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
 import {
-    setDocumentNonBlocking,
     addDocumentNonBlocking,
     updateDocumentNonBlocking,
     deleteDocumentNonBlocking,
@@ -236,7 +235,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) throw new Error("User not authenticated.");
-        await addDocumentNonBlocking(collectionRef, { ...orderData, createdAt: serverTimestamp() });
+        addDocumentNonBlocking(collectionRef, { ...orderData, createdAt: serverTimestamp() });
     }, [getCollectionRef]);
 
     const updateBakeryOrder = useCallback(async (orderId: string, orderData: Partial<BakeryOrder>) => {
@@ -290,7 +289,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) throw new Error("User not authenticated.");
         const newSupplierData = { ...supplierData, balance: 0 };
-        await addDocumentNonBlocking(collectionRef, newSupplierData);
+        addDocumentNonBlocking(collectionRef, newSupplierData);
     }, [getCollectionRef]);
 
     const updateSupplier = useCallback(async (supplierId: string, supplierData: Partial<Supplier>) => {
@@ -361,7 +360,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) throw new Error("User not authenticated.");
-        await addDocumentNonBlocking(collectionRef, { ...expenseData, createdAt: serverTimestamp() });
+        addDocumentNonBlocking(collectionRef, { ...expenseData, createdAt: serverTimestamp() });
     }, [getCollectionRef]);
 
     const updateExpense = useCallback(async (expenseId: string, expenseData: Partial<Expense>) => {
