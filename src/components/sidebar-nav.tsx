@@ -88,6 +88,25 @@ export function SidebarNav() {
     auth.signOut();
   };
 
+  const AppLogo = () => (
+    <div className="bg-primary/10 p-2 rounded-lg group">
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-10 w-10 text-primary transition-transform duration-300 group-hover:scale-110"
+        >
+            <path d="M7 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7Z" />
+            <path d="M16 2v4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
+            <path d="M12 18h.01" />
+        </svg>
+    </div>
+  );
+
   if (!isMounted) {
     return (
       <div className="w-16 hidden md:block">
@@ -122,22 +141,7 @@ export function SidebarNav() {
                 <div className="flex h-full w-full flex-col">
                     <SidebarHeader>
                         <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-lg group">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-10 w-10 text-primary transition-transform duration-300 group-hover:scale-110"
-                            >
-                                <path d="M7 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7Z" />
-                                <path d="M16 2v4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
-                                <path d="M12 18h.01" />
-                            </svg>
-                        </div>
+                        <AppLogo />
                         <div className="group-data-[collapsible=icon]:hidden">
                             <div className="flex flex-col">
                                 <span className="font-headline text-lg font-bold leading-tight">{t.appName}</span>
@@ -186,22 +190,7 @@ export function SidebarNav() {
     <Sidebar side={dir === 'rtl' ? 'right' : 'left'} collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-3">
-           <div className="bg-primary/10 p-2 rounded-lg group">
-               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-10 w-10 text-primary transition-transform duration-300 group-hover:scale-110"
-              >
-                <path d="M7 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7Z" />
-                <path d="M16 2v4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
-                <path d="M12 18h.01" />
-              </svg>
-           </div>
+          <AppLogo />
           <div className="group-data-[collapsible=icon]:hidden">
             {isMounted ? (
                 <div className="flex flex-col">
