@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import type { Product, Customer, CartItem, SaleRecord } from '@/lib/data';
+import type { Product, Customer, CartItem, SaleRecord } from '@/contexts/data-context';
 import {
   PlusCircle,
   MinusCircle,
@@ -271,7 +271,7 @@ export function PosView() {
   
       return currentSessions;
     });
-  }, [products, sessions, t.pos.stockAdjustedTitle, t.pos.stockAdjustedMessage, t.pos.productRemovedTitle, t.pos.productRemovedMessage, toast]);
+  }, [products, t.pos.stockAdjustedMessage, t.pos.stockAdjustedTitle, t.pos.productRemovedMessage, t.pos.productRemovedTitle, toast]);
 
   const activeSession = useMemo(() => {
     if (!activeSessionId) return undefined;
@@ -564,7 +564,7 @@ export function PosView() {
     }
     setBarcodeInput('');
     barcodeInputRef.current?.focus();
-  }, [addToCart, products, t, toast, setNewProductBarcode, setIsAddProductDialogOpen]);
+  }, [addToCart, products, t, toast]);
   
   const handleBarcodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && barcodeInput.trim()) {
@@ -576,11 +576,17 @@ export function PosView() {
   const handleSaveProduct = async (productData: Omit<Product, 'id'>, productId?: string) => {
     if (productId) return; 
     
-    const newProduct = await addProduct(productData);
+    try {
+        const newProduct = await addProduct(productData);
 
-    toast({ title: t.products.productAdded });
-    
-    addToCart(newProduct, 1);
+        toast({ title: t.products.productAdded });
+        
+        addToCart(newProduct, 1);
+        setIsAddProductDialogOpen(false);
+    } catch (error) {
+        // Let the dialog handle the error state
+        throw error;
+    }
   };
   
   const handleSaveNewCustomer = async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
@@ -675,7 +681,7 @@ export function PosView() {
   
   const selectedCustomer = useMemo(() => customers.find(c => c && c.id === activeSession?.selectedCustomerId), [customers, activeSession?.selectedCustomerId]);
 
-  if (isLoading) return <Loading />;
+  if (isLoading || !sessions.length) return <Loading />;
   if (!activeSessionId || !activeSession) return <Loading />;
 
   return (
@@ -1079,13 +1085,5 @@ export function PosView() {
     </div>
   );
 }
-
-    
-
-    
-
-
-
-    
 
     

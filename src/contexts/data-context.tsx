@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -199,9 +200,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             createdAt: serverTimestamp(),
         };
 
-        const docRef = await addDocumentNonBlocking(collectionRef, newProductData);
-        return { id: docRef.id, ...productData };
-    }, [getCollectionRef]);
+        try {
+            const docRef = await addDocumentNonBlocking(collectionRef, newProductData);
+            return { id: docRef.id, ...productData };
+        } catch (error) {
+            toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
+            throw error;
+        }
+    }, [getCollectionRef, t.errors.title, t.errors.unknownError, toast]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<Product>) => {
         if (!user || !firestore) return;
@@ -229,9 +235,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             spent: 0,
             balance: 0,
         };
-        const docRef = await addDocumentNonBlocking(collectionRef, newCustomerData);
-        return { id: docRef.id, ...newCustomerData, spent: 0, balance: 0 };
-    }, [getCollectionRef]);
+        try {
+            const docRef = await addDocumentNonBlocking(collectionRef, newCustomerData);
+            return { id: docRef.id, ...newCustomerData, spent: 0, balance: 0 };
+        } catch (error) {
+             toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
+             throw error;
+        }
+    }, [getCollectionRef, t.errors.title, t.errors.unknownError, toast]);
     
     const updateCustomer = useCallback(async (customerId: string, customerData: Partial<Customer>) => {
         if (!user || !firestore) return;
@@ -464,14 +475,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collections = ['products', 'customers', 'salesHistory', 'bakeryOrders', 'suppliers', 'supplierInvoices', 'expenses'];
 
         for (const collectionName of collections) {
+            // Map salesHistory to sales in Firestore
+            const firestoreCollectionName = collectionName === 'salesHistory' ? 'sales' : collectionName;
+
             if (data[collectionName] && Array.isArray(data[collectionName])) {
-                const currentCollectionQuery = query(collection(firestore, `users/${user.uid}/${collectionName}`));
+                const currentCollectionQuery = query(collection(firestore, `users/${user.uid}/${firestoreCollectionName}`));
                 const currentDocsSnapshot = await getDocs(currentCollectionQuery);
                 currentDocsSnapshot.forEach(doc => batch.delete(doc.ref));
 
                 for (const item of data[collectionName]) {
                     const { id, ...rest } = item;
-                    const docRef = id ? doc(firestore, `users/${user.uid}/${collectionName}`, id) : doc(collection(firestore, `users/${user.uid}/${collectionName}`));
+                    const docRef = id ? doc(firestore, `users/${user.uid}/${firestoreCollectionName}`, id) : doc(collection(firestore, `users/${user.uid}/${firestoreCollectionName}`));
                     batch.set(docRef, rest);
                 }
             }
@@ -530,3 +544,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    
