@@ -2,50 +2,40 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check if the user is signed in
+    
     function isSignedIn() {
       return request.auth != null;
     }
     
-    // Helper function to check if the user owns the data
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/config/admin).data.uid;
+    }
 
-    // Rules for user-specific data collections
+    // A user can create their own user document
     match /users/{userId} {
-      // A user can only access their own user document, but we don't have one.
-      // This is a placeholder for future profile info.
+      allow create: if isOwner(userId);
+      // Only the admin can read other user docs
+      allow read: if isOwner(userId) || isAdmin();
+    }
+    
+    match /config/admin {
+      // Anyone can read the admin config to check who is the admin
+      allow read: if true;
+      // Only allow creation if the document doesn't exist yet (i.e., first user sign-up)
+      allow create: if !exists(/databases/$(database)/documents/config/admin);
+      // No one can update or delete the admin document
+      allow update, delete: if false;
+    }
+
+    // Generic rule for user-partitioned data
+    match /{collection}/{userId}/{docId} {
       allow read, write: if isOwner(userId);
-
-      match /products/{productId} {
-        allow read, write: if isOwner(userId);
-      }
-
-      match /customers/{customerId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      match /sales/{saleId} {
-        allow read, write: if isOwner(userId);
-      }
-
-      match /bakeryOrders/{orderId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      match /suppliers/{supplierId} {
-        allow read, write: if isOwner(userId);
-      }
-
-      match /supplierInvoices/{invoiceId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      match /expenses/{expenseId} {
-        allow read, write: if isOwner(userId);
-      }
+      // Admin can read data from any user's collection but cannot write to it
+      allow read: if isAdmin();
     }
   }
 }

@@ -16,8 +16,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/language-context';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
@@ -26,6 +27,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 export default function SignupPage() {
   const { t } = useLanguage();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +49,26 @@ export default function SignupPage() {
     setIsLoading(true);
     setFirebaseError(null);
     try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
+      // Check if the admin config document exists
+      const adminConfigRef = doc(firestore, 'config', 'admin');
+      const adminConfigSnap = await getDoc(adminConfigRef);
+
+      if (!adminConfigSnap.exists()) {
+        // This is the first user, make them an admin
+        await setDoc(adminConfigRef, { uid: user.uid });
+      }
+
+      // Create a user document
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await setDoc(userDocRef, {
+        email: user.email,
+        createdAt: new Date().toISOString(),
+      });
+
+
       router.push('/');
     } catch (error) {
       if (error instanceof FirebaseError) {

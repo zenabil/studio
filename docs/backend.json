@@ -203,13 +203,40 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/{collection}/{docId}",
-        "description": "A multi-collection data model where all data is stored under a user's unique ID. This enforces top-level security and data isolation between users.",
-        "params": [
-          {"name": "userId", "description": "The unique ID of the authenticated user."},
-          {"name": "collection", "description": "The name of the data collection (e.g., 'products', 'customers')."},
-          {"name": "docId", "description": "The unique ID of the document within the collection."}
-        ]
+        "path": "/users/{userId}",
+        "description": "A document storing basic user information."
+      },
+      {
+        "path": "/products/{userId}/{productId}",
+        "description": "Products collection, where each product is a document. The collection is partitioned by user ID."
+      },
+      {
+        "path": "/customers/{userId}/{customerId}",
+        "description": "Customers collection, partitioned by user ID."
+      },
+      {
+        "path": "/sales/{userId}/{saleId}",
+        "description": "Sales records, partitioned by user ID."
+      },
+      {
+        "path": "/bakeryOrders/{userId}/{orderId}",
+        "description": "Bakery orders, partitioned by user ID."
+      },
+      {
+        "path": "/suppliers/{userId}/{supplierId}",
+        "description": "Suppliers collection, partitioned by user ID."
+      },
+      {
+        "path": "/supplierInvoices/{userId}/{invoiceId}",
+        "description": "Supplier invoices, partitioned by user ID."
+      },
+      {
+        "path": "/expenses/{userId}/{expenseId}",
+        "description": "Expenses, partitioned by user ID."
+      },
+      {
+        "path": "/config/admin",
+        "description": "A special document that stores the UID of the admin user."
       }
     ]
   },
