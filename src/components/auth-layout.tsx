@@ -1,19 +1,21 @@
 'use client';
 import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import Loading from "@/app/loading";
 import { doc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { Clock } from "lucide-react";
+import { useSettings } from "@/contexts/settings-context";
 
 
 function PendingApprovalScreen() {
     const { t } = useLanguage();
     const { auth } = useFirebase();
     const firestore = useFirestore();
+    const { settings } = useSettings();
 
     const adminConfigRef = useMemoFirebase(() => firestore ? doc(firestore, 'config/admin') : null, [firestore]);
     const { data: adminConfig } = useDoc<{ uid: string }>(adminConfigRef);
@@ -24,6 +26,9 @@ function PendingApprovalScreen() {
     }, [firestore, adminConfig?.uid]);
 
     const { data: adminUser } = useDoc<{ email: string }>(adminDocRef);
+
+    const contactEmail = adminUser?.email;
+    const contactPhone = settings.companyInfo.phone;
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
@@ -36,11 +41,24 @@ function PendingApprovalScreen() {
                     <CardDescription>{t.auth.pendingApprovalDescription}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground mb-4">
                         {t.auth.pendingApprovalContact}
-                        {adminUser?.email && <span className="font-bold text-foreground block mt-1">{adminUser.email}</span>}
                     </p>
-                    <Button variant="link" onClick={() => auth.signOut()} className="mt-4">{t.auth.signOut}</Button>
+                    <div className="space-y-2">
+                        {contactEmail && (
+                            <div className="text-sm">
+                                <span className="font-semibold">{t.auth.email}:</span>
+                                <a href={`mailto:${contactEmail}`} className="font-medium text-primary block hover:underline">{contactEmail}</a>
+                            </div>
+                        )}
+                        {contactPhone && (
+                             <div className="text-sm">
+                                <span className="font-semibold">WhatsApp:</span>
+                                <a href={`https://wa.me/${contactPhone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-medium text-primary block hover:underline">{contactPhone}</a>
+                            </div>
+                        )}
+                    </div>
+                    <Button variant="link" onClick={() => auth.signOut()} className="mt-6">{t.auth.signOut}</Button>
                 </CardContent>
             </Card>
         </div>
@@ -53,7 +71,6 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
-  const { t } = useLanguage();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
