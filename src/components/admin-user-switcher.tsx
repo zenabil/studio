@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/language-context';
+import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 
 export function AdminUserSwitcher() {
   const { isAdmin, allUsers, selectedUserId, setSelectedUserId } = useData();
@@ -32,6 +34,9 @@ export function AdminUserSwitcher() {
       setSelectedUserId(value);
     }
   };
+  
+  const sortedUsers = [...allUsers].sort((a, b) => (a.email > b.email ? 1 : -1));
+
 
   return (
     <div className="px-2 group-data-[collapsible=icon]:px-0">
@@ -50,14 +55,21 @@ export function AdminUserSwitcher() {
             <SelectContent>
                 {/* Add current admin user at the top */}
                 <SelectItem value={currentUser.uid}>
-                    {currentUser.email} ({t.auth.you})
+                    <div className="flex items-center gap-2">
+                        <span>{currentUser.email} ({t.auth.you})</span>
+                    </div>
                 </SelectItem>
                 {/* List other users */}
-                {allUsers
+                {sortedUsers
                 .filter(u => u.id !== currentUser.uid) // Exclude current admin from the rest of the list
                 .map(u => (
                     <SelectItem key={u.id} value={u.id}>
-                    {u.email}
+                        <div className="flex items-center justify-between w-full">
+                            <span>{u.email}</span>
+                            <Badge variant={u.approved ? 'success' : 'destructive'} className={cn('ml-2', t.nav.pos === "Caisse" ? 'font-normal' : '')}>
+                                {u.approved ? t.users.approved : t.users.pending}
+                            </Badge>
+                        </div>
                     </SelectItem>
                 ))}
             </SelectContent>
