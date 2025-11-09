@@ -18,15 +18,16 @@ import {
     where,
     getDocs,
     CollectionReference,
+    setDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
 import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
-import {
-    addDocumentNonBlocking,
-    updateDocumentNonBlocking,
-    deleteDocumentNonBlocking,
-} from '@/firebase/non-blocking-updates';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 // Data type definitions moved here for better co-location
@@ -232,7 +233,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         };
 
         try {
-            const docRef = await addDocumentNonBlocking(collectionRef, newProductData);
+            const docRef = await addDoc(collectionRef, newProductData)
+             .catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
+                throw error;
+            });
             return { id: docRef.id, ...productData };
         } catch (error) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
@@ -244,7 +249,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, productId);
-        updateDocumentNonBlocking(docRef, productData);
+        updateDoc(docRef, productData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: productData }));
+        });
     }, [getCollectionRef]);
 
     const deleteProduct = useCallback(async (productId: string) => {
@@ -255,7 +262,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const docRef = doc(collectionRef, productId);
-        deleteDocumentNonBlocking(docRef);
+        deleteDoc(docRef).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        });
         toast({ title: t.products.productDeleted });
     }, [getCollectionRef, salesHistory, supplierInvoices, t.errors.title, t.products.deleteErrorInUse, t.products.productDeleted, toast]);
     
@@ -269,7 +278,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             balance: 0,
         };
         try {
-            const docRef = await addDocumentNonBlocking(collectionRef, newCustomerData);
+            const docRef = await addDoc(collectionRef, newCustomerData).catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newCustomerData }));
+                throw error;
+            });
             return { id: docRef.id, ...newCustomerData, spent: 0, balance: 0 };
         } catch (error) {
              toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
@@ -281,7 +293,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('customers');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, customerId);
-        updateDocumentNonBlocking(docRef, customerData);
+        updateDoc(docRef, customerData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: customerData }));
+        });
     }, [getCollectionRef]);
 
     const deleteCustomer = useCallback(async (customerId: string) => {
@@ -292,7 +306,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const docRef = doc(collectionRef, customerId);
-        deleteDocumentNonBlocking(docRef);
+        deleteDoc(docRef).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        });
         toast({ title: t.customers.customerDeleted });
     }, [getCollectionRef, salesHistory, t.errors.title, t.customers.deleteErrorInUse, t.customers.customerDeleted, toast]);
     
@@ -362,21 +378,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
-        addDocumentNonBlocking(collectionRef, { ...orderData, createdAt: serverTimestamp() });
+        const newOrderData = { ...orderData, createdAt: serverTimestamp() };
+        addDoc(collectionRef, newOrderData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newOrderData }));
+        });
     }, [getCollectionRef]);
 
     const updateBakeryOrder = useCallback(async (orderId: string, orderData: Partial<BakeryOrder>) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, orderId);
-        updateDocumentNonBlocking(docRef, orderData);
+        updateDoc(docRef, orderData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: orderData }));
+        });
     }, [getCollectionRef]);
     
     const deleteBakeryOrder = useCallback(async (orderId: string) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, orderId);
-        deleteDocumentNonBlocking(docRef);
+        deleteDoc(docRef).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        });
     }, [getCollectionRef]);
 
     const deleteRecurringPattern = useCallback(async (orderName: string) => {
@@ -421,14 +444,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         const newSupplierData = { ...supplierData, balance: 0 };
-        addDocumentNonBlocking(collectionRef, newSupplierData);
+        addDoc(collectionRef, newSupplierData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newSupplierData }));
+        });
     }, [getCollectionRef]);
 
     const updateSupplier = useCallback(async (supplierId: string, supplierData: Partial<Supplier>) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, supplierId);
-        updateDocumentNonBlocking(docRef, supplierData);
+        updateDoc(docRef, supplierData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: supplierData }));
+        });
     }, [getCollectionRef]);
 
     const deleteSupplier = useCallback(async (supplierId: string) => {
@@ -439,7 +466,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const docRef = doc(collectionRef, supplierId);
-        deleteDocumentNonBlocking(docRef);
+        deleteDoc(docRef).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        });
         toast({ title: t.suppliers.supplierDeleted });
     }, [getCollectionRef, supplierInvoices, t, toast]);
     
@@ -494,21 +523,28 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
-        addDocumentNonBlocking(collectionRef, { ...expenseData, createdAt: serverTimestamp() });
+        const newExpenseData = { ...expenseData, createdAt: serverTimestamp() };
+        addDoc(collectionRef, newExpenseData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newExpenseData }));
+        });
     }, [getCollectionRef]);
 
     const updateExpense = useCallback(async (expenseId: string, expenseData: Partial<Expense>) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, expenseId);
-        updateDocumentNonBlocking(docRef, expenseData);
+        updateDoc(docRef, expenseData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: expenseData }));
+        });
     }, [getCollectionRef]);
 
     const deleteExpense = useCallback(async (expenseId: string) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, expenseId);
-        deleteDocumentNonBlocking(docRef);
+        deleteDoc(docRef).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        });
         toast({ title: t.expenses.expenseDeleted });
     }, [getCollectionRef, t, toast]);
     
