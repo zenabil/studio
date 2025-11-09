@@ -1,111 +1,21 @@
-/**
- * @description This ruleset enforces a strict owner-only access model for customer-related data,
- *              while allowing public read access to product information. It leverages path-based
- *              authorization for simplified and efficient security checks.
- * @dataStructure
- *  - /customers/{customerId}: Stores customer profiles, accessible only by the customer.
- *  - /products/{productId}: Stores product information, publicly readable.
- *  - /customers/{customerId}/invoices/{invoiceId}: Stores invoices, accessible only by the customer.
- *  - /invoices/{invoiceId}/invoiceItems/{invoiceItemId}: Stores invoice items, accessible only if the parent invoice is accessible.
- *  - /invoices/{invoiceId}/payments/{paymentId}: Stores payments, accessible only if the parent invoice is accessible.
- * @keySecurityDecisions
- *  - Customer data (profiles, invoices, payments) is strictly private and accessible only to the customer.
- *  - Product data is publicly readable.
- *  - Listing operations are secured based on path-based ownership.
- *  - The rules explicitly deny any unauthorized access.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Allows customers to manage their own profile.
-     * @path /customers/{customerId}
-     * @allow (create) User with UID 'user_abc' can create a customer profile at /customers/user_abc.
-     * @allow (get, update, delete) User with UID 'user_abc' can read, update, or delete their own profile at /customers/user_abc.
-     * @deny (create) User with UID 'user_xyz' cannot create a customer profile at /customers/user_abc.
-     * @deny (get, update, delete) User with UID 'user_xyz' cannot read, update, or delete the profile at /customers/user_abc.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /customers/{customerId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return isSignedIn() && request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(customerId);
-      allow list: if false;
-      allow create: if isOwner(customerId) && request.resource.data.id == customerId;
-      allow update: if isExistingOwner(customerId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(customerId);
+  
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Allows anyone to read product information, but restricts creation, updating, and deletion.
-     * @path /products/{productId}
-     * @allow (get, list) Any user can read product information.
-     * @deny (create, update, delete) No user can create, update, or delete product information without specific authorization (e.g., admin role - not implemented here).
-     * @principle Public read access with restricted write access.
-     */
-    match /products/{productId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
-    }
-
-    /**
-     * @description Allows customers to manage their own invoices.
-     * @path /customers/{customerId}/invoices/{invoiceId}
-     * @allow (create) User with UID 'user_abc' can create an invoice at /customers/user_abc/invoices/invoice_123.
-     * @allow (get, update, delete) User with UID 'user_abc' can read, update, or delete their own invoice at /customers/user_abc/invoices/invoice_123.
-     * @deny (create) User with UID 'user_xyz' cannot create an invoice at /customers/user_abc/invoices/invoice_123.
-     * @deny (get, update, delete) User with UID 'user_xyz' cannot read, update, or delete the invoice at /customers/user_abc/invoices/invoice_123.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /customers/{customerId}/invoices/{invoiceId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(customerId) {
-        return isSignedIn() && request.auth.uid == customerId;
-      }
-       function isExistingOwner(customerId) {
-        return isOwner(customerId) && resource != null;
-      }
-
-      allow get: if isOwner(customerId);
-      allow list: if isOwner(customerId);
-      allow create: if isOwner(customerId) && request.resource.data.customerId == customerId;
-      allow update: if isExistingOwner(customerId) && request.resource.data.customerId == resource.data.customerId;
-      allow delete: if isExistingOwner(customerId);
-    }
-
-    /**
-     * @description Restricts access to invoice items based on the parent invoice's access control.
-     * @path /invoices/{invoiceId}/invoiceItems/{invoiceItemId}
-     * @allow (get) Anyone can read an invoice item if they know the invoiceId, but this access is contingent on knowing the parent invoice ID.
-     * @deny (create, update, delete) No one can create, update, or delete invoice items directly (should be managed through backend functions).
-     */
-    match /invoices/{invoiceId}/invoiceItems/{invoiceItemId} {
-       allow get: if true;
-       allow list: if false;
-       allow create, update, delete: if false;
-    }
-
-    /**
-     * @description Restricts access to payments based on the parent invoice's access control.
-     * @path /invoices/{invoiceId}/payments/{paymentId}
-     * @allow (get) Anyone can read a payment if they know the invoiceId, but this access is contingent on knowing the parent invoice ID.
-     * @deny (create, update, delete) No one can create, update, or delete payments directly (should be managed through backend functions).
-     */
-    match /invoices/{invoiceId}/payments/{paymentId} {
-      allow get: if true;
-      allow list: if false;
-      allow create, update, delete: if false;
+    // Match any document in any collection under the 'users' root collection.
+    // This rule enforces that a user can only access documents under their own user ID.
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

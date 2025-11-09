@@ -8,291 +8,212 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the product."
+          "description": "Unique identifier for the product, managed by Firestore."
         },
         "name": {
           "type": "string",
           "description": "Name of the product."
         },
-        "description": {
-          "type": "string",
-          "description": "Detailed description of the product."
-        },
-        "price": {
-          "type": "number",
-          "description": "Selling price of the product."
-        },
         "category": {
           "type": "string",
           "description": "Category the product belongs to."
         },
-        "imageUrl": {
+        "price": {
+          "type": "number",
+          "description": "Selling price per unit."
+        },
+        "purchasePrice": {
+          "type": "number",
+          "description": "Cost price per unit."
+        },
+        "stock": {
+          "type": "number",
+          "description": "Current quantity in stock."
+        },
+        "minStock": {
+          "type": "number",
+          "description": "Minimum stock level for reorder alerts."
+        },
+        "quantityPerBox": {
+          "type": "number",
+          "description": "Number of units in a box/case."
+        },
+        "boxPrice": {
+          "type": "number",
+          "description": "Selling price for a full box."
+        },
+        "barcodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of barcode strings for the product."
+        },
+        "createdAt": {
           "type": "string",
-          "description": "URL of the product image.",
-          "format": "uri"
+          "format": "date-time",
+          "description": "Timestamp when the product was created."
         }
       },
-      "required": [
-        "id",
-        "name",
-        "price",
-        "category"
-      ]
-    },
-    "Invoice": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Invoice",
-      "type": "object",
-      "description": "Represents an invoice for a purchase.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the invoice."
-        },
-        "customerId": {
-          "type": "string",
-          "description": "Reference to Customer. (Relationship: Customer 1:N Invoice)"
-        },
-        "invoiceDate": {
-          "type": "string",
-          "description": "Date when the invoice was created.",
-          "format": "date-time"
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "Total amount of the invoice."
-        },
-        "amountPaid": {
-          "type": "number",
-          "description": "Amount paid by the customer towards the invoice."
-        },
-        "balanceDue": {
-          "type": "number",
-          "description": "Remaining balance due on the invoice."
-        }
-      },
-      "required": [
-        "id",
-        "customerId",
-        "invoiceDate",
-        "totalAmount"
-      ]
-    },
-    "InvoiceItem": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "InvoiceItem",
-      "type": "object",
-      "description": "Represents an item within an invoice.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the invoice item."
-        },
-        "invoiceId": {
-          "type": "string",
-          "description": "Reference to Invoice. (Relationship: Invoice 1:N InvoiceItem)"
-        },
-        "productId": {
-          "type": "string",
-          "description": "Reference to Product. (Relationship: Product 1:N InvoiceItem)"
-        },
-        "quantity": {
-          "type": "number",
-          "description": "Quantity of the product in the invoice item."
-        },
-        "unitPrice": {
-          "type": "number",
-          "description": "Price of the product per unit."
-        },
-        "discount": {
-          "type": "number",
-          "description": "Discount applied to the product in the invoice item."
-        }
-      },
-      "required": [
-        "id",
-        "invoiceId",
-        "productId",
-        "quantity",
-        "unitPrice"
-      ]
+      "required": ["name", "category", "price", "purchasePrice", "stock", "minStock", "barcodes"]
     },
     "Customer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Customer",
       "type": "object",
-      "description": "Represents a customer.",
+      "description": "Represents a customer of the business.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the customer."
+          "description": "Unique identifier for the customer, managed by Firestore."
         },
-        "firstName": {
+        "name": {
           "type": "string",
-          "description": "First name of the customer."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the customer."
+          "description": "Full name of the customer."
         },
         "email": {
           "type": "string",
-          "description": "Email address of the customer.",
-          "format": "email"
+          "format": "email",
+          "description": "Email address of the customer."
         },
-        "phoneNumber": {
+        "phone": {
           "type": "string",
           "description": "Phone number of the customer."
         },
-        "address": {
-          "type": "string",
-          "description": "Address of the customer."
+        "spent": {
+          "type": "number",
+          "description": "Total amount spent by the customer."
+        },
+        "balance": {
+          "type": "number",
+          "description": "Current outstanding balance (debt) of the customer."
+        },
+        "settlementDay": {
+            "type": "number",
+            "description": "The specific day of the month the customer's debts are due."
         }
       },
-      "required": [
-        "id",
-        "firstName",
-        "lastName"
-      ]
+      "required": ["name", "spent", "balance"]
     },
-    "Payment": {
+    "SaleRecord": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Payment",
+      "title": "SaleRecord",
       "type": "object",
-      "description": "Represents a payment made by a customer.",
+      "description": "Represents a single sale or payment transaction.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the payment."
+          "description": "Unique identifier for the sale record, managed by Firestore."
         },
-        "invoiceId": {
+        "customerId": {
           "type": "string",
-          "description": "Reference to Invoice. (Relationship: Invoice 1:N Payment)"
+          "description": "ID of the customer associated with the sale. Can be null for cash sales."
         },
-        "paymentDate": {
+        "items": {
+          "type": "array",
+          "description": "List of items sold in the transaction. Empty for payment-only records.",
+          "items": {
+            "type": "object",
+            "description": "A snapshot of the product at the time of sale."
+          }
+        },
+        "totals": {
+          "type": "object",
+          "properties": {
+            "subtotal": { "type": "number" },
+            "discount": { "type": "number" },
+            "total": { "type": "number" },
+            "amountPaid": { "type": "number" },
+            "balance": { "type": "number", "description": "Change in customer balance for this transaction." }
+          }
+        },
+        "date": {
           "type": "string",
-          "description": "Date when the payment was made.",
-          "format": "date-time"
-        },
-        "amount": {
-          "type": "number",
-          "description": "Amount paid in the payment."
-        },
-        "paymentMethod": {
-          "type": "string",
-          "description": "Method of payment used."
+          "format": "date-time",
+          "description": "ISO 8601 string of when the sale occurred."
         }
       },
-      "required": [
-        "id",
-        "invoiceId",
-        "paymentDate",
-        "amount",
-        "paymentMethod"
-      ]
+      "required": ["id", "items", "totals", "date"]
+    },
+     "BakeryOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BakeryOrder",
+      "type": "object",
+      "description": "Represents a daily order, typically for a bakery.",
+      "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string", "format": "date-time" },
+          "name": { "type": "string" },
+          "quantity": { "type": "number" },
+          "paid": { "type": "boolean" },
+          "received": { "type": "boolean" },
+          "isRecurring": { "type": "boolean", "description": "If true, this is a template for daily orders." },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["date", "name", "quantity", "paid", "received", "isRecurring"]
+    },
+    "Supplier": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Supplier",
+        "type": "object",
+        "description": "Represents a product supplier.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "productCategory": { "type": "string" },
+            "visitDays": { "type": "array", "items": { "type": "number" } },
+            "balance": { "type": "number", "description": "Current balance owed to the supplier." }
+        },
+        "required": ["name", "phone", "productCategory", "balance"]
+    },
+    "SupplierInvoice": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "SupplierInvoice",
+        "type": "object",
+        "description": "Represents an invoice from a supplier or a payment made to them.",
+        "properties": {
+            "id": { "type": "string" },
+            "supplierId": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "items": { "type": "array", "items": { "type": "object" } },
+            "totalAmount": { "type": "number" },
+            "amountPaid": { "type": "number" },
+            "isPayment": { "type": "boolean", "description": "True if this record is a payment, not an invoice." },
+            "priceUpdateStrategy": { "type": "string", "enum": ["master", "average", "none"] }
+        },
+        "required": ["supplierId", "date", "items", "totalAmount"]
+    },
+    "Expense": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Expense",
+        "type": "object",
+        "description": "Represents a business expense.",
+        "properties": {
+            "id": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "category": { "type": "string" },
+            "description": { "type": "string" },
+            "amount": { "type": "number" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["date", "category", "description", "amount"]
     }
-  },
-  "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/customers/{customerId}",
-        "definition": {
-          "entityName": "Customer",
-          "schema": {
-            "$ref": "#/backend/entities/Customer"
-          },
-          "description": "Stores customer profiles. Uses path-based ownership for access control.",
-          "params": [
-            {
-              "name": "customerId",
-              "description": "The unique identifier for the customer."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/products/{productId}",
-        "definition": {
-          "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
-          "description": "Stores product information.",
-          "params": [
-            {
-              "name": "productId",
-              "description": "The unique identifier for the product."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/customers/{customerId}/invoices/{invoiceId}",
-        "definition": {
-          "entityName": "Invoice",
-          "schema": {
-            "$ref": "#/backend/entities/Invoice"
-          },
-          "description": "Stores invoices associated with a specific customer. Uses path-based ownership.",
-          "params": [
-            {
-              "name": "customerId",
-              "description": "The unique identifier for the customer."
-            },
-            {
-              "name": "invoiceId",
-              "description": "The unique identifier for the invoice."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/invoices/{invoiceId}/invoiceItems/{invoiceItemId}",
-        "definition": {
-          "entityName": "InvoiceItem",
-          "schema": {
-            "$ref": "#/backend/entities/InvoiceItem"
-          },
-          "description": "Stores individual items within an invoice.",
-          "params": [
-            {
-              "name": "invoiceId",
-              "description": "The unique identifier for the invoice."
-            },
-            {
-              "name": "invoiceItemId",
-              "description": "The unique identifier for the invoice item."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/invoices/{invoiceId}/payments/{paymentId}",
-        "definition": {
-          "entityName": "Payment",
-          "schema": {
-            "$ref": "#/backend/entities/Payment"
-          },
-          "description": "Stores payments associated with an invoice.",
-          "params": [
-            {
-              "name": "invoiceId",
-              "description": "The unique identifier for the invoice."
-            },
-            {
-              "name": "paymentId",
-              "description": "The unique identifier for the payment."
-            }
-          ]
-        }
+        "path": "/users/{userId}/{collection}/{docId}",
+        "description": "A multi-collection data model where all data is stored under a user's unique ID. This enforces top-level security and data isolation between users.",
+        "params": [
+          {"name": "userId", "description": "The unique ID of the authenticated user."},
+          {"name": "collection", "description": "The name of the data collection (e.g., 'products', 'customers')."},
+          {"name": "docId", "description": "The unique ID of the document within the collection."}
+        ]
       }
-    ],
-    "reasoning": "The Firestore structure is designed to optimize for the point-of-sale application's requirements, focusing on authorization independence, clarity, and scalability. Customer, Product and Invoice data are separated into individual collections. Invoices, InvoiceItems, and Payments are structured to maintain a clear hierarchy while ensuring that access control can be implemented efficiently using security rules. This design avoids complex `get()` calls in security rules, enabling atomic operations and improved debuggability.\n\nSpecifically, the following strategies are implemented:\n\n*   **Authorization Independence:** The structure aims to avoid hierarchical authorization dependencies. For instance, while InvoiceItems are related to Invoices, there's no denormalization of authorization data into InvoiceItems since their access is intrinsically tied to the Invoice's access control. The Invoice collection includes the `customerId`, enabling direct association and filtering by customer without needing parent document reads.\n*   **Structural Segregation:** Each collection (Customers, Products, Invoices, InvoiceItems, Payments) contains data with a homogeneous security posture. This simplifies security rules, as there's no need to differentiate access based on document content within a single collection.\n*   **Access Modeling:** Path-based ownership is used for customer-related data (Invoices and Payments within `/customers/{customerId}`). This allows straightforward security rules to ensure only the customer or authorized personnel can access the data. Products are treated as a global catalog accessible with appropriate roles or permissions.\n*   **QAPs Support:** The segregation of data into separate collections allows for secure list operations. For example, listing all invoices for a specific customer is performed by querying the `/customers/{customerId}/invoices` collection, enabling security rules to efficiently filter based on customer ID without needing to filter document data. Global role collections like `/roles_admin/{uid}` could be introduced if there is a need to provide an administrator role, supporting secure management operations."
+    ]
+  },
+  "auth": {
+    "providers": ["anonymous"]
   }
 }
