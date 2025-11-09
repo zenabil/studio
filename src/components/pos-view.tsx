@@ -1082,7 +1082,3 @@ export function PosView() {
     </div>
   );
 }
-
-    
-
-    

@@ -156,6 +156,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     } catch (error) {
       // Error is handled in context/page, just prevent dialog from closing
       console.error("Failed to save product:", error);
+      throw error;
     } finally {
       setIsSaving(false);
     }
@@ -332,5 +333,3 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     </>
   );
 }
-
-    

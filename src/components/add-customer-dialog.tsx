@@ -107,6 +107,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, cus
       onClose();
     } catch (error) {
       console.error(error);
+      throw error;
     } finally {
       setIsSaving(false);
     }
@@ -188,5 +189,3 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, cus
     </Dialog>
   );
 }
-
-    
