@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -47,13 +48,14 @@ import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, language, dir } = useLanguage();
-  const { products, customers, salesHistory, isLoading, userProfile } = useData();
+  const { products, customers, salesHistory, isLoading } = useData();
+  const { userProfile } = useUser();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());

@@ -105,7 +105,16 @@ export function InvoiceDialog({ isOpen, onClose, cart, customer, totals }: Invoi
                 const effectiveUnitPrice = item.quantity > 0 ? lineTotal / item.quantity : 0;
                 return (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell className="font-medium flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-md bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
+                          {item.imageUrl ? (
+                            <Image src={item.imageUrl} alt={item.name} width={40} height={40} className="object-cover h-full w-full" unoptimized/>
+                          ) : (
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span>{item.name}</span>
+                    </TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">{settings.currency}{effectiveUnitPrice.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{settings.currency}{lineTotal.toFixed(2)}</TableCell>
