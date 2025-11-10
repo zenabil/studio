@@ -270,8 +270,13 @@ export function PosView() {
   useEffect(() => {
     if (sessions.length > 0 && !sessions.find(s => s.id === activeSessionId)) {
       setActiveSessionId(sessions[0].id);
+    } else if (sessions.length === 0) {
+      // This is a failsafe. If all sessions are somehow deleted, create a new one.
+      const newSession = createNewSession([]);
+      setSessions([newSession]);
+      setActiveSessionId(newSession.id);
     }
-  }, [sessions, activeSessionId]);
+  }, [sessions, activeSessionId, createNewSession]);
 
   const updateActiveSession = useCallback((data: Partial<Omit<SaleSession, 'id'>>) => {
     setSessions(prevSessions =>
