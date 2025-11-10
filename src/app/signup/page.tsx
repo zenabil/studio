@@ -22,7 +22,7 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
-import { doc, setDoc, serverTimestamp, getDocs, query, collection } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -58,10 +58,7 @@ export default function SignupPage() {
     setIsLoading(true);
     setFirebaseError(null);
     try {
-      // Check if any users exist
-      const userProfilesCollection = collection(firestore, 'userProfiles');
-      const userProfilesSnapshot = await getDocs(query(userProfilesCollection));
-      const isFirstUser = userProfilesSnapshot.empty;
+      const isAdmin = data.email.toLowerCase() === 'zenaguibilal2@gmail.com';
 
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -75,9 +72,9 @@ export default function SignupPage() {
       await setDoc(userProfileRef, {
         email: user.email,
         createdAt: serverTimestamp(),
-        // First user is automatically an admin and approved, others are pending
-        status: isFirstUser ? 'approved' : 'pending',
-        isAdmin: isFirstUser,
+        // Admin is auto-approved, others are pending
+        status: isAdmin ? 'approved' : 'pending',
+        isAdmin: isAdmin,
       });
 
       router.push('/');
