@@ -5,12 +5,10 @@ import React from 'react';
 import type { Product } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Box } from 'lucide-react';
+import { PlusCircle, Box, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
-import placeholderImageData from '@/app/lib/placeholder-images.json';
-
 
 interface PosProductCardProps {
   product: Product;
@@ -22,12 +20,6 @@ interface PosProductCardProps {
 const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAddToCart, currency, t }) => {
   const isOutOfStock = product.stock <= 0;
   const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
-  const { seed, width, height, hint } = placeholderImageData.productCard;
-  
-  const productSeed = seed + (product.id.charCodeAt(0) || 0) + (product.id.charCodeAt(1) || 0);
-  const placeholderImageUrl = `https://picsum.photos/seed/${productSeed}/${width}/${height}`;
-
-  const imageUrl = product.imageUrl || placeholderImageUrl;
 
   return (
     <Card 
@@ -39,16 +31,18 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
       )}
       onClick={() => !isOutOfStock && onAddToCart(product, 1)}
     >
-      <div className="aspect-square w-full overflow-hidden relative bg-muted">
-          <Image
-            src={imageUrl}
-            alt={product.name}
-            width={width}
-            height={height}
-            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
-            data-ai-hint={hint}
-            unoptimized
-          />
+      <div className="aspect-square w-full overflow-hidden relative bg-muted flex items-center justify-center">
+          {product.imageUrl ? (
+            <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                unoptimized
+            />
+          ) : (
+            <Package className="h-12 w-12 text-muted-foreground/50" />
+          )}
            {isOutOfStock && (
              <Badge variant="destructive" className="absolute top-2 left-2">
                 {t.pos.outOfStock}
