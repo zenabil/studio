@@ -29,6 +29,7 @@ import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
 import { calculateItemTotal } from '@/lib/utils';
 import { format } from 'date-fns';
+import { AiSummaryCard } from '@/components/reports/ai-summary-card';
 
 export default function DashboardPage() {
   const { t } = useLanguage();
@@ -148,6 +149,16 @@ export default function DashboardPage() {
           totalExpenses: expenseTotal
       };
   }, [filteredSales, allCustomers, products, expenses, dateRange, t.reports.other]);
+  
+  const summaryData = useMemo(() => ({
+    totalSales,
+    totalExpenses,
+    totalProfits,
+    topSellingProducts: bestSellers,
+    customerCount: uniqueCustomerCount,
+    salesCount: filteredSales.length,
+  }), [totalSales, totalExpenses, totalProfits, bestSellers, uniqueCustomerCount, filteredSales.length]);
+
 
   if (isLoading) {
     return <Loading />;
@@ -216,6 +227,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
       </div>
+      
+      <AiSummaryCard data={summaryData} />
 
       <Card>
           <CardHeader>
