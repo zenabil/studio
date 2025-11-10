@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -9,8 +8,6 @@ import {
     useFirestore,
     useCollection,
     useMemoFirebase,
-    useDoc,
-    getSdks,
 } from '@/firebase';
 import {
     collection,
@@ -48,10 +45,10 @@ interface DataContextType {
     userProfiles: WithId<UserProfile>[];
     userProfile: UserProfile | null;
     isLoading: boolean;
-    addProduct: (productData: ProductFormData) => Promise<WithId<Product>>;
+    addProduct: (productData: ProductFormData) => Promise<void>;
     updateProduct: (productId: string, productData: Partial<ProductFormData>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
-    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<WithId<Customer>>;
+    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
     updateCustomer: (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => Promise<void>;
     deleteCustomer: (customerId: string) => Promise<void>;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
@@ -65,7 +62,7 @@ interface DataContextType {
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
     addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => Promise<void>;
-    addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<WithId<PurchaseOrder>>;
+    addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<void>;
     updatePurchaseOrder: (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => Promise<void>;
     deletePurchaseOrder: (poId: string) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
@@ -80,11 +77,8 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const AdminDataProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+// This component fetches global data (like user profiles) if the user is an admin.
+const AdminDataProvider = ({ children }: { children: React.ReactNode }) => {
   const firestore = useFirestore();
   const { userProfile, setUserProfiles, setUserProfilesLoading } = useContext(DataContext)!;
 
@@ -141,22 +135,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const isLoadingAllData = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
     
-    const contextValue = useMemo(() => ({
-        products: products || [],
-        customers: customers || [],
-        salesHistory: salesHistory || [],
-        bakeryOrders: bakeryOrders || [],
-        suppliers: suppliers || [],
-        supplierInvoices: supplierInvoices || [],
-        purchaseOrders: purchaseOrders || [],
-        expenses: expenses || [],
-        userProfiles: userProfiles,
-        userProfile: authUserProfile,
-        isLoading: isLoadingAllData,
-        setUserProfiles,
-        setUserProfilesLoading
-    }), [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, userProfiles, authUserProfile, isLoadingAllData]);
-    
     const uploadImage = useCallback(async (file: File): Promise<string> => {
         if (!dataUserId || !firebaseApp) throw new Error("User not authenticated or Firebase app not available.");
         
@@ -170,7 +148,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return downloadURL;
     }, [dataUserId, firebaseApp]);
 
-    const addProduct = useCallback(async (productData: ProductFormData): Promise<WithId<Product>> => {
+    const addProduct = useCallback(async (productData: ProductFormData) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
@@ -193,13 +171,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             createdAt: serverTimestamp(),
         };
 
-        const docRef = await addDoc(collectionRef, newProductData)
+        addDoc(collectionRef, newProductData)
             .catch(error => {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
                 throw error;
             });
-        
-        return { id: docRef.id, ...restOfProductData, imageUrl };
     }, [getCollectionRef, uploadImage]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<ProductFormData>) => {
@@ -221,7 +197,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
 
         const docRef = doc(collectionRef, productId);
-        await updateDoc(docRef, sanitizedData).catch(error => {
+        updateDoc(docRef, sanitizedData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: sanitizedData }));
         });
     }, [getCollectionRef, uploadImage]);
@@ -229,7 +205,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteProduct = useCallback(async (productId: string) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
-        if ((contextValue.salesHistory || []).some(sale => sale.items.some(item => item.id === productId)) || (contextValue.supplierInvoices || []).some(invoice => invoice.items.some(item => item.productId === productId))) {
+        if ((salesHistory || []).some(sale => sale.items.some(item => item.id === productId)) || (supplierInvoices || []).some(invoice => invoice.items.some(item => item.productId === productId))) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
         }
@@ -238,9 +214,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.products.productDeleted });
-    }, [getCollectionRef, contextValue.salesHistory, contextValue.supplierInvoices, t, toast]);
+    }, [getCollectionRef, salesHistory, supplierInvoices, t, toast]);
     
-    const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<WithId<Customer>> => {
+    const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
         const collectionRef = getCollectionRef('customers');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
@@ -250,11 +226,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             balance: 0,
         };
 
-        const docRef = await addDoc(collectionRef, newCustomerData).catch(error => {
+        addDoc(collectionRef, newCustomerData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newCustomerData }));
             throw error;
         });
-        return { id: docRef.id, ...newCustomerData, spent: 0, balance: 0 };
         
     }, [getCollectionRef]);
     
@@ -270,7 +245,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteCustomer = useCallback(async (customerId: string) => {
         const collectionRef = getCollectionRef('customers');
         if (!collectionRef) return;
-        if ((contextValue.salesHistory || []).some(sale => sale.customerId === customerId)) {
+        if ((salesHistory || []).some(sale => sale.customerId === customerId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
         }
@@ -279,7 +254,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.customers.customerDeleted });
-    }, [getCollectionRef, contextValue.salesHistory, t, toast]);
+    }, [getCollectionRef, salesHistory, t, toast]);
     
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -297,7 +272,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         for (const item of cart) {
             const productRef = doc(firestore, `users/${dataUserId}/products/${item.id}`);
-            const product = (contextValue.products || []).find(p => p.id === item.id);
+            const product = (products || []).find(p => p.id === item.id);
             if (product) {
                 if (product.stock < item.quantity) {
                     throw new Error(`Not enough stock for '${product.name}'.`);
@@ -308,7 +283,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         if (customerId) {
             const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
-            const customer = (contextValue.customers || []).find(c => c.id === customerId);
+            const customer = (customers || []).find(c => c.id === customerId);
             if (customer) {
                 const newSpent = customer.spent + totals.total;
                 const newBalance = customer.balance + totals.balance;
@@ -321,7 +296,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             throw error;
         });
 
-    }, [firestore, dataUserId, contextValue.products, contextValue.customers]);
+    }, [firestore, dataUserId, products, customers]);
     
     const makePayment = useCallback(async (customerId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -338,7 +313,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         batch.set(paymentRef, paymentRecord);
 
         const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
-        const customer = (contextValue.customers || []).find(c => c.id === customerId);
+        const customer = (customers || []).find(c => c.id === customerId);
         if (customer) {
             const newBalance = customer.balance - amount;
             batch.update(customerRef, { balance: newBalance });
@@ -348,7 +323,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { payment: { customerId, amount } } }));
             throw error;
         });
-    }, [firestore, dataUserId, contextValue.customers]);
+    }, [firestore, dataUserId, customers]);
 
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
         const collectionRef = getCollectionRef('bakeryOrders');
@@ -398,7 +373,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (!collectionRef || !firestore) throw new Error("User not authenticated or data path not available.");
         
         const docRef = doc(collectionRef, templateId);
-        const templateOrder = (contextValue.bakeryOrders || []).find(o => o.id === templateId);
+        const templateOrder = (bakeryOrders || []).find(o => o.id === templateId);
 
         if (!templateOrder) return;
 
@@ -419,7 +394,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { isRecurring } }));
             throw error;
         });
-    }, [getCollectionRef, firestore, contextValue.bakeryOrders]);
+    }, [getCollectionRef, firestore, bakeryOrders]);
 
     const addSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
         const collectionRef = getCollectionRef('suppliers');
@@ -442,7 +417,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteSupplier = useCallback(async (supplierId: string) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) return;
-        if ((contextValue.supplierInvoices || []).some(invoice => invoice.supplierId === supplierId)) {
+        if ((supplierInvoices || []).some(invoice => invoice.supplierId === supplierId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.suppliers.deleteErrorInUse });
             return;
         }
@@ -451,7 +426,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.suppliers.supplierDeleted });
-    }, [getCollectionRef, contextValue.supplierInvoices, t, toast]);
+    }, [getCollectionRef, supplierInvoices, t, toast]);
     
     const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -462,7 +437,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
         batch.set(invoiceRef, newInvoice);
 
-        const updatedProducts = calculateUpdatedProductsForInvoice((contextValue.products || []), invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
+        const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
         invoiceData.items.forEach(item => {
             const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
             const updatedProductData = updatedProducts.find(p => p.id === item.productId);
@@ -475,7 +450,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
 
         const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
-        const supplier = (contextValue.suppliers || []).find(s => s.id === invoiceData.supplierId);
+        const supplier = (suppliers || []).find(s => s.id === invoiceData.supplierId);
         if (supplier) {
             const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
             batch.update(supplierRef, { balance: newBalance });
@@ -490,9 +465,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
             throw error;
         });
-    }, [firestore, dataUserId, contextValue.products, contextValue.suppliers]);
+    }, [firestore, dataUserId, products, suppliers]);
 
-    const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<WithId<PurchaseOrder>> => {
+    const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
         const collectionRef = getCollectionRef('purchaseOrders');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         
@@ -504,12 +479,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             updatedAt: now,
         };
 
-        const docRef = await addDoc(collectionRef, newPOData).catch(error => {
+        addDoc(collectionRef, newPOData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newPOData }));
             throw error;
         });
 
-        return { id: docRef.id, ...newPOData };
     }, [getCollectionRef]);
     
     const updatePurchaseOrder = useCallback(async (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => {
@@ -549,7 +523,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         batch.set(paymentRef, paymentRecord);
         
         const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${supplierId}`);
-        const supplier = (contextValue.suppliers || []).find(s => s.id === supplierId);
+        const supplier = (suppliers || []).find(s => s.id === supplierId);
         if(supplier) {
             batch.update(supplierRef, { balance: supplier.balance - amount });
         }
@@ -558,7 +532,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { supplierPayment: { supplierId, amount } } }));
             throw error;
         });
-    }, [firestore, dataUserId, contextValue.suppliers]);
+    }, [firestore, dataUserId, suppliers]);
 
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
         const collectionRef = getCollectionRef('expenses');
@@ -637,8 +611,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
     }, [dataUserId, firestore]);
 
-    const fullContext = useMemo(() => ({
-        ...contextValue,
+    const contextValue = {
+        products: products || [],
+        customers: customers || [],
+        salesHistory: salesHistory || [],
+        bakeryOrders: bakeryOrders || [],
+        suppliers: suppliers || [],
+        supplierInvoices: supplierInvoices || [],
+        purchaseOrders: purchaseOrders || [],
+        expenses: expenses || [],
+        userProfiles: userProfiles,
+        userProfile: authUserProfile,
+        isLoading: isLoadingAllData,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -667,20 +651,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         approveUser,
         revokeUser,
         restoreData,
-    }), [
-        contextValue,
-        addProduct, updateProduct, deleteProduct,
-        addCustomer, updateCustomer, deleteCustomer,
-        addSaleRecord, makePayment,
-        addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, deleteRecurringPattern, setAsRecurringTemplate,
-        addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, makePaymentToSupplier,
-        addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder,
-        addExpense, updateExpense, deleteExpense,
-        addPendingUser, approveUser, revokeUser, restoreData
-    ]);
+    };
 
     return (
-      <DataContext.Provider value={fullContext}>
+      <DataContext.Provider value={{...contextValue, setUserProfiles, setUserProfilesLoading}}>
         <AdminDataProvider>
           {children}
         </AdminDataProvider>
@@ -695,3 +669,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    
