@@ -29,7 +29,6 @@ import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
 import { calculateItemTotal } from '@/lib/utils';
 import { format } from 'date-fns';
-import { AiSummaryCard } from '@/components/reports/ai-summary-card';
 
 export default function DashboardPage() {
   const { t } = useLanguage();
@@ -228,8 +227,6 @@ export default function DashboardPage() {
           </Card>
       </div>
       
-      <AiSummaryCard data={summaryData} />
-
       <Card>
           <CardHeader>
             <CardTitle>{t.reports.salesOverTime}</CardTitle>
