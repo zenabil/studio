@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import {
@@ -102,7 +101,7 @@ export default function PurchaseOrdersPage() {
     handleCloseDeleteDialog();
   };
 
-  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
+  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => {
     await addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);
@@ -164,7 +163,7 @@ export default function PurchaseOrdersPage() {
                       <TableCell>{format(new Date(po.createdAt), 'PP')}</TableCell>
                       <TableCell className="text-right">{settings.currency}{po.total.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        {['sent', 'partially_received'].includes(po.status) && (
+                        {['sent', 'partially_received', 'draft'].includes(po.status) && (
                           <Button variant="outline" size="sm" onClick={() => handleOpenReceiveDialog(po)}>
                              <Truck className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                              {t.suppliers.receiveItems || 'Receive'}

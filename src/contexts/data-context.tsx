@@ -166,7 +166,7 @@ interface DataContextType {
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
     addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => Promise<void>;
-    addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<void>;
+    addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<WithId<PurchaseOrder>>;
     updatePurchaseOrder: (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => Promise<void>;
     deletePurchaseOrder: (poId: string) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
@@ -514,22 +514,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
     }, [firestore, dataUserId, products, suppliers]);
 
-    const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
+    const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<WithId<PurchaseOrder>> => {
         const collectionRef = getCollectionRef('purchaseOrders');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         
         const now = new Date().toISOString();
-        const newPO: Omit<PurchaseOrder, 'id'> = {
+        const newPOData: Omit<PurchaseOrder, 'id'> = {
             ...poData,
             status: 'draft',
             createdAt: now,
             updatedAt: now,
         };
 
-        return addDoc(collectionRef, newPO).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newPO }));
+        const docRef = await addDoc(collectionRef, newPOData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newPOData }));
             throw error;
         });
+
+        return { id: docRef.id, ...newPOData };
     }, [getCollectionRef]);
     
     const updatePurchaseOrder = useCallback(async (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => {

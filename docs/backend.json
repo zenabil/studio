@@ -181,9 +181,10 @@
             "totalAmount": { "type": "number" },
             "amountPaid": { "type": "number" },
             "isPayment": { "type": "boolean", "description": "True if this record is a payment, not an invoice." },
-            "priceUpdateStrategy": { "type": "string", "enum": ["master", "average", "none"] }
+            "priceUpdateStrategy": { "type": "string", "enum": ["master", "average", "none"] },
+            "purchaseOrderId": { "type": "string", "description": "ID of the purchase order this invoice is linked to, if any." }
         },
-        "required": ["supplierId", "date", "items", "totalAmount"]
+        "required": ["supplierId", "date", "totalAmount"]
     },
      "PurchaseOrder": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -268,8 +269,7 @@
       },
       {
         "path": "/users/{userId}/expenses/{expenseId}",
-        "schema": "Expense",
-        "description": "Expenses, partitioned by user ID."
+        "schema": "Expenses, partitioned by user ID."
       },
       {
         "path": "/userProfiles/{userId}",
