@@ -7,6 +7,7 @@ import {
     useFirestore,
     useCollection,
     useMemoFirebase,
+    useDoc,
 } from '@/firebase';
 import {
     collection,
@@ -133,10 +134,11 @@ export interface SupplierInvoice {
 }
 
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   email: string;
-  approved: boolean;
+  status: 'approved' | 'pending';
+  isAdmin: boolean;
   createdAt: string;
 }
 
@@ -149,6 +151,8 @@ interface DataContextType {
     supplierInvoices: WithId<SupplierInvoice>[];
     purchaseOrders: WithId<PurchaseOrder>[];
     expenses: WithId<Expense>[];
+    userProfiles: WithId<UserProfile>[];
+    userProfile: UserProfile | null;
     isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id'>) => Promise<WithId<Product>>;
     updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
@@ -174,6 +178,7 @@ interface DataContextType {
     addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
+    updateUserProfile: (userId: string, profileData: Partial<UserProfile>) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
 }
 
@@ -187,8 +192,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const dataUserId = user?.uid;
 
-    const getCollectionRef = useCallback((collectionName: string) => {
-        if (!dataUserId || !firestore) return null;
+    const getCollectionRef = useCallback((collectionName: string, forAllUsers: boolean = false) => {
+        if (!firestore) return null;
+        if (forAllUsers) {
+            return collection(firestore, collectionName) as CollectionReference;
+        }
+        if (!dataUserId) return null;
         const path = `users/${dataUserId}/${collectionName}`;
         return collection(firestore, path) as CollectionReference;
     }, [firestore, dataUserId]);
@@ -201,6 +210,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoicesRef = useMemoFirebase(() => getCollectionRef('supplierInvoices'), [getCollectionRef]);
     const purchaseOrdersRef = useMemoFirebase(() => getCollectionRef('purchaseOrders'), [getCollectionRef]);
     const expensesRef = useMemoFirebase(() => getCollectionRef('expenses'), [getCollectionRef]);
+    const userProfilesRef = useMemoFirebase(() => getCollectionRef('userProfiles', true), [getCollectionRef]);
+
+    const userProfileDocRef = useMemoFirebase(() => {
+        if (!firestore || !dataUserId) return null;
+        return doc(firestore, `userProfiles/${dataUserId}`);
+    }, [firestore, dataUserId]);
 
     const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customersData, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -210,6 +225,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoicesData, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expensesData, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
+    const { data: userProfilesData, isLoading: userProfilesLoading } = useCollection<UserProfile>(userProfilesRef);
+    const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
+    
+    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
 
     const products = useMemo(() => productsData || [], [productsData]);
     const customers = useMemo(() => customersData || [], [customersData]);
@@ -219,19 +238,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoices = useMemo(() => supplierInvoicesData || [], [supplierInvoicesData]);
     const purchaseOrders = useMemo(() => purchaseOrdersData || [], [purchaseOrdersData]);
     const expenses = useMemo(() => expensesData || [], [expensesData]);
+    const userProfiles = useMemo(() => userProfilesData || [], [userProfilesData]);
 
-    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading;
+    const isLoading = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
     
     const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
-        // Ensure undefined is converted to null
-        const sanitizedData = { ...productData };
-        if (sanitizedData.quantityPerBox === undefined) sanitizedData.quantityPerBox = null;
-        if (sanitizedData.boxPrice === undefined) sanitizedData.boxPrice = null;
-        if (sanitizedData.imageUrl === undefined) sanitizedData.imageUrl = null;
-
+        const sanitizedData: any = { ...productData };
+        Object.keys(sanitizedData).forEach(key => {
+            if (sanitizedData[key] === undefined) {
+                sanitizedData[key] = null;
+            }
+        });
 
         const newProductData = {
             ...sanitizedData,
@@ -251,10 +271,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
         
-        // Ensure undefined is converted to null
-        const sanitizedData = { ...productData };
-        if (sanitizedData.quantityPerBox === undefined) sanitizedData.quantityPerBox = null;
-        if (sanitizedData.boxPrice === undefined) sanitizedData.boxPrice = null;
+        const sanitizedData: any = { ...productData };
+        Object.keys(sanitizedData).forEach(key => {
+            if (sanitizedData[key] === undefined) {
+                sanitizedData[key] = null;
+            }
+        });
 
         const docRef = doc(collectionRef, productId);
         updateDoc(docRef, sanitizedData).catch(error => {
@@ -624,6 +646,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         toast({ title: t.expenses.expenseDeleted });
     }, [getCollectionRef, t, toast]);
     
+    const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
+        const collectionRef = getCollectionRef('userProfiles', true);
+        if (!collectionRef) return;
+        const docRef = doc(collectionRef, userId);
+        updateDoc(docRef, profileData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: profileData }));
+        });
+    }, [getCollectionRef]);
+
     const restoreData = useCallback(async (data: any) => {
         if (!dataUserId || !firestore) {
             throw new Error("User not authenticated.");
@@ -662,6 +693,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         supplierInvoices,
         purchaseOrders,
         expenses,
+        userProfiles,
+        userProfile,
         isLoading,
         addProduct,
         updateProduct,
@@ -687,14 +720,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addExpense,
         updateExpense,
         deleteExpense,
+        updateUserProfile,
         restoreData,
     }), [
-        products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, isLoading,
+        products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, userProfiles, userProfile, isLoading,
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
         deleteSupplier, addSupplierInvoice, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
-        restoreData,
+        updateUserProfile, restoreData,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -34,6 +34,7 @@ import {
   HandCoins,
   LogOut,
   FileText,
+  Users,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -53,7 +54,7 @@ export function SidebarNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, language, dir } = useLanguage();
-  const { products, customers, salesHistory, isLoading } = useData();
+  const { products, customers, salesHistory, isLoading, userProfile } = useData();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -100,10 +101,13 @@ export function SidebarNav() {
       { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
       { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
     ];
+    if (userProfile?.isAdmin) {
+      items.push({ href: '/users', label: t.nav.userManagement, icon: Users });
+    }
     items.push({ href: '/settings', label: t.nav.settings, icon: Settings });
     
     return items;
-  }, [t, totalAlertCount]);
+  }, [t, totalAlertCount, userProfile?.isAdmin]);
 
   const AppLogo = () => (
     <div className="bg-primary/10 p-2 rounded-lg group">

@@ -229,9 +229,10 @@
       "properties": {
         "email": { "type": "string", "format": "email" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "approved": { "type": "boolean" }
+        "status": { "type": "string", "enum": ["approved", "pending"], "description": "The approval status of the user account." },
+        "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." }
       },
-      "required": ["email", "createdAt", "approved"]
+      "required": ["email", "createdAt", "status", "isAdmin"]
     }
   },
   "firestore": {

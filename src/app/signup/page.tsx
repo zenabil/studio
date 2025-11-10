@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -21,7 +22,7 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDocs, query, collection } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -57,6 +58,11 @@ export default function SignupPage() {
     setIsLoading(true);
     setFirebaseError(null);
     try {
+      // Check if any users exist
+      const userProfilesCollection = collection(firestore, 'userProfiles');
+      const userProfilesSnapshot = await getDocs(query(userProfilesCollection));
+      const isFirstUser = userProfilesSnapshot.empty;
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         data.email,
@@ -69,7 +75,9 @@ export default function SignupPage() {
       await setDoc(userProfileRef, {
         email: user.email,
         createdAt: serverTimestamp(),
-        approved: true, // Auto-approve user
+        // First user is automatically an admin and approved, others are pending
+        status: isFirstUser ? 'approved' : 'pending',
+        isAdmin: isFirstUser,
       });
 
       router.push('/');

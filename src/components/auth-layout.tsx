@@ -1,35 +1,40 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import Loading from '@/app/loading';
+import { useData } from '@/contexts/data-context';
+import { useLanguage } from '@/contexts/language-context';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const publicPaths = ['/login', '/signup'];
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const { userProfile, isLoading: isProfileLoading } = useData();
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const isLoading = isUserLoading || isProfileLoading;
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Wait until the user's auth state is resolved
+    if (isLoading) {
+      return; 
     }
 
     const isPublicPath = publicPaths.includes(pathname);
 
     if (user && isPublicPath) {
-      // If user is logged in and tries to access a public path, redirect to home
       router.push('/');
     } else if (!user && !isPublicPath) {
-      // If user is not logged in and tries to access a protected path, redirect to login
       router.push('/login');
     }
-  }, [user, isUserLoading, router, pathname]);
+  }, [user, isLoading, router, pathname]);
 
-  if (isUserLoading || (!user && !publicPaths.includes(pathname))) {
-    // Show a loading screen while checking auth or before redirecting to login
+  if (isLoading || (!user && !publicPaths.includes(pathname))) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">
         <Loading />
@@ -37,13 +42,27 @@ export function AuthLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // If user is logged in, but their profile is not approved and they are not on a public page
+  if (user && userProfile?.status === 'pending' && !publicPaths.includes(pathname)) {
+      return (
+          <div className="flex min-h-screen w-full items-center justify-center p-4">
+              <Card className="max-w-md text-center">
+                  <CardHeader>
+                    <CardTitle>{t.auth.pendingApprovalTitle}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p>{t.auth.pendingApprovalDescription}</p>
+                    <p className="text-sm text-muted-foreground">{t.auth.pendingApprovalContact}</p>
+                  </CardContent>
+              </Card>
+          </div>
+      );
+  }
+
   if (user || publicPaths.includes(pathname)) {
-    // If user is logged in, or if it's a public page, render the children
     return <>{children}</>;
   }
   
-  // This case should ideally not be reached due to the loading state and redirects,
-  // but it's a safe fallback.
   return (
     <div className="flex min-h-screen w-full items-center justify-center">
         <Loading />
