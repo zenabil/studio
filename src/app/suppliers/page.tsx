@@ -34,7 +34,7 @@ type SortableKeys = keyof Pick<Supplier, 'name' | 'phone' | 'productCategory' | 
 export default function SuppliersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, products, isLoading, makePaymentToSupplier } = useData();
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, products, isLoading, makePaymentToSupplier, addPurchaseOrder } = useData();
   const { settings } = useSettings();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -174,32 +174,19 @@ export default function SuppliersPage() {
     setSupplierForRestock(supplier);
   };
   
-  const handleCreatePurchaseOrderFromRestock = (productsToOrder: Product[]) => {
+  const handleCreatePurchaseOrderFromRestock = async (items: SupplierInvoiceItem[]) => {
       if (!supplierForRestock) return;
-  
-      const items: SupplierInvoiceItem[] = productsToOrder.map(product => {
-        const neededQuantity = (product.minStock || 0) - product.stock;
-        let quantityToOrder = neededQuantity > 0 ? neededQuantity : 0;
-  
-        if (product.quantityPerBox && product.quantityPerBox > 0 && quantityToOrder > 0) {
-          const numberOfBoxes = Math.ceil(quantityToOrder / product.quantityPerBox);
-          quantityToOrder = numberOfBoxes * product.quantityPerBox;
-        }
-  
-        return {
-          productId: product.id,
-          productName: product.name,
-          quantity: quantityToOrder,
-          purchasePrice: product.purchasePrice || 0,
-          boxPrice: product.boxPrice,
-          quantityPerBox: product.quantityPerBox,
-          barcode: (product.barcodes || []).join(', '),
-        };
+
+      const poData = {
+        supplierId: supplierForRestock.id,
+        items: items,
+      };
+
+      await addPurchaseOrder(poData);
+      toast({
+        title: t.purchaseOrders.poCreated,
+        description: t.purchaseOrders.poCreatedFor.replace('{supplierName}', supplierForRestock.name),
       });
-  
-      setSupplierForInvoice(supplierForRestock);
-      setInitialInvoiceItems(items);
-      setIsInvoiceDialogOpen(true);
   };
 
   const handleMakePayment = async (amount: number) => {
@@ -337,7 +324,7 @@ export default function SuppliersPage() {
         onClose={() => setSupplierForRestock(null)}
         supplier={supplierForRestock}
         products={lowStockProductsForSupplier}
-        onCreateInvoice={handleCreatePurchaseOrderFromRestock}
+        onCreatePO={handleCreatePurchaseOrderFromRestock}
       />
       
       <MakeSupplierPaymentDialog

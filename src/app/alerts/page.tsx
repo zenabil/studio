@@ -30,7 +30,7 @@ import type { Product, SupplierInvoiceItem } from '@/lib/data';
 export default function AlertsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products, customers, salesHistory, isLoading, suppliers, addSupplierInvoice } = useData();
+  const { products, customers, salesHistory, isLoading, suppliers, addPurchaseOrder } = useData();
   const { settings } = useSettings();
   const [orderingProductId, setOrderingProductId] = useState<string | null>(null);
 
@@ -75,16 +75,14 @@ export default function AlertsPage() {
         barcode: (product.barcodes || []).join(', '),
       };
 
-      const invoiceData = {
+      const poData = {
         supplierId: supplier.id,
         items: [newItem],
-        amountPaid: 0,
-        priceUpdateStrategy: 'average', // Default strategy
       };
 
-      await addSupplierInvoice(invoiceData);
+      await addPurchaseOrder(poData);
       toast({
-        title: t.suppliers.invoiceAdded,
+        title: t.purchaseOrders.poCreated,
         description: `${quantityToOrder} x ${product.name} ${t.pos.addedToCart.replace('au panier', `pour ${supplier.name}`)}`,
       });
 

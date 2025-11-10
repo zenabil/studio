@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -13,7 +12,7 @@ import {
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import type { Supplier, Product } from '@/lib/data';
+import type { Supplier, Product, SupplierInvoiceItem } from '@/lib/data';
 import { format } from 'date-fns';
 import { Printer, Package, FilePlus } from 'lucide-react';
 import Image from 'next/image';
@@ -24,17 +23,36 @@ interface SupplierRestockListDialogProps {
   onClose: () => void;
   supplier: Supplier | null;
   products: Product[];
-  onCreateInvoice: (productsToOrder: Product[]) => void;
+  onCreatePO: (items: SupplierInvoiceItem[]) => void;
 }
 
-export function SupplierRestockListDialog({ isOpen, onClose, supplier, products, onCreateInvoice }: SupplierRestockListDialogProps) {
+export function SupplierRestockListDialog({ isOpen, onClose, supplier, products, onCreatePO }: SupplierRestockListDialogProps) {
   const { t } = useLanguage();
   const { settings } = useSettings();
 
   const productsToOrder = products.filter(p => (p.minStock || 0) - p.stock > 0);
 
-  const handleCreateInvoice = () => {
-    onCreateInvoice(productsToOrder);
+  const handleCreatePO = () => {
+     const items: SupplierInvoiceItem[] = productsToOrder.map(product => {
+        const neededQuantity = (product.minStock || 0) - product.stock;
+        let quantityToOrder = neededQuantity > 0 ? neededQuantity : 0;
+  
+        if (product.quantityPerBox && product.quantityPerBox > 0 && quantityToOrder > 0) {
+          const numberOfBoxes = Math.ceil(quantityToOrder / product.quantityPerBox);
+          quantityToOrder = numberOfBoxes * product.quantityPerBox;
+        }
+  
+        return {
+          productId: product.id,
+          productName: product.name,
+          quantity: quantityToOrder,
+          purchasePrice: product.purchasePrice || 0,
+          boxPrice: product.boxPrice,
+          quantityPerBox: product.quantityPerBox,
+          barcode: (product.barcodes || []).join(', '),
+        };
+      });
+    onCreatePO(items);
     onClose();
   }
 
@@ -116,9 +134,9 @@ export function SupplierRestockListDialog({ isOpen, onClose, supplier, products,
               <Printer className="mr-2 h-4 w-4" />
               {t.suppliers.printList}
           </Button>
-          <Button onClick={handleCreateInvoice} disabled={productsToOrder.length === 0}>
+          <Button onClick={handleCreatePO} disabled={productsToOrder.length === 0}>
             <FilePlus className="mr-2 h-4 w-4" />
-            {t.suppliers.createPurchaseOrder}
+            {t.purchaseOrders.title}
           </Button>
         </DialogFooter>
       </DialogContent>

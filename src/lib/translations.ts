@@ -301,6 +301,8 @@ export const translations = {
         total: "Total",
         actions: "Actions",
         noPOs: "Aucun bon de commande trouvé.",
+        poCreated: "Bon de commande créé.",
+        poCreatedFor: "Bon de commande créé pour {supplierName}.",
         statuses: {
             draft: "Brouillon",
             sent: "Envoyé",
@@ -804,6 +806,8 @@ export const translations = {
         total: "المجموع",
         actions: "الإجراءات",
         noPOs: "لم يتم العثور على أوامر شراء.",
+        poCreated: "تم إنشاء أمر الشراء.",
+        poCreatedFor: "تم إنشاء أمر شراء للمورد {supplierName}.",
         statuses: {
             draft: "مسودة",
             sent: "مرسل",

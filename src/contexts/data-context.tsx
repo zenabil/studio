@@ -163,6 +163,7 @@ interface DataContextType {
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
     addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => Promise<void>;
+    addPurchaseOrder: (poData: { supplierId: string, items: SupplierInvoiceItem[], notes?: string }) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
     addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
@@ -502,6 +503,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             throw error;
         });
     }, [firestore, dataUserId, products, suppliers]);
+
+    const addPurchaseOrder = useCallback(async (poData: { supplierId: string, items: SupplierInvoiceItem[], notes?: string }) => {
+        const collectionRef = getCollectionRef('purchaseOrders');
+        if (!collectionRef) throw new Error("User not authenticated or data path not available.");
+        
+        const now = new Date().toISOString();
+        const newPO: Omit<PurchaseOrder, 'id'> = {
+            ...poData,
+            status: 'draft',
+            createdAt: now,
+            updatedAt: now,
+        };
+
+        addDoc(collectionRef, newPO).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newPO }));
+        });
+    }, [getCollectionRef]);
     
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -607,6 +625,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updateSupplier,
         deleteSupplier,
         addSupplierInvoice,
+        addPurchaseOrder,
         makePaymentToSupplier,
         addExpense,
         updateExpense,
@@ -617,7 +636,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
-        deleteSupplier, addSupplierInvoice, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
+        deleteSupplier, addSupplierInvoice, addPurchaseOrder, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
         restoreData,
     ]);
 
