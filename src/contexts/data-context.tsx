@@ -201,7 +201,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
 
         const docRef = doc(collectionRef, productId);
-        updateDoc(docRef, sanitizedData).catch(error => {
+        await updateDoc(docRef, sanitizedData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: sanitizedData }));
         });
     }, [getCollectionRef, uploadImage]);
@@ -214,7 +214,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const docRef = doc(collectionRef, productId);
-        deleteDoc(docRef).catch(error => {
+        await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.products.productDeleted });
@@ -243,7 +243,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('customers');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, customerId);
-        updateDoc(docRef, customerData).catch(error => {
+        await updateDoc(docRef, customerData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: customerData }));
         });
     }, [getCollectionRef]);
@@ -256,7 +256,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const docRef = doc(collectionRef, customerId);
-        deleteDoc(docRef).catch(error => {
+        await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.customers.customerDeleted });
@@ -265,77 +265,73 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
 
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const salesCollectionRef = collection(firestore, `users/${dataUserId}/sales`);
-                const saleRef = doc(salesCollectionRef);
-                const newSale: Omit<SaleRecord, 'id'> = {
-                    customerId,
-                    items: cart,
-                    totals,
-                    date: new Date().toISOString()
-                };
-                transaction.set(saleRef, newSale);
+        await runTransaction(firestore, async (transaction) => {
+            const salesCollectionRef = collection(firestore, `users/${dataUserId}/sales`);
+            const saleRef = doc(salesCollectionRef);
+            const newSale: Omit<SaleRecord, 'id'> = {
+                customerId,
+                items: cart,
+                totals,
+                date: new Date().toISOString()
+            };
+            transaction.set(saleRef, newSale);
 
-                for (const item of cart) {
-                    const productRef = doc(firestore, `users/${dataUserId}/products/${item.id}`);
-                    const productDoc = await transaction.get(productRef);
-                    if (productDoc.exists()) {
-                        const currentStock = productDoc.data().stock;
-                        transaction.update(productRef, { stock: currentStock - item.quantity });
-                    }
+            for (const item of cart) {
+                const productRef = doc(firestore, `users/${dataUserId}/products/${item.id}`);
+                const productDoc = await transaction.get(productRef);
+                if (productDoc.exists()) {
+                    const currentStock = productDoc.data().stock;
+                    transaction.update(productRef, { stock: currentStock - item.quantity });
                 }
+            }
 
-                if (customerId) {
-                    const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
-                    const customerDoc = await transaction.get(customerRef);
-                    if (customerDoc.exists()) {
-                        const customer = customerDoc.data();
-                        const newSpent = customer.spent + totals.total;
-                        const newBalance = customer.balance + totals.balance;
-                        transaction.update(customerRef, { spent: newSpent, balance: newBalance });
-                    }
+            if (customerId) {
+                const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
+                const customerDoc = await transaction.get(customerRef);
+                if (customerDoc.exists()) {
+                    const customer = customerDoc.data();
+                    const newSpent = customer.spent + totals.total;
+                    const newBalance = customer.balance + totals.balance;
+                    transaction.update(customerRef, { spent: newSpent, balance: newBalance });
                 }
-            });
-        } catch (error) {
+            }
+        }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { cart, customerId, totals } }));
             throw error;
-        }
+        });
     }, [firestore, dataUserId]);
     
     const makePayment = useCallback(async (customerId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const salesCollectionRef = collection(firestore, `users/${dataUserId}/sales`);
-                const paymentRef = doc(salesCollectionRef);
-                const paymentRecord: Omit<SaleRecord, 'id'>= { 
-                    customerId, 
-                    items: [], 
-                    totals: { subtotal: 0, discount: 0, total: amount, amountPaid: amount, balance: -amount }, 
-                    date: new Date().toISOString() 
-                };
-                transaction.set(paymentRef, paymentRecord);
+        await runTransaction(firestore, async (transaction) => {
+            const salesCollectionRef = collection(firestore, `users/${dataUserId}/sales`);
+            const paymentRef = doc(salesCollectionRef);
+            const paymentRecord: Omit<SaleRecord, 'id'>= { 
+                customerId, 
+                items: [], 
+                totals: { subtotal: 0, discount: 0, total: amount, amountPaid: amount, balance: -amount }, 
+                date: new Date().toISOString() 
+            };
+            transaction.set(paymentRef, paymentRecord);
 
-                const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
-                const customerDoc = await transaction.get(customerRef);
-                if (customerDoc.exists()) {
-                    const newBalance = customerDoc.data().balance - amount;
-                    transaction.update(customerRef, { balance: newBalance });
-                }
-            });
-        } catch (error) {
+            const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
+            const customerDoc = await transaction.get(customerRef);
+            if (customerDoc.exists()) {
+                const newBalance = customerDoc.data().balance - amount;
+                transaction.update(customerRef, { balance: newBalance });
+            }
+        }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { payment: { customerId, amount } } }));
             throw error;
-        }
+        });
     }, [firestore, dataUserId]);
 
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         const newOrderData = { ...orderData, createdAt: serverTimestamp() };
-        addDoc(collectionRef, newOrderData).catch(error => {
+        await addDoc(collectionRef, newOrderData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newOrderData }));
         });
     }, [getCollectionRef]);
@@ -344,7 +340,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, orderId);
-        updateDoc(docRef, orderData).catch(error => {
+        await updateDoc(docRef, orderData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: orderData }));
         });
     }, [getCollectionRef]);
@@ -353,7 +349,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('bakeryOrders');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, orderId);
-        deleteDoc(docRef).catch(error => {
+        await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
     }, [getCollectionRef]);
@@ -409,7 +405,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         const newSupplierData = { ...supplierData, balance: 0 };
-        addDoc(collectionRef, newSupplierData).catch(error => {
+        await addDoc(collectionRef, newSupplierData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newSupplierData }));
         });
     }, [getCollectionRef]);
@@ -418,7 +414,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, supplierId);
-        updateDoc(docRef, supplierData).catch(error => {
+        await updateDoc(docRef, supplierData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: supplierData }));
         });
     }, [getCollectionRef]);
@@ -431,7 +427,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const docRef = doc(collectionRef, supplierId);
-        deleteDoc(docRef).catch(error => {
+        await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.suppliers.supplierDeleted });
@@ -440,43 +436,41 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
-                const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
-                const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
-                transaction.set(invoiceRef, newInvoice);
-                
-                const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
-                
-                for (const item of invoiceData.items) {
-                    const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
-                    const updatedProductData = updatedProducts.find(p => p.id === item.productId);
-                    if(updatedProductData) {
-                        transaction.update(productRef, {
-                            stock: updatedProductData.stock,
-                            purchasePrice: updatedProductData.purchasePrice,
-                        });
-                    }
+        await runTransaction(firestore, async (transaction) => {
+            const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
+            const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
+            const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
+            transaction.set(invoiceRef, newInvoice);
+            
+            const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
+            
+            for (const item of invoiceData.items) {
+                const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
+                const updatedProductData = updatedProducts.find(p => p.id === item.productId);
+                if(updatedProductData) {
+                    transaction.update(productRef, {
+                        stock: updatedProductData.stock,
+                        purchasePrice: updatedProductData.purchasePrice,
+                    });
                 }
+            }
 
-                const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
-                const supplierDoc = await transaction.get(supplierRef);
-                if (supplierDoc.exists()) {
-                    const supplier = supplierDoc.data();
-                    const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
-                    transaction.update(supplierRef, { balance: newBalance });
-                }
+            const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
+            const supplierDoc = await transaction.get(supplierRef);
+            if (supplierDoc.exists()) {
+                const supplier = supplierDoc.data();
+                const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
+                transaction.update(supplierRef, { balance: newBalance });
+            }
 
-                if (invoiceData.purchaseOrderId) {
-                    const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
-                    transaction.update(poRef, { status: 'completed' });
-                }
-            });
-        } catch (error) {
+            if (invoiceData.purchaseOrderId) {
+                const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
+                transaction.update(poRef, { status: 'completed' });
+            }
+        }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
             throw error;
-        }
+        });
     }, [firestore, dataUserId, products]);
 
     const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
@@ -491,7 +485,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             updatedAt: now,
         };
 
-        addDoc(collectionRef, newPOData).catch(error => {
+        await addDoc(collectionRef, newPOData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newPOData }));
             throw error;
         });
@@ -529,29 +523,27 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const paymentRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
-                const paymentRecord: Omit<SupplierInvoice, 'id'> = { supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
-                transaction.set(paymentRef, paymentRecord);
-                
-                const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${supplierId}`);
-                const supplierDoc = await transaction.get(supplierRef);
-                if(supplierDoc.exists()) {
-                    transaction.update(supplierRef, { balance: supplierDoc.data().balance - amount });
-                }
-            });
-        } catch (error) {
+        await runTransaction(firestore, async (transaction) => {
+            const paymentRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
+            const paymentRecord: Omit<SupplierInvoice, 'id'> = { supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
+            transaction.set(paymentRef, paymentRecord);
+            
+            const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${supplierId}`);
+            const supplierDoc = await transaction.get(supplierRef);
+            if(supplierDoc.exists()) {
+                transaction.update(supplierRef, { balance: supplierDoc.data().balance - amount });
+            }
+        }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { supplierPayment: { supplierId, amount } } }));
             throw error;
-        }
+        });
     }, [firestore, dataUserId]);
 
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         const newExpenseData = { ...expenseData, createdAt: serverTimestamp() };
-        addDoc(collectionRef, newExpenseData).catch(error => {
+        await addDoc(collectionRef, newExpenseData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newExpenseData }));
         });
     }, [getCollectionRef]);
@@ -560,7 +552,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, expenseId);
-        updateDoc(docRef, expenseData).catch(error => {
+        await updateDoc(docRef, expenseData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: expenseData }));
         });
     }, [getCollectionRef]);
@@ -569,7 +561,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('expenses');
         if (!collectionRef) return;
         const docRef = doc(collectionRef, expenseId);
-        deleteDoc(docRef).catch(error => {
+        await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.expenses.expenseDeleted });
@@ -686,3 +678,4 @@ export const useData = () => {
     
 
     
+
