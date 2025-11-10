@@ -3,18 +3,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { UserProfile } from '@/contexts/data-context';
+import type { UserProfile } from '@/lib/data';
 
 export interface UseUserResult {
   user: User | null;
+  firebaseApp: any;
   userProfile: UserProfile | null;
   isUserLoading: boolean;
 }
 
 export function useUser(): UseUserResult {
-  const auth = useAuth();
+  const { auth, firebaseApp } = useFirebase();
   const firestore = useFirestore();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +37,6 @@ export function useUser(): UseUserResult {
   const userProfile = useMemo(() => {
     if (!userProfileData) return null;
     
-    // Construct the full UserProfile object
     return {
       id: userProfileData.id,
       email: userProfileData.email,
@@ -48,6 +48,7 @@ export function useUser(): UseUserResult {
 
   return {
     user,
+    firebaseApp,
     userProfile,
     isUserLoading: isAuthLoading || isProfileLoading,
   };

@@ -3,6 +3,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
+import type { Product, Customer, CartItem, SaleRecord, BakeryOrder, Supplier, SupplierInvoiceItem, PurchaseOrder, Expense, UserProfile, ProductFormData } from '@/lib/data';
 import {
     useUser,
     useFirestore,
@@ -34,119 +35,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-
-// Data type definitions moved here for better co-location
-export type Product = {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  purchasePrice: number;
-  stock: number;
-  minStock: number;
-  quantityPerBox?: number | null;
-  boxPrice?: number | null;
-  barcodes: string[];
-  imageUrl?: string | null;
-};
-
-export type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  spent: number;
-  balance: number;
-  settlementDay?: number;
-};
-
-export interface BakeryOrder {
-  id: string;
-  date: string;
-  name: string;
-  quantity: number;
-  paid: boolean;
-  received: boolean;
-  isRecurring: boolean;
-}
-
-export interface Supplier {
-  id:string;
-  name: string;
-  phone: string;
-  productCategory: string;
-  visitDays?: number[];
-  balance: number;
-}
-
-export interface SupplierInvoiceItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  purchasePrice: number;
-  boxPrice?: number | null;
-  quantityPerBox?: number | null;
-  barcode?: string;
-}
-
-export interface PurchaseOrder {
-    id: string;
-    supplierId: string;
-    status: 'draft' | 'sent' | 'partially_received' | 'completed' | 'cancelled';
-    items: SupplierInvoiceItem[];
-    notes?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface Expense {
-  id: string;
-  date: string;
-  category: string;
-  description: string;
-  amount: number;
-}
-
-export interface CartItem extends Product {
-    quantity: number;
-}
-
-export type SaleRecord = {
-    id: string;
-    customerId: string | null;
-    items: CartItem[];
-    totals: {
-        subtotal: number;
-        discount: number;
-        total: number;
-        amountPaid: number;
-        balance: number;
-    };
-    date: string;
-}
-
-export interface SupplierInvoice {
-  id: string;
-  supplierId: string;
-  date: string;
-  items: SupplierInvoiceItem[];
-  totalAmount: number;
-  amountPaid?: number;
-  isPayment?: boolean;
-  priceUpdateStrategy?: 'master' | 'average' | 'none';
-  purchaseOrderId?: string;
-}
-
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  status: 'approved' | 'pending' | 'revoked';
-  isAdmin: boolean;
-  createdAt: string;
-}
-
-export type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
 
 interface DataContextType {
     products: WithId<Product>[];
@@ -194,16 +82,11 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 const AdminDataProvider = ({
   children,
-  userProfile,
-  setUserProfiles,
-  setUserProfilesLoading,
 }: {
   children: React.ReactNode;
-  userProfile: UserProfile | null;
-  setUserProfiles: (profiles: WithId<UserProfile>[]) => void;
-  setUserProfilesLoading: (loading: boolean) => void;
 }) => {
   const firestore = useFirestore();
+  const { userProfile, setUserProfiles, setUserProfilesLoading } = useContext(DataContext)!;
 
   const userProfilesRef = useMemoFirebase(() => {
     if (!firestore || !userProfile?.isAdmin) return null;
@@ -223,8 +106,9 @@ const AdminDataProvider = ({
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, isUserLoading, firebaseApp } = useUser();
+    const { user, userProfile: authUserProfile, isUserLoading } = useUser();
     const firestore = useFirestore();
+    const { firebaseApp } = useUser();
 
     const dataUserId = user?.uid;
 
@@ -233,15 +117,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const path = `users/${dataUserId}/${collectionName}`;
         return collection(firestore, path) as CollectionReference;
     }, [firestore, dataUserId]);
-
-    const userProfileDocRef = useMemoFirebase(() => {
-        if (!firestore || !dataUserId) return null;
-        return doc(firestore, `userProfiles/${dataUserId}`);
-    }, [firestore, dataUserId]);
     
-    const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
-    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
-
     const productsRef = useMemoFirebase(() => getCollectionRef('products'), [getCollectionRef]);
     const customersRef = useMemoFirebase(() => getCollectionRef('customers'), [getCollectionRef]);
     const salesRef = useMemoFirebase(() => getCollectionRef('sales'), [getCollectionRef]);
@@ -251,33 +127,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const purchaseOrdersRef = useMemoFirebase(() => getCollectionRef('purchaseOrders'), [getCollectionRef]);
     const expensesRef = useMemoFirebase(() => getCollectionRef('expenses'), [getCollectionRef]);
     
-    const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
-    const { data: customersData, isLoading: customersLoading } = useCollection<Customer>(customersRef);
-    const { data: salesHistoryData, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
-    const { data: bakeryOrdersData, isLoading: bakeryOrdersLoading } = useCollection<BakeryOrder>(bakeryOrdersRef);
-    const { data: suppliersData, isLoading: suppliersLoading } = useCollection<Supplier>(suppliersRef);
-    const { data: supplierInvoicesData, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
-    const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
-    const { data: expensesData, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
+    const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
+    const { data: salesHistory, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
+    const { data: bakeryOrders, isLoading: bakeryOrdersLoading } = useCollection<BakeryOrder>(bakeryOrdersRef);
+    const { data: suppliers, isLoading: suppliersLoading } = useCollection<Supplier>(suppliersRef);
+    const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
+    const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
+    const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
     
     const [userProfiles, setUserProfiles] = useState<WithId<UserProfile>[]>([]);
     const [userProfilesLoading, setUserProfilesLoading] = useState(true);
 
-    const isLoadingAllData = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
+    const isLoadingAllData = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
     
     const contextValue = useMemo(() => ({
-        products: productsData || [],
-        customers: customersData || [],
-        salesHistory: salesHistoryData || [],
-        bakeryOrders: bakeryOrdersData || [],
-        suppliers: suppliersData || [],
-        supplierInvoices: supplierInvoicesData || [],
-        purchaseOrders: purchaseOrdersData || [],
-        expenses: expensesData || [],
+        products: products || [],
+        customers: customers || [],
+        salesHistory: salesHistory || [],
+        bakeryOrders: bakeryOrders || [],
+        suppliers: suppliers || [],
+        supplierInvoices: supplierInvoices || [],
+        purchaseOrders: purchaseOrders || [],
+        expenses: expenses || [],
         userProfiles: userProfiles,
-        userProfile,
+        userProfile: authUserProfile,
         isLoading: isLoadingAllData,
-    }), [productsData, customersData, salesHistoryData, bakeryOrdersData, suppliersData, supplierInvoicesData, purchaseOrdersData, expensesData, userProfiles, userProfile, isLoadingAllData]);
+        setUserProfiles,
+        setUserProfilesLoading
+    }), [products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, userProfiles, authUserProfile, isLoadingAllData]);
     
     const uploadImage = useCallback(async (file: File): Promise<string> => {
         if (!dataUserId || !firebaseApp) throw new Error("User not authenticated or Firebase app not available.");
@@ -803,11 +681,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     return (
       <DataContext.Provider value={fullContext}>
-        <AdminDataProvider
-          userProfile={userProfile}
-          setUserProfiles={setUserProfiles}
-          setUserProfilesLoading={setUserProfilesLoading}
-        >
+        <AdminDataProvider>
           {children}
         </AdminDataProvider>
       </DataContext.Provider>
