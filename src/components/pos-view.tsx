@@ -690,25 +690,40 @@ export function PosView() {
         <Card className="h-full flex flex-col">
           <CardHeader>
             <div className="flex flex-col gap-4">
-               <div className="relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
-                  <Input
-                    ref={searchInputRef}
-                    placeholder={`${t.pos.searchProducts} (F1)`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-10 rtl:pr-10 rtl:pl-10"
-                  />
-                  {searchTerm && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rtl:right-auto rtl:left-2"
-                      onClick={() => setSearchTerm('')}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+              <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-grow">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
+                      <Input
+                        ref={searchInputRef}
+                        placeholder={`${t.pos.searchProducts} (F1)`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 pr-10 rtl:pr-10 rtl:pl-10"
+                      />
+                      {searchTerm && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rtl:right-auto rtl:left-2"
+                          onClick={() => setSearchTerm('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                  </div>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
+                      <SelectValue placeholder={t.pos.allCategories} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.pos.allCategories}</SelectItem>
+                      {categories.filter(c => c !== 'all').map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                </div>
                <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-grow flex items-center gap-2">
@@ -727,18 +742,7 @@ export function PosView() {
                        <Barcode className="h-5 w-5" />
                      </Button>
                   </div>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
-                      <SelectValue placeholder={t.pos.allCategories} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat === 'all' ? t.pos.allCategories : cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  
                   <div className="flex items-center rounded-md bg-muted p-1">
                       <Button
                         variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
