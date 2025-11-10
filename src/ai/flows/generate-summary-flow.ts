@@ -13,7 +13,7 @@ import {
 
 const generateSummaryPrompt = ai.definePrompt({
   name: 'generateSummaryPrompt',
-  inputSchema: GenerateSummaryFlowInputSchema,
+  input: { schema: GenerateSummaryFlowInputSchema },
   output: { format: 'text' },
   prompt: `
         You are a business analyst AI integrated into a Point of Sale (POS) system.
