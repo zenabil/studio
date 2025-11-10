@@ -35,25 +35,11 @@ export default function SettingsPage() {
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
+  const { control, handleSubmit, reset, setValue } = useForm<CompanyInfoFormData>({
     defaultValues: {
       companyInfo: settings.companyInfo,
       paymentTermsDays: settings.paymentTermsDays,
     },
-  });
-
-  const passwordFormSchema = z.object({
-      currentPassword: z.string().min(1, { message: t.settings.currentPasswordRequired }),
-      newPassword: z.string().min(4, { message: t.settings.newPasswordMinLength }),
-      confirmPassword: z.string()
-  }).refine(data => data.newPassword === data.confirmPassword, {
-      message: t.auth.passwordsDoNotMatch,
-      path: ['confirmPassword']
-  });
-
-  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
-      resolver: zodResolver(passwordFormSchema),
-      mode: 'onChange'
   });
   
   useEffect(() => {
@@ -67,23 +53,6 @@ export default function SettingsPage() {
   const onCompanyInfoSubmit = (data: CompanyInfoFormData) => {
     setSettings(data);
     toast({ title: t.settings.settingsSaved });
-  };
-
-  const onPasswordSubmit = (data: z.infer<typeof passwordFormSchema>) => {
-      if (data.currentPassword !== (settings.adminPassword || 'admin')) {
-          passwordForm.setError('currentPassword', {
-              type: 'manual',
-              message: t.settings.currentPasswordIncorrect
-          });
-          return;
-      }
-      setSettings({ adminPassword: data.newPassword });
-      toast({ title: t.settings.passwordChangedSuccess });
-      passwordForm.reset({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-      });
   };
   
   const handleBackup = async () => {
@@ -211,7 +180,6 @@ export default function SettingsPage() {
         </TabsList>
         
         <TabsContent value="general" className="mt-4">
-          <div className="space-y-6">
             <form onSubmit={handleSubmit(onCompanyInfoSubmit)}>
               <Card>
                 <CardHeader>
@@ -274,36 +242,6 @@ export default function SettingsPage() {
                 </CardFooter>
               </Card>
             </form>
-            
-            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t.settings.adminPasswordTitle}</CardTitle>
-                        <CardDescription>{t.settings.adminPasswordDescription}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="currentPassword">{t.settings.currentPassword}</Label>
-                            <Input id="currentPassword" type="password" {...passwordForm.register('currentPassword')} />
-                             {passwordForm.formState.errors.currentPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.currentPassword.message}</p>}
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="newPassword">{t.settings.newPassword}</Label>
-                            <Input id="newPassword" type="password" {...passwordForm.register('newPassword')} />
-                            {passwordForm.formState.errors.newPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.newPassword.message}</p>}
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">{t.auth.confirmPassword}</Label>
-                            <Input id="confirmPassword" type="password" {...passwordForm.register('confirmPassword')} />
-                            {passwordForm.formState.errors.confirmPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.confirmPassword.message}</p>}
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button type="submit" disabled={!passwordForm.formState.isValid}>{t.settings.changePassword}</Button>
-                    </CardFooter>
-                </Card>
-            </form>
-          </div>
         </TabsContent>
         
         <TabsContent value="appearance" className="mt-4">

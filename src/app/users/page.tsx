@@ -6,6 +6,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
+  CardDescription
 } from '@/components/ui/card';
 import {
   Table,
@@ -27,6 +29,11 @@ import { useUser } from '@/firebase';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useSettings } from '@/contexts/settings-context';
+
 
 function AdminPasswordPrompt({ onCorrectPassword }: { onCorrectPassword: () => void }) {
   const { t } = useLanguage();
@@ -82,7 +89,39 @@ export default function UsersPage() {
   const { userProfiles, approveUser, revokeUser, isLoading } = useData();
   const { user } = useUser();
   const { isAuthorized, setIsAuthorized } = useAdminAuth();
+  const { settings, setSettings } = useSettings();
 
+
+  const passwordFormSchema = z.object({
+      currentPassword: z.string().min(1, { message: t.settings.currentPasswordRequired }),
+      newPassword: z.string().min(4, { message: t.settings.newPasswordMinLength }),
+      confirmPassword: z.string()
+  }).refine(data => data.newPassword === data.confirmPassword, {
+      message: t.auth.passwordsDoNotMatch,
+      path: ['confirmPassword']
+  });
+
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
+      resolver: zodResolver(passwordFormSchema),
+      mode: 'onChange'
+  });
+
+  const onPasswordSubmit = (data: z.infer<typeof passwordFormSchema>) => {
+      if (data.currentPassword !== (settings.adminPassword || 'admin')) {
+          passwordForm.setError('currentPassword', {
+              type: 'manual',
+              message: t.settings.currentPasswordIncorrect
+          });
+          return;
+      }
+      setSettings({ adminPassword: data.newPassword });
+      toast({ title: t.settings.passwordChangedSuccess });
+      passwordForm.reset({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+      });
+  };
 
   const sortedUsers = useMemo(() => {
     if (!userProfiles) return [];
@@ -182,6 +221,35 @@ export default function UsersPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
+        <Card>
+            <CardHeader>
+                <CardTitle>{t.settings.adminPasswordTitle}</CardTitle>
+                <CardDescription>{t.settings.adminPasswordDescription}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="currentPassword">{t.settings.currentPassword}</Label>
+                    <Input id="currentPassword" type="password" {...passwordForm.register('currentPassword')} />
+                      {passwordForm.formState.errors.currentPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.currentPassword.message}</p>}
+                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">{t.settings.newPassword}</Label>
+                    <Input id="newPassword" type="password" {...passwordForm.register('newPassword')} />
+                    {passwordForm.formState.errors.newPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.newPassword.message}</p>}
+                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">{t.auth.confirmPassword}</Label>
+                    <Input id="confirmPassword" type="password" {...passwordForm.register('confirmPassword')} />
+                    {passwordForm.formState.errors.confirmPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.confirmPassword.message}</p>}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button type="submit" disabled={!passwordForm.formState.isValid}>{t.settings.changePassword}</Button>
+            </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 }
