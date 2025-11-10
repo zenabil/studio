@@ -15,6 +15,7 @@ export const translations = {
       bakeryOrders: "Commandes Boulangerie",
       settings: "Paramètres",
       suppliers: "Fournisseurs",
+      purchaseOrders: "Bons de Commande",
       expenses: "Dépenses",
       zakat: "Zakat",
       userManagement: "Utilisateurs",
@@ -289,6 +290,25 @@ export const translations = {
         payFullAmount: "Payer le montant total",
         createPurchaseOrder: "Créer une Facture",
     },
+    purchaseOrders: {
+        title: "Bons de Commande",
+        addPO: "Créer un bon de commande",
+        editPO: "Modifier le bon de commande",
+        searchPOs: "Rechercher des bons de commande...",
+        supplier: "Fournisseur",
+        status: "Statut",
+        createdAt: "Créé le",
+        total: "Total",
+        actions: "Actions",
+        noPOs: "Aucun bon de commande trouvé.",
+        statuses: {
+            draft: "Brouillon",
+            sent: "Envoyé",
+            partially_received: "Partiellement Reçu",
+            completed: "Terminé",
+            cancelled: "Annulé"
+        }
+    },
     reports: {
       title: "Rapports et Analyses",
       productSales: "Ventes par Produit",
@@ -339,7 +359,7 @@ export const translations = {
       noPhoneNumber: "Ce client n'a pas de numéro de téléphone.",
       smsRedirect: "Vous allez être redirigé vers votre application de messagerie pour envoyer le SMS.",
       overdue: "En retard",
-      orderStock: "Commander",
+      orderStock: "Créer un bon de commande",
       noSupplierForCategory: "Aucun fournisseur trouvé pour la catégorie '{category}'. Veuillez d'abord en ajouter un.",
     },
     settings: {
@@ -498,6 +518,7 @@ export const translations = {
       bakeryOrders: "طلبات الخبز",
       settings: "الإعدادات",
       suppliers: "الموردون",
+      purchaseOrders: "أوامر الشراء",
       expenses: "المصروفات",
       zakat: "الزكاة",
       userManagement: "إدارة المستخدمين",
@@ -772,6 +793,25 @@ export const translations = {
         payFullAmount: "دفع المبلغ كاملاً",
         createPurchaseOrder: "إنشاء فاتورة",
     },
+    purchaseOrders: {
+        title: "أوامر الشراء",
+        addPO: "إنشاء أمر شراء",
+        editPO: "تعديل أمر الشراء",
+        searchPOs: "البحث عن أوامر الشراء...",
+        supplier: "المورد",
+        status: "الحالة",
+        createdAt: "تاريخ الإنشاء",
+        total: "المجموع",
+        actions: "الإجراءات",
+        noPOs: "لم يتم العثور على أوامر شراء.",
+        statuses: {
+            draft: "مسودة",
+            sent: "مرسل",
+            partially_received: "مستلم جزئياً",
+            completed: "مكتمل",
+            cancelled: "ملغى"
+        }
+    },
     reports: {
       title: "التقارير والتحليلات",
       productSales: "مبيعات المنتجات",
@@ -822,7 +862,7 @@ export const translations = {
       noPhoneNumber: "لا يوجد رقم هاتف لهذا العميل.",
       smsRedirect: "سيتم توجيهك إلى تطبيق الرسائل الخاص بك لإرسال الرسالة.",
       overdue: "متأخر",
-      orderStock: "طلب مخزون",
+      orderStock: "إنشاء أمر شراء",
       noSupplierForCategory: "لم يتم العثور على مورد للفئة '{category}'. يرجى إضافة مورد أولاً.",
     },
     settings: {

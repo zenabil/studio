@@ -185,6 +185,22 @@
         },
         "required": ["supplierId", "date", "items", "totalAmount"]
     },
+     "PurchaseOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PurchaseOrder",
+      "type": "object",
+      "description": "Represents a purchase order sent to a supplier.",
+      "properties": {
+        "id": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "sent", "partially_received", "completed", "cancelled"] },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierId", "status", "items", "createdAt", "updatedAt"]
+    },
     "Expense": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Expense",
@@ -244,6 +260,11 @@
         "path": "/users/{userId}/supplierInvoices/{invoiceId}",
         "schema": "SupplierInvoice",
         "description": "Supplier invoices, partitioned by user ID."
+      },
+       {
+        "path": "/users/{userId}/purchaseOrders/{purchaseOrderId}",
+        "schema": "PurchaseOrder",
+        "description": "Purchase orders sent to suppliers, partitioned by user ID."
       },
       {
         "path": "/users/{userId}/expenses/{expenseId}",
