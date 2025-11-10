@@ -209,16 +209,22 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteProduct = useCallback(async (productId: string) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
-        if ((salesHistory || []).some(sale => sale.items.some(item => item.id === productId)) || (supplierInvoices || []).some(invoice => invoice.items.some(item => item.productId === productId))) {
+
+        const isUsedInSales = (salesHistory || []).some(sale => sale.items.some(item => item.id === productId));
+        const isUsedInInvoices = (supplierInvoices || []).some(invoice => invoice.items.some(item => item.productId === productId));
+        const isUsedInPOs = (purchaseOrders || []).some(po => po.items.some(item => item.productId === productId));
+
+        if (isUsedInSales || isUsedInInvoices || isUsedInPOs) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
         }
+
         const docRef = doc(collectionRef, productId);
         await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.products.productDeleted });
-    }, [getCollectionRef, salesHistory, supplierInvoices, t, toast]);
+    }, [getCollectionRef, salesHistory, supplierInvoices, purchaseOrders, t, toast]);
     
     const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => {
         const collectionRef = getCollectionRef('customers');
@@ -678,4 +684,5 @@ export const useData = () => {
     
 
     
+
 
