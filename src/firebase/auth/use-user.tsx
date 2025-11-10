@@ -3,12 +3,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase } from '@/firebase';
-import type { UserProfile } from '@/lib/data';
+import type { UserProfile, WithId } from '@/lib/data';
 
 export interface UseUserResult {
   user: User | null;
   firebaseApp: any;
-  userProfile: UserProfile | null;
+  userProfile: WithId<UserProfile> | null;
   isUserLoading: boolean;
 }
 
