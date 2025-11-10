@@ -93,6 +93,16 @@ export interface SupplierInvoice {
   priceUpdateStrategy?: 'master' | 'average' | 'none';
 }
 
+export interface PurchaseOrder {
+    id: string;
+    supplierId: string;
+    status: 'draft' | 'sent' | 'partially_received' | 'completed' | 'cancelled';
+    items: SupplierInvoiceItem[];
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface Expense {
   id: string;
   date: string;
@@ -133,6 +143,7 @@ interface DataContextType {
     bakeryOrders: WithId<BakeryOrder>[];
     suppliers: WithId<Supplier>[];
     supplierInvoices: WithId<SupplierInvoice>[];
+    purchaseOrders: WithId<PurchaseOrder>[];
     expenses: WithId<Expense>[];
     isLoading: boolean;
     addProduct: (productData: Omit<Product, 'id'>) => Promise<WithId<Product>>;
@@ -181,6 +192,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const bakeryOrdersRef = useMemoFirebase(() => getCollectionRef('bakeryOrders'), [getCollectionRef]);
     const suppliersRef = useMemoFirebase(() => getCollectionRef('suppliers'), [getCollectionRef]);
     const supplierInvoicesRef = useMemoFirebase(() => getCollectionRef('supplierInvoices'), [getCollectionRef]);
+    const purchaseOrdersRef = useMemoFirebase(() => getCollectionRef('purchaseOrders'), [getCollectionRef]);
     const expensesRef = useMemoFirebase(() => getCollectionRef('expenses'), [getCollectionRef]);
 
     const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
@@ -189,6 +201,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: bakeryOrdersData, isLoading: bakeryOrdersLoading } = useCollection<BakeryOrder>(bakeryOrdersRef);
     const { data: suppliersData, isLoading: suppliersLoading } = useCollection<Supplier>(suppliersRef);
     const { data: supplierInvoicesData, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
+    const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expensesData, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
 
     const products = useMemo(() => productsData || [], [productsData]);
@@ -197,9 +210,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const bakeryOrders = useMemo(() => bakeryOrdersData || [], [bakeryOrdersData]);
     const suppliers = useMemo(() => suppliersData || [], [suppliersData]);
     const supplierInvoices = useMemo(() => supplierInvoicesData || [], [supplierInvoicesData]);
+    const purchaseOrders = useMemo(() => purchaseOrdersData || [], [purchaseOrdersData]);
     const expenses = useMemo(() => expensesData || [], [expensesData]);
 
-    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || expensesLoading;
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading;
     
     const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
         const collectionRef = getCollectionRef('products');
@@ -543,7 +557,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
         const batch = writeBatch(firestore);
 
-        const collections = ['products', 'customers', 'sales', 'bakeryOrders', 'suppliers', 'supplierInvoices', 'expenses'];
+        const collections = ['products', 'customers', 'sales', 'bakeryOrders', 'suppliers', 'supplierInvoices', 'expenses', 'purchaseOrders'];
 
         for (const collectionName of collections) {
             if (data[collectionName] && Array.isArray(data[collectionName])) {
@@ -573,6 +587,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         bakeryOrders,
         suppliers,
         supplierInvoices,
+        purchaseOrders,
         expenses,
         isLoading,
         addProduct,
@@ -598,7 +613,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteExpense,
         restoreData,
     }), [
-        products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses, isLoading,
+        products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, isLoading,
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
