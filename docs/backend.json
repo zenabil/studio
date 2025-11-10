@@ -52,7 +52,7 @@
         },
         "imageUrl": {
             "type": "string",
-            "description": "URL of the product image."
+            "description": "URL of the product image, stored as a Data URL."
         },
         "createdAt": {
           "type": "string",
