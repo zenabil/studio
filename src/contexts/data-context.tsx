@@ -39,8 +39,8 @@ export type Product = {
   purchasePrice: number;
   stock: number;
   minStock: number;
-  quantityPerBox?: number;
-  boxPrice?: number;
+  quantityPerBox?: number | null;
+  boxPrice?: number | null;
   barcodes: string[];
 };
 
@@ -78,8 +78,8 @@ export interface SupplierInvoiceItem {
   productName: string;
   quantity: number;
   purchasePrice: number;
-  boxPrice?: number;
-  quantityPerBox?: number;
+  boxPrice?: number | null;
+  quantityPerBox?: number | null;
   barcode?: string;
 }
 
@@ -225,8 +225,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
+        // Ensure undefined is converted to null
+        const sanitizedData = { ...productData };
+        if (sanitizedData.quantityPerBox === undefined) sanitizedData.quantityPerBox = null;
+        if (sanitizedData.boxPrice === undefined) sanitizedData.boxPrice = null;
+
         const newProductData = {
-            ...productData,
+            ...sanitizedData,
             createdAt: serverTimestamp(),
         };
 
@@ -242,9 +247,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const updateProduct = useCallback(async (productId: string, productData: Partial<Product>) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
+        
+        // Ensure undefined is converted to null
+        const sanitizedData = { ...productData };
+        if (sanitizedData.quantityPerBox === undefined) sanitizedData.quantityPerBox = null;
+        if (sanitizedData.boxPrice === undefined) sanitizedData.boxPrice = null;
+
         const docRef = doc(collectionRef, productId);
-        updateDoc(docRef, productData).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: productData }));
+        updateDoc(docRef, sanitizedData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: sanitizedData }));
         });
     }, [getCollectionRef]);
 
@@ -693,3 +704,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    

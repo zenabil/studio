@@ -51,8 +51,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
       stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
       minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
-      quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-      boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+      quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? null : val),
+      boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? null : val),
       barcodes: z.string(),
     }).superRefine((data, ctx) => {
         // Barcode check
@@ -77,8 +77,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
         }
         
         // Box pricing cross-validation
-        const hasBoxPrice = data.boxPrice !== undefined && data.boxPrice > 0;
-        const hasQuantityPerBox = data.quantityPerBox !== undefined && data.quantityPerBox > 0;
+        const hasBoxPrice = data.boxPrice !== undefined && data.boxPrice !== null && data.boxPrice > 0;
+        const hasQuantityPerBox = data.quantityPerBox !== undefined && data.quantityPerBox !== null && data.quantityPerBox > 0;
 
         if (hasBoxPrice && !hasQuantityPerBox) {
             ctx.addIssue({
@@ -108,8 +108,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       price: 0,
       stock: 0,
       minStock: 0,
-      quantityPerBox: undefined,
-      boxPrice: undefined,
+      quantityPerBox: null,
+      boxPrice: null,
       barcodes: '',
     },
   });
@@ -126,8 +126,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           price: productToEdit.price,
           stock: productToEdit.stock,
           minStock: productToEdit.minStock || 0,
-          quantityPerBox: productToEdit.quantityPerBox || undefined,
-          boxPrice: productToEdit.boxPrice || undefined,
+          quantityPerBox: productToEdit.quantityPerBox || null,
+          boxPrice: productToEdit.boxPrice || null,
           barcodes: (productToEdit.barcodes || []).join(', '),
         });
       } else {
@@ -138,8 +138,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           price: 0,
           stock: 0,
           minStock: 0,
-          quantityPerBox: undefined,
-          boxPrice: undefined,
+          quantityPerBox: null,
+          boxPrice: null,
           barcodes: initialBarcode || '',
         });
       }
@@ -150,7 +150,13 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     setIsSaving(true);
     try {
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
-      await onSave({ ...values, barcodes: barcodesArray }, productToEdit?.id);
+      const dataToSave = {
+        ...values,
+        quantityPerBox: values.quantityPerBox || 0,
+        boxPrice: values.boxPrice || 0,
+        barcodes: barcodesArray
+      };
+      await onSave(dataToSave, productToEdit?.id);
       form.reset();
       onClose();
     } catch (error) {
@@ -268,7 +274,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                     <FormItem>
                       <FormLabel>{t.products.quantityPerBox}</FormLabel>
                       <FormControl>
-                        <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving}/>
+                        <Input type="number" step="1" placeholder={t.products.quantityPerBoxPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? null : e.target.valueAsNumber)} disabled={isSaving}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -281,7 +287,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                     <FormItem>
                       <FormLabel>{t.products.boxPrice}</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder={t.products.boxPricePlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving}/>
+                        <Input type="number" step="0.01" placeholder={t.products.boxPricePlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? null : e.target.valueAsNumber)} disabled={isSaving}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -333,3 +339,5 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     </>
   );
 }
+
+    

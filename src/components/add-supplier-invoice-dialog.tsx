@@ -58,8 +58,8 @@ const invoiceItemSchema = z.object({
   productName: z.string(),
   quantity: z.coerce.number().min(1),
   purchasePrice: z.coerce.number().min(0),
-  boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? null : val),
+  quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? null : val),
   barcode: z.string().optional(),
 });
 
@@ -324,7 +324,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
                             render={({ field }) => (
                               <FormItem>
                                 {index === 0 && <FormLabel>{t.products.boxPrice}</FormLabel>}
-                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving} /></FormControl>
+                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.valueAsNumber)} disabled={isSaving} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -337,7 +337,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
                             render={({ field }) => (
                               <FormItem>
                                 {index === 0 && <FormLabel>{t.products.quantityPerBox}</FormLabel>}
-                                <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving} /></FormControl>
+                                <FormControl><Input type="number" step="1" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.valueAsNumber)} disabled={isSaving} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -357,7 +357,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
                   variant="outline"
                   size="sm"
                   className="mt-2"
-                  onClick={() => append({ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: undefined, quantityPerBox: undefined, barcode: '' })}
+                  onClick={() => append({ productId: '', productName: '', quantity: 1, purchasePrice: 0, boxPrice: null, quantityPerBox: null, barcode: '' })}
                   disabled={isSaving}
                 >
                   <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
@@ -454,3 +454,5 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     </>
   );
 }
+
+    
