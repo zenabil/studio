@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSettings } from '@/contexts/settings-context';
 import type { Settings, Theme } from '@/contexts/settings-context';
 import { useLanguage } from '@/contexts/language-context';
@@ -17,6 +17,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
+import Image from 'next/image';
+import { Upload, Package } from 'lucide-react';
 
 
 type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
@@ -27,9 +29,11 @@ export default function SettingsPage() {
   const { user } = useUser();
   const { restoreData } = useData();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
+  const { control, handleSubmit, reset, setValue } = useForm<CompanyInfoFormData>({
     defaultValues: {
       companyInfo: settings.companyInfo,
       paymentTermsDays: settings.paymentTermsDays,
@@ -41,6 +45,7 @@ export default function SettingsPage() {
       companyInfo: settings.companyInfo,
       paymentTermsDays: settings.paymentTermsDays,
     });
+    setLogoPreview(settings.companyInfo.logoUrl || null);
   }, [settings.companyInfo, settings.paymentTermsDays, reset]);
 
   const onCompanyInfoSubmit = (data: CompanyInfoFormData) => {
@@ -74,10 +79,10 @@ export default function SettingsPage() {
   };
   
   const handleRestoreClick = () => {
-    fileInputRef.current?.click();
+    backupFileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackupFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -130,6 +135,35 @@ export default function SettingsPage() {
     reader.readAsText(file);
   };
 
+  const handleLogoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) { // 1MB size limit
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.fileTooLarge,
+        });
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setLogoPreview(dataUrl);
+        setValue('companyInfo.logoUrl', dataUrl, { shouldDirty: true });
+    };
+    reader.onerror = () => {
+         toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.fileReadError,
+        });
+    }
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -150,6 +184,29 @@ export default function SettingsPage() {
                 <CardTitle>{t.settings.companyInfo}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                  <Label>{t.settings.companyLogo}</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
+                        {logoPreview ? (
+                            <Image src={logoPreview} alt="Logo Preview" width={96} height={96} className="object-contain w-full h-full rounded-lg" unoptimized/>
+                        ) : (
+                            <Package className="w-10 h-10 text-muted-foreground"/>
+                        )}
+                    </div>
+                    <Button type="button" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4"/>
+                        {t.settings.uploadLogo}
+                    </Button>
+                     <input
+                        type="file"
+                        ref={logoFileInputRef}
+                        onChange={handleLogoFileChange}
+                        accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                        className="hidden"
+                     />
+                  </div>
+                </div>
                 <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="companyName">{t.settings.companyName}</Label>
@@ -167,10 +224,6 @@ export default function SettingsPage() {
                  <div className="space-y-2">
                   <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
                   <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="logoUrl">{t.settings.logoUrl}</Label>
-                  <Controller name="companyInfo.logoUrl" control={control} render={({ field }) => <Input id="logoUrl" placeholder="https://example.com/logo.png" {...field} value={field.value || ''} />} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="additionalInfo">{t.settings.additionalInfo}</Label>
@@ -256,8 +309,8 @@ export default function SettingsPage() {
                 <Button type="button" onClick={handleBackup}>{t.settings.backupData}</Button>
                 <input
                   type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
+                  ref={backupFileInputRef}
+                  onChange={handleBackupFileChange}
                   accept=".json"
                   className="hidden"
                 />

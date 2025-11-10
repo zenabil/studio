@@ -350,6 +350,8 @@ export const translations = {
       companyPhone: "Téléphone",
       companyEmail: "Email",
       logoUrl: "URL du Logo",
+      companyLogo: "Logo de l'entreprise",
+      uploadLogo: "Changer le logo",
       additionalInfo: "Informations Supplémentaires (N° Fiscal, etc.)",
       appearance: "Apparence",
       theme: "Thème",
@@ -479,6 +481,8 @@ export const translations = {
       imageGenerationError: "La génération de l'image du produit a échoué.",
       apiKeyMissing: "La clé API de Google AI n'est pas configurée. Veuillez l'ajouter à vos variables d'environnement pour activer cette fonctionnalité.",
       aiError: "Une erreur est survenue lors de la communication avec le service d'IA.",
+      fileTooLarge: "Le fichier est trop volumineux. La taille maximale est de 1 Mo.",
+      fileReadError: "Impossible de lire le fichier.",
     }
   },
   ar: {
@@ -827,6 +831,8 @@ export const translations = {
       companyPhone: "الهاتف",
       companyEmail: "البريد الإلكتروني",
       logoUrl: "رابط الشعار",
+      companyLogo: "شعار الشركة",
+      uploadLogo: "تغيير الشعار",
       additionalInfo: "معلومات إضافية (الرقم الضريبي، إلخ)",
       appearance: "المظهر",
       theme: "السمة",
@@ -956,6 +962,8 @@ export const translations = {
       imageGenerationError: "فشل إنشاء صورة المنتج.",
       apiKeyMissing: "مفتاح واجهة برمجة تطبيقات Google AI غير مهيأ. يرجى إضافته إلى متغيرات البيئة الخاصة بك لتفعيل هذه الميزة.",
       aiError: "حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي.",
+      fileTooLarge: "حجم الملف كبير جدًا. الحجم الأقصى هو 1 ميجابايت.",
+      fileReadError: "تعذر قراءة الملف.",
     }
   },
 };
