@@ -1,3 +1,4 @@
+
 'use client';
 import { useUser, useDoc, useMemoFirebase, useFirestore, useFirebase, FirebaseContextState, FirebaseContext } from "@/firebase";
 import { useRouter, usePathname } from "next/navigation";
@@ -123,13 +124,10 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If user is logged in but not approved and not an admin trying to access the app
-  if (user && userDoc && !userDoc.approved) {
-    return <PendingApprovalScreen />;
-  }
-
+  // With public signups, we no longer need the pending approval screen.
+  // We just verify the user is logged in or on an auth page.
   const isAuthPage = pathname === '/login' || pathname === '/signup';
-  if ((user && userDoc?.approved) || isAuthPage) {
+  if (user || isAuthPage) {
     return <>{children}</>;
   }
   

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Product": {
@@ -107,7 +108,7 @@
         },
         "approved": {
           "type": "boolean",
-          "description": "Admin approval status for the user."
+          "description": "Approval status for the user, now defaults to true."
         },
         "createdAt": {
           "type": "string",

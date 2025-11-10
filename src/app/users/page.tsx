@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo } from 'react';
 import {
@@ -18,11 +19,9 @@ import {
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import Loading from '@/app/loading';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 
 export default function UsersPage() {
   const { t } = useLanguage();
@@ -34,16 +33,6 @@ export default function UsersPage() {
     if (!allUsers) return [];
     return [...allUsers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [allUsers]);
-
-  const handleApprovalChange = async (userId: string, approved: boolean) => {
-    try {
-      await updateUserApproval(userId, approved);
-      toast({ title: t.users.approvalUpdated });
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
-    }
-  };
 
   if (isLoading) {
     return <Loading />;
@@ -79,7 +68,6 @@ export default function UsersPage() {
               <TableRow>
                 <TableHead>{t.users.email}</TableHead>
                 <TableHead>{t.users.status}</TableHead>
-                <TableHead className="text-right">{t.users.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -93,14 +81,6 @@ export default function UsersPage() {
                     <Badge variant={user.approved ? 'success' : 'destructive'}>
                       {user.approved ? t.users.approved : t.users.pending}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Switch
-                      checked={user.approved}
-                      onCheckedChange={(checked) => handleApprovalChange(user.id, checked)}
-                      disabled={user.id === currentUser?.uid} // Admin cannot disapprove themselves
-                      aria-label={user.approved ? t.users.revoke : t.users.approve}
-                    />
                   </TableCell>
                 </TableRow>
               ))}

@@ -67,17 +67,17 @@ export default function SignupPage() {
       const adminConfigRef = doc(firestore, 'config', 'admin');
       const adminConfigSnap = await getDoc(adminConfigRef);
 
-      let isFirstUser = false;
+      // The first user to sign up becomes the admin
       if (!adminConfigSnap.exists()) {
         await setDoc(adminConfigRef, { uid: user.uid });
-        isFirstUser = true;
       }
 
+      // All users are approved by default now
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, {
         email: user.email,
         createdAt: new Date().toISOString(),
-        approved: isFirstUser,
+        approved: true,
       });
 
       router.push('/');
