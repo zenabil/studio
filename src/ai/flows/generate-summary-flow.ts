@@ -2,8 +2,8 @@
 /**
  * @fileOverview A flow for generating an AI-powered summary of sales data.
  */
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 import {
   GenerateSummaryFlowInput,
   GenerateSummaryFlowInputSchema,
@@ -11,16 +11,10 @@ import {
   GenerateSummaryFlowOutputSchema,
 } from './summary-flow.types';
 
-const ai = genkit({
-  plugins: [googleAI({ apiVersion: 'v1beta' })],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
-});
-
 const generateSummaryPrompt = ai.definePrompt({
   name: 'generateSummaryPrompt',
-  input: { schema: GenerateSummaryFlowInputSchema },
-  output: { schema: GenerateSummaryFlowOutputSchema },
+  inputSchema: GenerateSummaryFlowInputSchema,
+  output: { format: 'text' },
   prompt: `
         You are a business analyst AI integrated into a Point of Sale (POS) system.
         Your task is to provide a concise, insightful, and professional summary of the provided sales data.

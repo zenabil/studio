@@ -1,5 +1,9 @@
-import { z } from 'genkit';
-import { Language } from '@/contexts/language-context';
+import { z } from 'zod';
+
+export enum Language {
+  French = 'fr',
+  Arabic = 'ar',
+}
 
 // Define the input schema for the sales summary data
 const SalesSummaryDataSchema = z.object({
