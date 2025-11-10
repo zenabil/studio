@@ -12,11 +12,12 @@ export async function getBackupData(userId: string) {
   const collectionsToBackup = [
     'products',
     'customers',
-    'sales', // Corrected from salesHistory
+    'sales',
     'bakeryOrders',
     'suppliers',
     'supplierInvoices',
     'expenses',
+    'purchaseOrders', // Added this line
   ];
 
   const backupData: { [key: string]: any[] } = {};
@@ -24,7 +25,6 @@ export async function getBackupData(userId: string) {
   for (const collectionName of collectionsToBackup) {
     const collRef = collection(firestore, `users/${userId}/${collectionName}`);
     const snapshot = await getDocs(collRef);
-    // Use the original collection name from the loop for the key in backupData
     backupData[collectionName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
