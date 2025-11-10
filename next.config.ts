@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    ADMIN_PASSWORD: 'admin123',
+    
   },
 };
 

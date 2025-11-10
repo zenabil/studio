@@ -19,7 +19,9 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import Image from 'next/image';
 import { Upload, Package } from 'lucide-react';
-
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Separator } from '@/components/ui/separator';
 
 type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
 
@@ -33,11 +35,25 @@ export default function SettingsPage() {
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const { control, handleSubmit, reset, setValue } = useForm<CompanyInfoFormData>({
+  const { control, handleSubmit, reset } = useForm<CompanyInfoFormData>({
     defaultValues: {
       companyInfo: settings.companyInfo,
       paymentTermsDays: settings.paymentTermsDays,
     },
+  });
+
+  const passwordFormSchema = z.object({
+      currentPassword: z.string().min(1, { message: t.settings.currentPasswordRequired }),
+      newPassword: z.string().min(4, { message: t.settings.newPasswordMinLength }),
+      confirmPassword: z.string()
+  }).refine(data => data.newPassword === data.confirmPassword, {
+      message: t.auth.passwordsDoNotMatch,
+      path: ['confirmPassword']
+  });
+
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
+      resolver: zodResolver(passwordFormSchema),
+      mode: 'onChange'
   });
   
   useEffect(() => {
@@ -51,6 +67,23 @@ export default function SettingsPage() {
   const onCompanyInfoSubmit = (data: CompanyInfoFormData) => {
     setSettings(data);
     toast({ title: t.settings.settingsSaved });
+  };
+
+  const onPasswordSubmit = (data: z.infer<typeof passwordFormSchema>) => {
+      if (data.currentPassword !== (settings.adminPassword || 'admin')) {
+          passwordForm.setError('currentPassword', {
+              type: 'manual',
+              message: t.settings.currentPasswordIncorrect
+          });
+          return;
+      }
+      setSettings({ adminPassword: data.newPassword });
+      toast({ title: t.settings.passwordChangedSuccess });
+      passwordForm.reset({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+      });
   };
   
   const handleBackup = async () => {
@@ -178,68 +211,99 @@ export default function SettingsPage() {
         </TabsList>
         
         <TabsContent value="general" className="mt-4">
-          <form onSubmit={handleSubmit(onCompanyInfoSubmit)}>
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.settings.companyInfo}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                  <Label>{t.settings.companyLogo}</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 h-24 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
-                        {logoPreview ? (
-                            <Image src={logoPreview} alt="Logo Preview" width={96} height={96} className="object-contain w-full h-full rounded-lg" unoptimized/>
-                        ) : (
-                            <Package className="w-10 h-10 text-muted-foreground"/>
-                        )}
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit(onCompanyInfoSubmit)}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.settings.companyInfo}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{t.settings.companyLogo}</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
+                          {logoPreview ? (
+                              <Image src={logoPreview} alt="Logo Preview" width={96} height={96} className="object-contain w-full h-full rounded-lg" unoptimized/>
+                          ) : (
+                              <Package className="w-10 h-10 text-muted-foreground"/>
+                          )}
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
+                          <Upload className="mr-2 h-4 w-4"/>
+                          {t.settings.uploadLogo}
+                      </Button>
+                      <input
+                          type="file"
+                          ref={logoFileInputRef}
+                          onChange={handleLogoFileChange}
+                          accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                          className="hidden"
+                      />
                     </div>
-                    <Button type="button" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4"/>
-                        {t.settings.uploadLogo}
-                    </Button>
-                     <input
-                        type="file"
-                        ref={logoFileInputRef}
-                        onChange={handleLogoFileChange}
-                        accept="image/png, image/jpeg, image/gif, image/svg+xml"
-                        className="hidden"
-                     />
                   </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="companyName">{t.settings.companyName}</Label>
-                      <Controller name="companyInfo.name" control={control} render={({ field }) => <Input id="companyName" {...field} />} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="companyPhone">{t.settings.companyPhone}</Label>
-                      <Controller name="companyInfo.phone" control={control} render={({ field }) => <Input id="companyPhone" {...field} />} />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyAddress">{t.settings.companyAddress}</Label>
-                  <Controller name="companyInfo.address" control={control} render={({ field }) => <Input id="companyAddress" {...field} />} />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
-                  <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="additionalInfo">{t.settings.additionalInfo}</Label>
-                  <Controller name="companyInfo.additionalInfo" control={control} render={({ field }) => <Textarea id="additionalInfo" {...field} value={field.value || ''} />} />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="paymentTerms">{t.settings.paymentTerms}</Label>
-                  <Controller name="paymentTermsDays" control={control} render={({ field }) => <Input id="paymentTerms" type="number" min="0" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />} />
-                  <p className="text-sm text-muted-foreground">{t.settings.paymentTermsDescription}</p>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit">{t.settings.save}</Button>
-              </CardFooter>
-            </Card>
-          </form>
+                  <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName">{t.settings.companyName}</Label>
+                        <Controller name="companyInfo.name" control={control} render={({ field }) => <Input id="companyName" {...field} />} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="companyPhone">{t.settings.companyPhone}</Label>
+                        <Controller name="companyInfo.phone" control={control} render={({ field }) => <Input id="companyPhone" {...field} />} />
+                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyAddress">{t.settings.companyAddress}</Label>
+                    <Controller name="companyInfo.address" control={control} render={({ field }) => <Input id="companyAddress" {...field} />} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyEmail">{t.settings.companyEmail}</Label>
+                    <Controller name="companyInfo.email" control={control} render={({ field }) => <Input id="companyEmail" type="email" {...field} />} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="additionalInfo">{t.settings.additionalInfo}</Label>
+                    <Controller name="companyInfo.additionalInfo" control={control} render={({ field }) => <Textarea id="additionalInfo" {...field} value={field.value || ''} />} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentTerms">{t.settings.paymentTerms}</Label>
+                    <Controller name="paymentTermsDays" control={control} render={({ field }) => <Input id="paymentTerms" type="number" min="0" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />} />
+                    <p className="text-sm text-muted-foreground">{t.settings.paymentTermsDescription}</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit">{t.settings.save}</Button>
+                </CardFooter>
+              </Card>
+            </form>
+            
+            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t.settings.adminPasswordTitle}</CardTitle>
+                        <CardDescription>{t.settings.adminPasswordDescription}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="currentPassword">{t.settings.currentPassword}</Label>
+                            <Input id="currentPassword" type="password" {...passwordForm.register('currentPassword')} />
+                             {passwordForm.formState.errors.currentPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.currentPassword.message}</p>}
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="newPassword">{t.settings.newPassword}</Label>
+                            <Input id="newPassword" type="password" {...passwordForm.register('newPassword')} />
+                            {passwordForm.formState.errors.newPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.newPassword.message}</p>}
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">{t.auth.confirmPassword}</Label>
+                            <Input id="confirmPassword" type="password" {...passwordForm.register('confirmPassword')} />
+                            {passwordForm.formState.errors.confirmPassword && <p className="text-sm text-destructive">{passwordForm.formState.errors.confirmPassword.message}</p>}
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button type="submit" disabled={!passwordForm.formState.isValid}>{t.settings.changePassword}</Button>
+                    </CardFooter>
+                </Card>
+            </form>
+          </div>
         </TabsContent>
         
         <TabsContent value="appearance" className="mt-4">

@@ -1,6 +1,7 @@
 
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { useSettings } from './settings-context';
 
 interface AdminAuthContextType {
   isAuthorized: boolean;
@@ -12,15 +13,15 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthorized, setIsAuthorizedState] = useState(false);
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const { settings } = useSettings();
 
   const checkPassword = useCallback((password: string) => {
-    const correct = password === adminPassword;
+    const correct = password === (settings.adminPassword || 'admin');
     if (correct) {
       setIsAuthorizedState(true);
     }
     return correct;
-  }, [adminPassword]);
+  }, [settings.adminPassword]);
 
   const setIsAuthorized = (authStatus: boolean) => {
     setIsAuthorizedState(authStatus);

@@ -409,6 +409,15 @@ export const translations = {
       changesSavedAutomatically: "Les modifications de l'apparence sont enregistrées automatiquement.",
       installPrompt: "Installez l'application sur votre appareil pour une meilleure expérience.",
       installButton: "Installer",
+      adminPasswordTitle: "Mot de passe administrateur",
+      adminPasswordDescription: "Gérez le mot de passe pour accéder à la page de gestion des utilisateurs.",
+      currentPassword: "Mot de passe actuel",
+      newPassword: "Nouveau mot de passe",
+      changePassword: "Changer le mot de passe",
+      currentPasswordRequired: "Le mot de passe actuel est requis.",
+      newPasswordMinLength: "Le nouveau mot de passe doit comporter au moins 4 caractères.",
+      currentPasswordIncorrect: "Le mot de passe actuel est incorrect.",
+      passwordChangedSuccess: "Mot de passe changé avec succès.",
     },
     bakeryOrders: {
       title: "Commandes Boulangerie",
@@ -925,6 +934,15 @@ export const translations = {
       changesSavedAutomatically: "يتم حفظ تغييرات المظهر تلقائيًا.",
       installPrompt: "ثبّت التطبيق على جهازك للحصول على تجربة أفضل.",
       installButton: "تثبيت",
+      adminPasswordTitle: "كلمة مرور المسؤول",
+      adminPasswordDescription: "إدارة كلمة المرور للوصول إلى صفحة إدارة المستخدمين.",
+      currentPassword: "كلمة المرور الحالية",
+      newPassword: "كلمة المرور الجديدة",
+      changePassword: "تغيير كلمة المرور",
+      currentPasswordRequired: "كلمة المرور الحالية مطلوبة.",
+      newPasswordMinLength: "يجب أن تتكون كلمة المرور الجديدة من 4 أحرف على الأقل.",
+      currentPasswordIncorrect: "كلمة المرور الحالية غير صحيحة.",
+      passwordChangedSuccess: "تم تغيير كلمة المرور بنجاح.",
     },
     bakeryOrders: {
       title: "طلبات المخبز",
@@ -1037,5 +1055,3 @@ export const translations = {
     }
   },
 };
-
-    

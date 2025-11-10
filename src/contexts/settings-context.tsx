@@ -26,6 +26,7 @@ export interface Settings {
   theme: Theme;
   colorPreset: string; // name of the preset
   paymentTermsDays: number;
+  adminPassword?: string;
 }
 
 // Define the context type
@@ -69,6 +70,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     theme: 'dark',
     colorPreset: 'Slate',
     paymentTermsDays: 30,
+    adminPassword: 'admin',
   });
   
   // Load settings from localStorage on initial client render
