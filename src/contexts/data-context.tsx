@@ -146,7 +146,7 @@ export interface UserProfile {
   createdAt: string;
 }
 
-type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
+export type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
 
 interface DataContextType {
     products: WithId<Product>[];
@@ -192,27 +192,32 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const AdminDataProvider = ({ children, userProfile }: { children: React.ReactNode, userProfile: UserProfile | null }) => {
-    const firestore = useFirestore();
+const AdminDataProvider = ({
+  children,
+  userProfile,
+  setUserProfiles,
+  setUserProfilesLoading,
+}: {
+  children: React.ReactNode;
+  userProfile: UserProfile | null;
+  setUserProfiles: (profiles: WithId<UserProfile>[]) => void;
+  setUserProfilesLoading: (loading: boolean) => void;
+}) => {
+  const firestore = useFirestore();
 
-    const userProfilesRef = useMemoFirebase(() => {
-        if (!firestore || !userProfile?.isAdmin) return null;
-        return collection(firestore, 'userProfiles');
-    }, [firestore, userProfile?.isAdmin]);
+  const userProfilesRef = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.isAdmin) return null;
+    return collection(firestore, 'userProfiles');
+  }, [firestore, userProfile?.isAdmin]);
 
-    const { data: userProfilesData, isLoading: userProfilesLoading } = useCollection<UserProfile>(userProfilesRef);
+  const { data: userProfilesData, isLoading: profilesLoading } = useCollection<UserProfile>(userProfilesRef);
+  
+  useEffect(() => {
+    setUserProfiles(userProfilesData || []);
+    setUserProfilesLoading(profilesLoading);
+  }, [userProfilesData, profilesLoading, setUserProfiles, setUserProfilesLoading]);
 
-    const mergedChildren = React.Children.map(children, child => {
-        if (React.isValidElement(child)) {
-            return React.cloneElement(child, {
-                userProfiles: userProfilesData || [],
-                userProfilesLoading: userProfilesLoading
-            } as any);
-        }
-        return child;
-    });
-
-    return <>{mergedChildren}</>;
+  return <>{children}</>;
 };
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
@@ -229,6 +234,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return collection(firestore, path) as CollectionReference;
     }, [firestore, dataUserId]);
 
+    const userProfileDocRef = useMemoFirebase(() => {
+        if (!firestore || !dataUserId) return null;
+        return doc(firestore, `userProfiles/${dataUserId}`);
+    }, [firestore, dataUserId]);
+    
+    const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
+    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
+
     const productsRef = useMemoFirebase(() => getCollectionRef('products'), [getCollectionRef]);
     const customersRef = useMemoFirebase(() => getCollectionRef('customers'), [getCollectionRef]);
     const salesRef = useMemoFirebase(() => getCollectionRef('sales'), [getCollectionRef]);
@@ -238,12 +251,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const purchaseOrdersRef = useMemoFirebase(() => getCollectionRef('purchaseOrders'), [getCollectionRef]);
     const expensesRef = useMemoFirebase(() => getCollectionRef('expenses'), [getCollectionRef]);
     
-    const userProfileDocRef = useMemoFirebase(() => {
-        if (!firestore || !dataUserId) return null;
-        return doc(firestore, `userProfiles/${dataUserId}`);
-    }, [firestore, dataUserId]);
-    
-    const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
     const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customersData, isLoading: customersLoading } = useCollection<Customer>(customersRef);
     const { data: salesHistoryData, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
@@ -255,8 +262,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     const [userProfiles, setUserProfiles] = useState<WithId<UserProfile>[]>([]);
     const [userProfilesLoading, setUserProfilesLoading] = useState(true);
-
-    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
 
     const isLoadingAllData = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
     
@@ -796,24 +801,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addPendingUser, approveUser, revokeUser, restoreData
     ]);
 
-    const childProps = {
-        userProfiles,
-        userProfilesLoading,
-    };
-
     return (
       <DataContext.Provider value={fullContext}>
-        <AdminDataProvider userProfile={userProfile}>
-            {React.Children.map(children, child =>
-                React.isValidElement(child)
-                    ? React.cloneElement(child, {
-                          ...child.props,
-                          ...childProps,
-                          setUserProfiles,
-                          setUserProfilesLoading,
-                      })
-                    : child
-            )}
+        <AdminDataProvider
+          userProfile={userProfile}
+          setUserProfiles={setUserProfiles}
+          setUserProfilesLoading={setUserProfilesLoading}
+        >
+          {children}
         </AdminDataProvider>
       </DataContext.Provider>
     );
