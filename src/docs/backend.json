@@ -1,0 +1,285 @@
+
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product available for sale.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product, managed by Firestore."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category the product belongs to."
+        },
+        "price": {
+          "type": "number",
+          "description": "Selling price per unit."
+        },
+        "purchasePrice": {
+          "type": "number",
+          "description": "Cost price per unit."
+        },
+        "stock": {
+          "type": "number",
+          "description": "Current quantity in stock."
+        },
+        "minStock": {
+          "type": "number",
+          "description": "Minimum stock level for reorder alerts."
+        },
+        "quantityPerBox": {
+          "type": "number",
+          "description": "Number of units in a box/case."
+        },
+        "boxPrice": {
+          "type": "number",
+          "description": "Selling price for a full box."
+        },
+        "barcodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of barcode strings for the product."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the product was created."
+        }
+      },
+      "required": ["name", "category", "price", "purchasePrice", "stock", "minStock", "barcodes"]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer of the business.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the customer, managed by Firestore."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the customer."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the customer."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the customer."
+        },
+        "spent": {
+          "type": "number",
+          "description": "Total amount spent by the customer."
+        },
+        "balance": {
+          "type": "number",
+          "description": "Current outstanding balance (debt) of the customer."
+        },
+        "settlementDay": {
+            "type": "number",
+            "description": "The specific day of the month the customer's debts are due."
+        }
+      },
+      "required": ["name", "spent", "balance"]
+    },
+    "SaleRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SaleRecord",
+      "type": "object",
+      "description": "Represents a single sale or payment transaction.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the sale record, managed by Firestore."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "ID of the customer associated with the sale. Can be null for cash sales."
+        },
+        "items": {
+          "type": "array",
+          "description": "List of items sold in the transaction. Empty for payment-only records.",
+          "items": {
+            "type": "object",
+            "description": "A snapshot of the product at the time of sale."
+          }
+        },
+        "totals": {
+          "type": "object",
+          "properties": {
+            "subtotal": { "type": "number" },
+            "discount": { "type": "number" },
+            "total": { "type": "number" },
+            "amountPaid": { "type": "number" },
+            "balance": { "type": "number", "description": "Change in customer balance for this transaction." }
+          }
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 string of when the sale occurred."
+        }
+      },
+      "required": ["id", "items", "totals", "date"]
+    },
+     "BakeryOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BakeryOrder",
+      "type": "object",
+      "description": "Represents a daily order, typically for a bakery.",
+      "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string", "format": "date-time" },
+          "name": { "type": "string" },
+          "quantity": { "type": "number" },
+          "paid": { "type": "boolean" },
+          "received": { "type": "boolean" },
+          "isRecurring": { "type": "boolean", "description": "If true, this is a template for daily orders." },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["date", "name", "quantity", "paid", "received", "isRecurring"]
+    },
+    "Supplier": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Supplier",
+        "type": "object",
+        "description": "Represents a product supplier.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "productCategory": { "type": "string" },
+            "visitDays": { "type": "array", "items": { "type": "number" } },
+            "balance": { "type": "number", "description": "Current balance owed to the supplier." }
+        },
+        "required": ["name", "phone", "productCategory", "balance"]
+    },
+    "SupplierInvoice": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "SupplierInvoice",
+        "type": "object",
+        "description": "Represents an invoice from a supplier or a payment made to them.",
+        "properties": {
+            "id": { "type": "string" },
+            "supplierId": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "items": { "type": "array", "items": { "type": "object" } },
+            "totalAmount": { "type": "number" },
+            "amountPaid": { "type": "number" },
+            "isPayment": { "type": "boolean", "description": "True if this record is a payment, not an invoice." },
+            "priceUpdateStrategy": { "type": "string", "enum": ["master", "average", "none"] },
+            "purchaseOrderId": { "type": "string", "description": "ID of the purchase order this invoice is linked to, if any." }
+        },
+        "required": ["supplierId", "date", "items", "totalAmount"]
+    },
+     "PurchaseOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PurchaseOrder",
+      "type": "object",
+      "description": "Represents a purchase order sent to a supplier.",
+      "properties": {
+        "id": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "sent", "partially_received", "completed", "cancelled"] },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierId", "status", "items", "createdAt", "updatedAt"]
+    },
+    "Expense": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Expense",
+        "type": "object",
+        "description": "Represents a business expense.",
+        "properties": {
+            "id": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "category": { "type": "string" },
+            "description": { "type": "string" },
+            "amount": { "type": "number" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["date", "category", "description", "amount"]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile information.",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "approved": { "type": "boolean" }
+      },
+      "required": ["email", "createdAt", "approved"]
+    }
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/products/{productId}",
+        "schema": "Product",
+        "description": "Products collection, partitioned by user ID."
+      },
+      {
+        "path": "/users/{userId}/customers/{customerId}",
+        "schema": "Customer",
+        "description": "Customers collection, partitioned by user ID."
+      },
+      {
+        "path": "/users/{userId}/sales/{saleId}",
+        "schema": "SaleRecord",
+        "description": "Sales records, partitioned by user ID."
+      },
+      {
+        "path": "/users/{userId}/bakeryOrders/{orderId}",
+        "schema": "BakeryOrder",
+        "description": "Bakery orders, partitioned by user ID."
+      },
+      {
+        "path": "/users/{userId}/suppliers/{supplierId}",
+        "schema": "Supplier",
+        "description": "Suppliers collection, partitioned by user ID."
+      },
+      {
+        "path": "/users/{userId}/supplierInvoices/{invoiceId}",
+        "schema": "SupplierInvoice",
+        "description": "Supplier invoices, partitioned by user ID."
+      },
+       {
+        "path": "/users/{userId}/purchaseOrders/{purchaseOrderId}",
+        "schema": "PurchaseOrder",
+        "description": "Purchase orders sent to suppliers, partitioned by user ID."
+      },
+      {
+        "path": "/users/{userId}/expenses/{expenseId}",
+        "schema": "Expense",
+        "description": "Expenses, partitioned by user ID."
+      },
+      {
+        "path": "/userProfiles/{userId}",
+        "schema": "UserProfile",
+        "description": "Stores profile information for each user."
+      }
+    ]
+  },
+  "auth": {
+    "providers": ["emailPassword"]
+  }
+}

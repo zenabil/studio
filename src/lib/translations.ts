@@ -289,6 +289,7 @@ export const translations = {
         addNewProduct: "Ajouter un nouveau produit",
         payFullAmount: "Payer le montant total",
         createPurchaseOrder: "Créer une Facture",
+        receiveItems: "Réceptionner",
     },
     purchaseOrders: {
         title: "Bons de Commande",
@@ -802,6 +803,7 @@ export const translations = {
         addNewProduct: "إضافة منتج جديد",
         payFullAmount: "دفع المبلغ كاملاً",
         createPurchaseOrder: "إنشاء فاتورة",
+        receiveItems: "استلام البضاعة",
     },
     purchaseOrders: {
         title: "أوامر الشراء",

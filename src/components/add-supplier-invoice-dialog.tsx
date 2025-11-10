@@ -50,6 +50,7 @@ interface AddSupplierInvoiceDialogProps {
   onSave: (values: z.infer<typeof formSchema>) => void;
   supplier: Supplier;
   initialItems?: SupplierInvoiceItem[];
+  purchaseOrderId?: string;
 }
 
 const invoiceItemSchema = z.object({
@@ -67,9 +68,10 @@ const formSchema = z.object({
   items: z.array(invoiceItemSchema).min(1, "Please add at least one item to the invoice."),
   amountPaid: z.coerce.number().min(0).optional(),
   priceUpdateStrategy: z.string().default('average'),
+  purchaseOrderId: z.string().optional(),
 });
 
-export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, initialItems }: AddSupplierInvoiceDialogProps) {
+export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, initialItems, purchaseOrderId }: AddSupplierInvoiceDialogProps) {
   const { t } = useLanguage();
   const { products, addProduct } = useData();
   const { settings } = useSettings();
@@ -108,6 +110,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
       items: initialItems || [],
       amountPaid: 0,
       priceUpdateStrategy: 'average',
+      purchaseOrderId: purchaseOrderId || undefined,
     },
   });
 
@@ -164,9 +167,10 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
         items: initialItems || [],
         amountPaid: 0,
         priceUpdateStrategy: 'average',
+        purchaseOrderId: purchaseOrderId || undefined,
       });
     }
-  }, [isOpen, supplier, form, initialItems]);
+  }, [isOpen, supplier, form, initialItems, purchaseOrderId]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSaving(true);

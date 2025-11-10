@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -127,6 +128,7 @@ export interface SupplierInvoice {
   amountPaid?: number;
   isPayment?: boolean;
   priceUpdateStrategy?: 'master' | 'average' | 'none';
+  purchaseOrderId?: string;
 }
 
 
@@ -163,7 +165,7 @@ interface DataContextType {
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
-    addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => Promise<void>;
+    addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => Promise<void>;
     addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<void>;
     updatePurchaseOrder: (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => Promise<void>;
     deletePurchaseOrder: (poId: string) => Promise<void>;
@@ -473,7 +475,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         toast({ title: t.suppliers.supplierDeleted });
     }, [getCollectionRef, supplierInvoices, t, toast]);
     
-    const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
+    const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         const batch = writeBatch(firestore);
         
@@ -499,6 +501,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (supplier) {
             const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
             batch.update(supplierRef, { balance: newBalance });
+        }
+
+        if (invoiceData.purchaseOrderId) {
+            const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
+            batch.update(poRef, { status: 'completed' });
         }
         
         await batch.commit().catch(error => {
@@ -684,5 +691,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    

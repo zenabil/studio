@@ -17,27 +17,31 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
-import type { PurchaseOrder } from '@/contexts/data-context';
+import type { PurchaseOrder, Supplier, SupplierInvoiceItem } from '@/contexts/data-context';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import Loading from '@/app/loading';
 import { Badge } from '@/components/ui/badge';
 import { AddPurchaseOrderDialog } from '@/components/add-purchase-order-dialog';
+import { AddSupplierInvoiceDialog } from '@/components/add-supplier-invoice-dialog';
 
 export default function PurchaseOrdersPage() {
   const { t } = useLanguage();
-  const { purchaseOrders, suppliers, deletePurchaseOrder, isLoading } = useData();
+  const { purchaseOrders, suppliers, deletePurchaseOrder, isLoading, addSupplierInvoice } = useData();
   const { settings } = useSettings();
   const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPODialogOpen, setIsPODialogOpen] = useState(false);
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
+  const [poToReceive, setPoToReceive] = useState<PurchaseOrder | null>(null);
   const [poToDelete, setPoToDelete] = useState<PurchaseOrder | null>(null);
   
   const purchaseOrdersWithSupplier = useMemo(() => {
@@ -73,10 +77,15 @@ export default function PurchaseOrdersPage() {
     }
   }
 
-  const handleOpenDialog = (po: PurchaseOrder | null = null) => {
+  const handleOpenPODialog = (po: PurchaseOrder | null = null) => {
     setEditingPO(po);
-    setIsDialogOpen(true);
+    setIsPODialogOpen(true);
   };
+
+  const handleOpenReceiveDialog = (po: PurchaseOrder) => {
+    setPoToReceive(po);
+    setIsInvoiceDialogOpen(true);
+  }
 
   const handleOpenDeleteDialog = (po: PurchaseOrder) => {
     setPoToDelete(po);
@@ -92,6 +101,18 @@ export default function PurchaseOrdersPage() {
     toast({ title: t.purchaseOrders.poDeleted || "Purchase order deleted." });
     handleCloseDeleteDialog();
   };
+
+  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
+    await addSupplierInvoice(invoiceData);
+    toast({ title: t.suppliers.invoiceAdded });
+    setIsInvoiceDialogOpen(false);
+    setPoToReceive(null);
+  };
+
+  const supplierForInvoice = useMemo(() => {
+    if (!poToReceive) return null;
+    return suppliers.find(s => s.id === poToReceive.supplierId) || null;
+  }, [poToReceive, suppliers]);
 
   if (isLoading) {
     return <Loading />;
@@ -109,7 +130,7 @@ export default function PurchaseOrdersPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-64"
             />
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenPODialog()}>
               <PlusCircle className="mr-2 h-4 w-4" />
               {t.purchaseOrders.addPO}
             </Button>
@@ -143,7 +164,13 @@ export default function PurchaseOrdersPage() {
                       <TableCell>{format(new Date(po.createdAt), 'PP')}</TableCell>
                       <TableCell className="text-right">{settings.currency}{po.total.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" title={t.purchaseOrders.editPO} onClick={() => handleOpenDialog(po)}>
+                        {['sent', 'partially_received'].includes(po.status) && (
+                          <Button variant="outline" size="sm" onClick={() => handleOpenReceiveDialog(po)}>
+                             <Truck className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                             {t.suppliers.receiveItems || 'Receive'}
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" title={t.purchaseOrders.editPO} onClick={() => handleOpenPODialog(po)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" title={t.delete} onClick={() => handleOpenDeleteDialog(po)}>
@@ -166,10 +193,21 @@ export default function PurchaseOrdersPage() {
       </div>
       
       <AddPurchaseOrderDialog
-        isOpen={isDialogOpen}
-        onClose={() => {setIsDialogOpen(false); setEditingPO(null);}}
+        isOpen={isPODialogOpen}
+        onClose={() => {setIsPODialogOpen(false); setEditingPO(null);}}
         purchaseOrderToEdit={editingPO}
       />
+
+      {poToReceive && supplierForInvoice && (
+          <AddSupplierInvoiceDialog
+            isOpen={isInvoiceDialogOpen}
+            onClose={() => setIsInvoiceDialogOpen(false)}
+            onSave={handleSaveInvoice}
+            supplier={supplierForInvoice}
+            initialItems={poToReceive.items}
+            purchaseOrderId={poToReceive.id}
+          />
+      )}
       
       <ConfirmDialog
         isOpen={!!poToDelete}
@@ -181,5 +219,3 @@ export default function PurchaseOrdersPage() {
     </>
   );
 }
-
-    
