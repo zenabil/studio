@@ -24,7 +24,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { AddBakeryOrderDialog } from '@/components/add-bakery-order-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { format, isToday } from 'date-fns';
+import { format, isToday, startOfToday, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useData } from '@/contexts/data-context';
 import type { BakeryOrder } from '@/lib/data';
@@ -48,7 +48,7 @@ const addDeletedRecurringForToday = (orderName: string) => {
   if (typeof window === 'undefined') return;
   const key = getTodaysDeletedRecurringKey();
   const deletedNames = getDeletedRecurringForToday();
-  if (!deletedNames.includes(orderName)) {
+  if (!deletedNames.includes(deletedNames)) {
     deletedNames.push(orderName);
     localStorage.setItem(key, JSON.stringify(deletedNames));
   }
@@ -58,7 +58,19 @@ const addDeletedRecurringForToday = (orderName: string) => {
 export default function BakeryOrdersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { bakeryOrders, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, isLoading, setAsRecurringTemplate, deleteRecurringPattern } = useData();
+  const { 
+    bakeryOrders, 
+    addBakeryOrder, 
+    updateBakeryOrder, 
+    deleteBakeryOrder, 
+    isLoading, 
+    setAsRecurringTemplate, 
+    deleteRecurringPattern,
+    processUnpaidBakeryOrders,
+    products,
+    customers,
+    addCustomer
+  } = useData();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<BakeryOrder | null>(null);
@@ -84,23 +96,19 @@ export default function BakeryOrdersPage() {
   }, []);
 
   useEffect(() => {
-    // This effect runs once after data is loaded to create any missing daily recurring orders.
     if (!isLoading && !isInitialized) {
-        const initializeRecurringOrders = async () => {
+        const initializeDailyOrders = async () => {
+            // Process old unpaid orders first
+            await processUnpaidBakeryOrders();
+
+            // Then, create today's recurring orders
             const deletedForToday = getDeletedRecurringForToday();
-            
-            // Find unique templates. Each order with isRecurring=true is a template.
             const recurringTemplates = bakeryOrders.filter(o => o.isRecurring);
-            
             const addPromises: Promise<void>[] = [];
 
             recurringTemplates.forEach(template => {
-                // Skip creation if an order with this name was deleted today
-                if (deletedForToday.includes(template.name)) {
-                    return;
-                }
+                if (deletedForToday.includes(template.name)) return;
 
-                // Check if an order with this name already exists for today
                 const instanceExists = bakeryOrders.some(o => o.name === template.name && isToday(new Date(o.date)));
                 
                 if (!instanceExists) {
@@ -110,7 +118,7 @@ export default function BakeryOrdersPage() {
                         date: new Date().toISOString(),
                         paid: false,
                         received: false,
-                        isRecurring: false, // The new instance is NOT a template
+                        isRecurring: false,
                     };
                     addPromises.push(addBakeryOrder(newOrderData));
                 }
@@ -121,11 +129,11 @@ export default function BakeryOrdersPage() {
             }
             
             setIsInitialized(true);
-        }
+        };
 
-        initializeRecurringOrders();
+        initializeDailyOrders();
     }
-  }, [isLoading, isInitialized, bakeryOrders, addBakeryOrder]);
+  }, [isLoading, isInitialized, bakeryOrders, addBakeryOrder, processUnpaidBakeryOrders]);
 
 
   const todaysOrders = useMemo(() => bakeryOrders.filter(o => isToday(new Date(o.date))), [bakeryOrders]);

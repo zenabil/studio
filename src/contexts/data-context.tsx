@@ -32,6 +32,7 @@ import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { isBefore, startOfToday } from 'date-fns';
 
 // Data type definitions moved here for better co-location
 export type Product = {
@@ -66,6 +67,7 @@ export interface BakeryOrder {
   paid: boolean;
   received: boolean;
   isRecurring: boolean;
+  price?: number;
 }
 
 export interface Supplier {
@@ -172,6 +174,7 @@ interface DataContextType {
     deleteBakeryOrder: (orderId: string) => Promise<void>;
     deleteRecurringPattern: (orderName: string) => Promise<void>;
     setAsRecurringTemplate: (templateId: string, isRecurring: boolean) => Promise<void>;
+    processUnpaidBakeryOrders: () => Promise<void>;
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
@@ -519,6 +522,91 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [getCollectionRef, firestore, bakeryOrders]);
 
+    const processUnpaidBakeryOrders = useCallback(async () => {
+        if (!firestore || !dataUserId || !bakeryOrders || !products) return;
+
+        const today = startOfToday();
+        const ordersToProcess = bakeryOrders.filter(order =>
+            order.received &&
+            !order.paid &&
+            isBefore(new Date(order.date), today)
+        );
+
+        if (ordersToProcess.length === 0) return;
+
+        const bakeryProduct = products.find(p => p.category.toLowerCase() === 'boulangerie');
+        const defaultPrice = bakeryProduct?.price || 0;
+
+        for (const order of ordersToProcess) {
+            try {
+                await runTransaction(firestore, async (transaction) => {
+                    let customerId: string | null = null;
+                    const customersCollection = collection(firestore, `users/${dataUserId}/customers`);
+                    const customerQuery = query(customersCollection, where("name", "==", order.name));
+                    const customerSnapshot = await getDocs(customerQuery);
+
+                    if (customerSnapshot.empty) {
+                        const newCustomerRef = doc(customersCollection);
+                        transaction.set(newCustomerRef, { name: order.name, balance: 0, spent: 0 });
+                        customerId = newCustomerRef.id;
+                    } else {
+                        customerId = customerSnapshot.docs[0].id;
+                    }
+
+                    if (!customerId) return;
+
+                    const price = order.price ?? defaultPrice;
+                    const total = price * order.quantity;
+
+                    const saleItem: CartItem = {
+                        id: bakeryProduct?.id || 'bakery-item',
+                        name: order.name,
+                        price: price,
+                        quantity: order.quantity,
+                        category: bakeryProduct?.category || 'Boulangerie',
+                        purchasePrice: bakeryProduct?.purchasePrice || 0,
+                        stock: bakeryProduct?.stock || 0,
+                        minStock: bakeryProduct?.minStock || 0,
+                        barcodes: [],
+                    };
+
+                    const saleTotals = {
+                        subtotal: total,
+                        discount: 0,
+                        total: total,
+                        amountPaid: 0,
+                        balance: total, // This is the amount to be added to customer's debt
+                    };
+
+                    const salesCollectionRef = collection(firestore, `users/${dataUserId}/sales`);
+                    const saleRef = doc(salesCollectionRef);
+                    transaction.set(saleRef, {
+                        customerId,
+                        items: [saleItem],
+                        totals: saleTotals,
+                        date: order.date,
+                    });
+
+                    const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
+                    const customerDoc = await transaction.get(customerRef);
+                    if (customerDoc.exists()) {
+                        const customerData = customerDoc.data();
+                        transaction.update(customerRef, {
+                            balance: (customerData.balance || 0) + total,
+                            spent: (customerData.spent || 0) + total,
+                        });
+                    }
+
+                    const bakeryOrderRef = doc(firestore, `users/${dataUserId}/bakeryOrders/${order.id}`);
+                    transaction.update(bakeryOrderRef, { paid: true });
+                });
+            } catch (error) {
+                 console.error(`Failed to process unpaid order for ${order.name}:`, error);
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { processingOrder: order.id } }));
+            }
+        }
+    }, [firestore, dataUserId, bakeryOrders, products]);
+
     const addSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
@@ -759,6 +847,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteBakeryOrder,
         deleteRecurringPattern,
         setAsRecurringTemplate,
+        processUnpaidBakeryOrders,
         addSupplier,
         updateSupplier,
         deleteSupplier,
@@ -792,11 +881,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    
-
-    
-
-
-
-
