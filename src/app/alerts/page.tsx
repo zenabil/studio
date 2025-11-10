@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -17,22 +17,17 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
-import { TriangleAlert, CalendarClock, MessageSquare, Truck } from 'lucide-react';
+import { TriangleAlert, CalendarClock } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import Loading from '@/app/loading';
 import { cn } from '@/lib/utils';
 import { calculateDebtAlerts } from '@/lib/utils';
-import type { Product, SupplierInvoiceItem } from '@/lib/data';
 
 export default function AlertsPage() {
   const { t } = useLanguage();
-  const { toast } = useToast();
-  const { products, customers, salesHistory, isLoading, suppliers, addPurchaseOrder } = useData();
+  const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
-  const [orderingProductId, setOrderingProductId] = useState<string | null>(null);
 
   const lowStockProducts = useMemo(() => {
     return products
@@ -43,88 +38,6 @@ export default function AlertsPage() {
   const debtAlerts = useMemo(() => {
     return calculateDebtAlerts(customers, salesHistory, settings.paymentTermsDays);
   }, [customers, salesHistory, settings.paymentTermsDays]);
-
-  const handleCreatePurchaseOrder = async (product: Product) => {
-    setOrderingProductId(product.id);
-    try {
-      const supplier = suppliers.find(s => s.productCategory === product.category);
-      if (!supplier) {
-        toast({
-          variant: 'destructive',
-          title: t.errors.title,
-          description: t.alerts.noSupplierForCategory.replace('{category}', product.category),
-        });
-        return;
-      }
-
-      const needed = (product.minStock || 0) - product.stock;
-      let quantityToOrder = needed > 0 ? needed : (product.minStock || 1);
-
-      if (product.quantityPerBox && product.quantityPerBox > 0) {
-        const numBoxes = Math.ceil(quantityToOrder / product.quantityPerBox);
-        quantityToOrder = numBoxes * product.quantityPerBox;
-      }
-
-      const newItem: SupplierInvoiceItem = {
-        productId: product.id,
-        productName: product.name,
-        quantity: quantityToOrder,
-        purchasePrice: product.purchasePrice || 0,
-        boxPrice: product.boxPrice,
-        quantityPerBox: product.quantityPerBox,
-        barcode: (product.barcodes || []).join(', '),
-      };
-
-      const poData = {
-        supplierId: supplier.id,
-        items: [newItem],
-      };
-
-      await addPurchaseOrder(poData);
-      toast({
-        title: t.purchaseOrders.poCreated,
-        description: `${quantityToOrder} x ${product.name} ${t.pos.addedToCart.replace('au panier', `pour ${supplier.name}`)}`,
-      });
-
-    } catch (error) {
-      console.error("Failed to create purchase order:", error);
-      toast({
-        variant: 'destructive',
-        title: t.errors.title,
-        description: t.errors.unknownError,
-      });
-    } finally {
-      setOrderingProductId(null);
-    }
-  };
-
-  const handleSendSms = (alert: (typeof debtAlerts)[0]) => {
-    if (!alert.phone) {
-      toast({
-        variant: 'destructive',
-        title: t.errors.title,
-        description: t.alerts.noPhoneNumber,
-      });
-      return;
-    }
-
-    const message = t.alerts.smsBody
-      .replace('{customerName}', alert.customerName)
-      .replace('{currency}', settings.currency)
-      .replace('{balance}', alert.balance.toFixed(2))
-      .replace('{dueDate}', format(alert.dueDate, 'PP'));
-
-    const phoneNumber = alert.phone.replace(/[^0-9+]/g, ''); // Clean the phone number
-    const smsUri = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
-
-    // This will attempt to open the default SMS application.
-    window.open(smsUri, '_self');
-
-    toast({
-      title: t.alerts.smsSent,
-      description: t.alerts.smsRedirect,
-    });
-  };
 
   if (isLoading) {
     return <Loading />;
@@ -150,7 +63,6 @@ export default function AlertsPage() {
                   <TableHead>{t.products.category}</TableHead>
                   <TableHead className="text-right">{t.alerts.currentStock}</TableHead>
                   <TableHead className="text-right">{t.products.minStock}</TableHead>
-                  <TableHead className="text-right">{t.products.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,17 +74,6 @@ export default function AlertsPage() {
                       {product.stock}
                     </TableCell>
                     <TableCell className="text-right">{product.minStock || 0}</TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleCreatePurchaseOrder(product)}
-                        disabled={orderingProductId === product.id}
-                      >
-                        <Truck className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                        {orderingProductId === product.id ? `${t.settings.saving}...` : t.alerts.orderStock}
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -199,7 +100,6 @@ export default function AlertsPage() {
                             <TableHead>{t.alerts.customer}</TableHead>
                             <TableHead className="text-right">{t.alerts.balanceDue}</TableHead>
                             <TableHead className="text-right">{t.alerts.dueDate}</TableHead>
-                            <TableHead className="text-right">{t.products.actions}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -214,11 +114,6 @@ export default function AlertsPage() {
                                       <span>{format(alert.dueDate, 'PP')}</span>
                                       {alert.isOverdue && <span className="text-xs font-bold text-destructive">({t.alerts.overdue})</span>}
                                     </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button variant="ghost" size="icon" title={t.alerts.sendSms} onClick={() => handleSendSms(alert)}>
-                                      <MessageSquare className="h-4 w-4" />
-                                  </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
