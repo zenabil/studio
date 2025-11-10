@@ -45,10 +45,10 @@ interface DataContextType {
     userProfiles: WithId<UserProfile>[];
     userProfile: UserProfile | null;
     isLoading: boolean;
-    addProduct: (productData: ProductFormData) => Promise<void>;
+    addProduct: (productData: ProductFormData) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<ProductFormData>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
-    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<void>;
+    addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<WithId<Customer>>;
     updateCustomer: (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => Promise<void>;
     deleteCustomer: (customerId: string) => Promise<void>;
     addSaleRecord: (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => Promise<void>;
@@ -171,11 +171,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             createdAt: serverTimestamp(),
         };
 
-        addDoc(collectionRef, newProductData)
+        const docRef = await addDoc(collectionRef, newProductData)
             .catch(error => {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
                 throw error;
             });
+        
+        return { ...newProductData, id: docRef.id } as WithId<Product>;
     }, [getCollectionRef, uploadImage]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<ProductFormData>) => {
@@ -226,10 +228,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             balance: 0,
         };
 
-        addDoc(collectionRef, newCustomerData).catch(error => {
+        const docRef = await addDoc(collectionRef, newCustomerData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newCustomerData }));
             throw error;
         });
+
+        return { ...newCustomerData, id: docRef.id };
         
     }, [getCollectionRef]);
     
@@ -274,9 +278,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             const productRef = doc(firestore, `users/${dataUserId}/products/${item.id}`);
             const product = (products || []).find(p => p.id === item.id);
             if (product) {
-                if (product.stock < item.quantity) {
-                    throw new Error(`Not enough stock for '${product.name}'.`);
-                }
                 batch.update(productRef, { stock: product.stock - item.quantity });
             }
         }
