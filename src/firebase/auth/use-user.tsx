@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
-import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/data';
 
 export interface UseUserResult {
