@@ -184,7 +184,7 @@
             "priceUpdateStrategy": { "type": "string", "enum": ["master", "average", "none"] },
             "purchaseOrderId": { "type": "string", "description": "ID of the purchase order this invoice is linked to, if any." }
         },
-        "required": ["supplierId", "date", "items", "totalAmount"]
+        "required": ["supplierId", "date", "totalAmount"]
     },
      "PurchaseOrder": {
       "$schema": "http://json-schema.org/draft-07/schema#",
