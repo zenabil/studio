@@ -14,7 +14,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen w-full bg-background text-foreground">
       <SidebarNav />
        <main className={cn(
-        "flex-1 flex-col transition-all duration-300 ease-in-out",
+        "flex-1 flex flex-col transition-all duration-300 ease-in-out",
         dir === 'ltr' ? (state === 'expanded' ? 'md:ml-64' : 'md:ml-16') : (state === 'expanded' ? 'md:mr-64' : 'md:mr-16')
       )}>
         <div className="p-4 md:p-8 mt-14 md:mt-0">
