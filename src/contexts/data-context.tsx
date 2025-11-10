@@ -213,12 +213,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoicesRef = useMemoFirebase(() => getCollectionRef('supplierInvoices'), [getCollectionRef]);
     const purchaseOrdersRef = useMemoFirebase(() => getCollectionRef('purchaseOrders'), [getCollectionRef]);
     const expensesRef = useMemoFirebase(() => getCollectionRef('expenses'), [getCollectionRef]);
-    const userProfilesRef = useMemoFirebase(() => getCollectionRef('userProfiles', true), [getCollectionRef]);
-
+    
     const userProfileDocRef = useMemoFirebase(() => {
         if (!firestore || !dataUserId) return null;
         return doc(firestore, `userProfiles/${dataUserId}`);
     }, [firestore, dataUserId]);
+    
+    const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
+    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
+
+    const userProfilesRef = useMemoFirebase(() => {
+        // Only fetch all user profiles if the current user is an admin
+        if (userProfile?.isAdmin) {
+            return getCollectionRef('userProfiles', true);
+        }
+        return null; // Return null if not an admin, preventing the query
+    }, [getCollectionRef, userProfile?.isAdmin]);
+
 
     const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customersData, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -229,10 +240,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expensesData, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
     const { data: userProfilesData, isLoading: userProfilesLoading } = useCollection<UserProfile>(userProfilesRef);
-    const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
     
-    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
-
     const products = useMemo(() => productsData || [], [productsData]);
     const customers = useMemo(() => customersData || [], [customersData]);
     const salesHistory = useMemo(() => salesHistoryData || [], [salesHistoryData]);
@@ -650,37 +658,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef, t, toast]);
     
     const addPendingUser = useCallback(async (email: string, password: string) => {
-        if (!firestore) throw new Error("Firestore not available");
-        const collectionRef = collection(firestore, 'userProfiles');
-        const q = query(collectionRef, where("email", "==", email));
-        const querySnapshot = await getDocs(q);
+        const functions = getFunctions();
+        const createPendingUser = httpsCallable(functions, 'createPendingUser');
 
-        if (!querySnapshot.empty) {
-            const err = new Error("Email already in use") as any;
-            err.code = "already-exists";
-            throw err;
+        try {
+            await createPendingUser({ email, password });
+        } catch (error: any) {
+            // Re-throw the error so the UI can catch it (e.g., to show "Email already in use")
+            // The Cloud Function should be designed to return specific error codes.
+            throw error;
         }
 
-        const isAdmin = email.toLowerCase() === 'zenaguibilal2@gmail.com';
-        
-        await addDoc(collectionRef, {
-            email,
-            password, // Storing password temporarily, will be used by Cloud Function
-            status: isAdmin ? 'approved' : 'pending',
-            isAdmin: isAdmin,
-            createdAt: serverTimestamp()
-        }).catch(error => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: { email } }));
-             throw error;
-        });
-
-        // If admin, create auth user immediately (can be done via a cloud function trigger in a real app)
-        if (isAdmin) {
-             const functions = getFunctions();
-             const createUser = httpsCallable(functions, 'createUser');
-             await createUser({ email, password });
-        }
-    }, [firestore]);
+    }, []);
 
     const approveUser = useCallback(async (userId: string) => {
         const functions = getFunctions();
@@ -689,13 +678,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const revokeUser = useCallback(async (userId: string) => {
-        const collectionRef = getCollectionRef('userProfiles', true);
-        if (!collectionRef) return;
-        const docRef = doc(collectionRef, userId);
-        return updateDoc(docRef, { status: 'revoked' }).catch(error => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status: 'revoked' } }));
-        });
-    }, [getCollectionRef]);
+        const functions = getFunctions();
+        const revoke = httpsCallable(functions, 'revokeUser');
+        await revoke({ userId });
+    }, []);
 
     const restoreData = useCallback(async (data: any) => {
         if (!dataUserId || !firestore) {
@@ -785,3 +771,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    
