@@ -5,22 +5,11 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useLanguage } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
 import React from 'react';
-import { useUser } from '@/firebase';
-import Loading from '@/app/loading';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { state } = useSidebar();
   const { dir } = useLanguage();
-  const { isUserLoading } = useUser();
 
-  if (isUserLoading) {
-    return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loading />
-        </div>
-    );
-  }
-  
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       <SidebarNav />
