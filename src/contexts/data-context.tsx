@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -187,7 +188,26 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-export const DataProvider = ({ children }: { children: ReactNode }) => {
+const AdminDataProvider = ({ children }: { children: React.ReactNode}) => {
+    const firestore = useFirestore();
+    const { userProfile } = useData();
+
+    const userProfilesRef = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.isAdmin) return null;
+        return collection(firestore, 'userProfiles');
+    }, [firestore, userProfile?.isAdmin]);
+
+    const { data: userProfilesData, isLoading: userProfilesLoading } = useCollection<UserProfile>(userProfilesRef);
+
+    return React.cloneElement(children as React.ReactElement, {
+        adminData: {
+            userProfiles: userProfilesData,
+            userProfilesLoading
+        }
+    });
+};
+
+export const DataProvider = ({ children, adminData }: { children: ReactNode, adminData?: any }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
     const { user, isUserLoading } = useUser();
@@ -195,11 +215,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const dataUserId = user?.uid;
 
-    const getCollectionRef = useCallback((collectionName: string, forAllUsers: boolean = false) => {
+    const getCollectionRef = useCallback((collectionName: string) => {
         if (!firestore) return null;
-        if (forAllUsers) {
-            return collection(firestore, collectionName) as CollectionReference;
-        }
         if (!dataUserId) return null;
         const path = `users/${dataUserId}/${collectionName}`;
         return collection(firestore, path) as CollectionReference;
@@ -220,16 +237,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [firestore, dataUserId]);
     
     const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
-    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
-
-    const userProfilesRef = useMemoFirebase(() => {
-        // Only fetch all user profiles if the current user is an admin
-        if (userProfile?.isAdmin) {
-            return getCollectionRef('userProfiles', true);
-        }
-        return null; // Return null if not an admin, preventing the query
-    }, [getCollectionRef, userProfile?.isAdmin]);
-
 
     const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customersData, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -239,20 +246,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoicesData, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expensesData, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
-    const { data: userProfilesData, isLoading: userProfilesLoading } = useCollection<UserProfile>(userProfilesRef);
     
-    const products = useMemo(() => productsData || [], [productsData]);
-    const customers = useMemo(() => customersData || [], [customersData]);
-    const salesHistory = useMemo(() => salesHistoryData || [], [salesHistoryData]);
-    const bakeryOrders = useMemo(() => bakeryOrdersData || [], [bakeryOrdersData]);
-    const suppliers = useMemo(() => suppliersData || [], [suppliersData]);
-    const supplierInvoices = useMemo(() => supplierInvoicesData || [], [supplierInvoicesData]);
-    const purchaseOrders = useMemo(() => purchaseOrdersData || [], [purchaseOrdersData]);
-    const expenses = useMemo(() => expensesData || [], [expensesData]);
-    const userProfiles = useMemo(() => userProfilesData || [], [userProfilesData]);
+    const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
 
-    const isLoading = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
+    const isLoadingAllData = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (userProfile?.isAdmin && adminData?.userProfilesLoading);
     
+    const contextValue = useMemo(() => ({
+        products: productsData || [],
+        customers: customersData || [],
+        salesHistory: salesHistoryData || [],
+        bakeryOrders: bakeryOrdersData || [],
+        suppliers: suppliersData || [],
+        supplierInvoices: supplierInvoicesData || [],
+        purchaseOrders: purchaseOrdersData || [],
+        expenses: expensesData || [],
+        userProfiles: adminData?.userProfiles || [],
+        userProfile,
+        isLoading: isLoadingAllData,
+    }), [productsData, customersData, salesHistoryData, bakeryOrdersData, suppliersData, supplierInvoicesData, purchaseOrdersData, expensesData, adminData?.userProfiles, userProfile, isLoadingAllData]);
+
     const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
@@ -298,7 +310,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteProduct = useCallback(async (productId: string) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
-        if (salesHistory.some(sale => sale.items.some(item => item.id === productId)) || supplierInvoices.some(invoice => invoice.items.some(item => item.productId === productId))) {
+        if ((contextValue.salesHistory || []).some(sale => sale.items.some(item => item.id === productId)) || (contextValue.supplierInvoices || []).some(invoice => invoice.items.some(item => item.productId === productId))) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.products.deleteErrorInUse });
             return;
         }
@@ -307,7 +319,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.products.productDeleted });
-    }, [getCollectionRef, salesHistory, supplierInvoices, t, toast]);
+    }, [getCollectionRef, contextValue.salesHistory, contextValue.supplierInvoices, t, toast]);
     
     const addCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>): Promise<WithId<Customer>> => {
         const collectionRef = getCollectionRef('customers');
@@ -339,7 +351,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteCustomer = useCallback(async (customerId: string) => {
         const collectionRef = getCollectionRef('customers');
         if (!collectionRef) return;
-        if (salesHistory.some(sale => sale.customerId === customerId)) {
+        if ((contextValue.salesHistory || []).some(sale => sale.customerId === customerId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
             return;
         }
@@ -348,7 +360,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.customers.customerDeleted });
-    }, [getCollectionRef, salesHistory, t, toast]);
+    }, [getCollectionRef, contextValue.salesHistory, t, toast]);
     
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -366,7 +378,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         for (const item of cart) {
             const productRef = doc(firestore, `users/${dataUserId}/products/${item.id}`);
-            const product = products.find(p => p.id === item.id);
+            const product = (contextValue.products || []).find(p => p.id === item.id);
             if (product) {
                 if (product.stock < item.quantity) {
                     throw new Error(`Not enough stock for '${product.name}'.`);
@@ -377,7 +389,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         if (customerId) {
             const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
-            const customer = customers.find(c => c.id === customerId);
+            const customer = (contextValue.customers || []).find(c => c.id === customerId);
             if (customer) {
                 const newSpent = customer.spent + totals.total;
                 const newBalance = customer.balance + totals.balance;
@@ -390,7 +402,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             throw error;
         });
 
-    }, [firestore, dataUserId, products, customers]);
+    }, [firestore, dataUserId, contextValue.products, contextValue.customers]);
     
     const makePayment = useCallback(async (customerId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -407,7 +419,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         batch.set(paymentRef, paymentRecord);
 
         const customerRef = doc(firestore, `users/${dataUserId}/customers/${customerId}`);
-        const customer = customers.find(c => c.id === customerId);
+        const customer = (contextValue.customers || []).find(c => c.id === customerId);
         if (customer) {
             const newBalance = customer.balance - amount;
             batch.update(customerRef, { balance: newBalance });
@@ -417,7 +429,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { payment: { customerId, amount } } }));
             throw error;
         });
-    }, [firestore, dataUserId, customers]);
+    }, [firestore, dataUserId, contextValue.customers]);
 
     const addBakeryOrder = useCallback(async (orderData: Omit<BakeryOrder, 'id'>) => {
         const collectionRef = getCollectionRef('bakeryOrders');
@@ -467,7 +479,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (!collectionRef || !firestore) throw new Error("User not authenticated or data path not available.");
         
         const docRef = doc(collectionRef, templateId);
-        const templateOrder = bakeryOrders.find(o => o.id === templateId);
+        const templateOrder = (contextValue.bakeryOrders || []).find(o => o.id === templateId);
 
         if (!templateOrder) return;
 
@@ -488,7 +500,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { isRecurring } }));
             throw error;
         });
-    }, [getCollectionRef, firestore, bakeryOrders]);
+    }, [getCollectionRef, firestore, contextValue.bakeryOrders]);
 
     const addSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'balance'>) => {
         const collectionRef = getCollectionRef('suppliers');
@@ -511,7 +523,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteSupplier = useCallback(async (supplierId: string) => {
         const collectionRef = getCollectionRef('suppliers');
         if (!collectionRef) return;
-        if (supplierInvoices.some(invoice => invoice.supplierId === supplierId)) {
+        if ((contextValue.supplierInvoices || []).some(invoice => invoice.supplierId === supplierId)) {
             toast({ variant: 'destructive', title: t.errors.title, description: t.suppliers.deleteErrorInUse });
             return;
         }
@@ -520,7 +532,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.suppliers.supplierDeleted });
-    }, [getCollectionRef, supplierInvoices, t, toast]);
+    }, [getCollectionRef, contextValue.supplierInvoices, t, toast]);
     
     const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string; purchaseOrderId?: string; }) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
@@ -531,7 +543,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
         batch.set(invoiceRef, newInvoice);
 
-        const updatedProducts = calculateUpdatedProductsForInvoice(products, invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
+        const updatedProducts = calculateUpdatedProductsForInvoice((contextValue.products || []), invoiceData.items, invoiceData.priceUpdateStrategy as 'master' | 'average' | 'none');
         invoiceData.items.forEach(item => {
             const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
             const updatedProductData = updatedProducts.find(p => p.id === item.productId);
@@ -544,7 +556,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
 
         const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
-        const supplier = suppliers.find(s => s.id === invoiceData.supplierId);
+        const supplier = (contextValue.suppliers || []).find(s => s.id === invoiceData.supplierId);
         if (supplier) {
             const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
             batch.update(supplierRef, { balance: newBalance });
@@ -559,7 +571,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
             throw error;
         });
-    }, [firestore, dataUserId, products, suppliers]);
+    }, [firestore, dataUserId, contextValue.products, contextValue.suppliers]);
 
     const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<WithId<PurchaseOrder>> => {
         const collectionRef = getCollectionRef('purchaseOrders');
@@ -618,7 +630,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         batch.set(paymentRef, paymentRecord);
         
         const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${supplierId}`);
-        const supplier = suppliers.find(s => s.id === supplierId);
+        const supplier = (contextValue.suppliers || []).find(s => s.id === supplierId);
         if(supplier) {
             batch.update(supplierRef, { balance: supplier.balance - amount });
         }
@@ -627,7 +639,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { supplierPayment: { supplierId, amount } } }));
             throw error;
         });
-    }, [firestore, dataUserId, suppliers]);
+    }, [firestore, dataUserId, contextValue.suppliers]);
 
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
         const collectionRef = getCollectionRef('expenses');
@@ -658,18 +670,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, [getCollectionRef, t, toast]);
     
     const addPendingUser = useCallback(async (email: string, password: string) => {
-        const functions = getFunctions();
-        const createPendingUser = httpsCallable(functions, 'createPendingUser');
+        if (!firestore) throw new Error("Firestore not initialized");
 
-        try {
-            await createPendingUser({ email, password });
-        } catch (error: any) {
-            // Re-throw the error so the UI can catch it (e.g., to show "Email already in use")
-            // The Cloud Function should be designed to return specific error codes.
-            throw error;
+        // We are creating a user document, not an auth user.
+        // The admin will later approve and an auth user will be created.
+        const userProfilesRef = collection(firestore, 'userProfiles');
+        
+        // Check if user email already exists
+        const q = query(userProfilesRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            throw new Error("auth/email-already-in-use");
         }
 
-    }, []);
+        const newUserProfile = {
+            email: email,
+            password: password, // Storing password temporarily, to be used by admin
+            status: email === 'zenaguibilal2@gmail.com' ? 'approved' : 'pending',
+            isAdmin: email === 'zenaguibilal2@gmail.com',
+            createdAt: new Date().toISOString(),
+        };
+
+        if (email === 'zenaguibilal2@gmail.com') {
+            const functions = getFunctions();
+            const createAndApproveAdmin = httpsCallable(functions, 'createAndApproveAdmin');
+            await createAndApproveAdmin({ email, password });
+
+        } else {
+             await addDoc(userProfilesRef, newUserProfile).catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userProfilesRef.path, operation: 'create', requestResourceData: newUserProfile }));
+                throw error;
+            });
+        }
+    }, [firestore]);
+
 
     const approveUser = useCallback(async (userId: string) => {
         const functions = getFunctions();
@@ -712,18 +746,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
     }, [dataUserId, firestore]);
 
-    const value = useMemo(() => ({
-        products,
-        customers,
-        salesHistory,
-        bakeryOrders,
-        suppliers,
-        supplierInvoices,
-        purchaseOrders,
-        expenses,
-        userProfiles,
-        userProfile,
-        isLoading,
+    const fullContext = useMemo(() => ({
+        ...contextValue,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -753,15 +777,32 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         revokeUser,
         restoreData,
     }), [
-        products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, userProfiles, userProfile, isLoading,
-        addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
-        addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
-        deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
-        deleteSupplier, addSupplierInvoice, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
-        addPendingUser, approveUser, revokeUser, restoreData,
+        contextValue,
+        addProduct, updateProduct, deleteProduct,
+        addCustomer, updateCustomer, deleteCustomer,
+        addSaleRecord, makePayment,
+        addBakeryOrder, updateBakeryOrder, deleteBakeryOrder, deleteRecurringPattern, setAsRecurringTemplate,
+        addSupplier, updateSupplier, deleteSupplier, addSupplierInvoice, makePaymentToSupplier,
+        addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder,
+        addExpense, updateExpense, deleteExpense,
+        addPendingUser, approveUser, revokeUser, restoreData
     ]);
 
-    return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+    if (userProfile?.isAdmin) {
+        return (
+            <DataContext.Provider value={fullContext}>
+                <AdminDataProvider>
+                    {children}
+                </AdminDataProvider>
+            </DataContext.Provider>
+        );
+    }
+    
+    return (
+        <DataContext.Provider value={fullContext}>
+            {children}
+        </DataContext.Provider>
+    );
 };
 
 export const useData = () => {
@@ -773,3 +814,4 @@ export const useData = () => {
 };
 
     
+
