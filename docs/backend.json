@@ -50,6 +50,10 @@
           },
           "description": "List of barcode strings for the product."
         },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL of the product image."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -224,10 +228,12 @@
       "description": "Represents a user's profile information.",
       "properties": {
         "email": { "type": "string", "format": "email" },
+        "password": { "type": "string", "description": "Hashed or temporary password, for creation flow." },
         "createdAt": { "type": "string", "format": "date-time" },
-        "approved": { "type": "boolean" }
+        "status": { "type": "string", "enum": ["approved", "pending", "revoked"], "description": "The approval status of the user account." },
+        "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." }
       },
-      "required": ["email", "createdAt", "approved"]
+      "required": ["email", "createdAt", "status", "isAdmin"]
     }
   },
   "firestore": {
@@ -269,7 +275,8 @@
       },
       {
         "path": "/users/{userId}/expenses/{expenseId}",
-        "schema": "Expenses, partitioned by user ID."
+        "schema": "Expense",
+        "description": "Expenses, partitioned by user ID."
       },
       {
         "path": "/userProfiles/{userId}",
@@ -282,3 +289,5 @@
     "providers": ["emailPassword"]
   }
 }
+
+    
