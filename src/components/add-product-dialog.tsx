@@ -29,6 +29,7 @@ import { BarcodeScannerDialog } from './barcode-scanner-dialog';
 import { Barcode, Upload, Package } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from './ui/label';
 
 interface AddProductDialogProps {
   isOpen: boolean;
@@ -161,10 +162,11 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     setIsSaving(true);
     try {
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
-      const dataToSave = {
+      const dataToSave: Omit<Product, 'id'> = {
         ...values,
-        quantityPerBox: values.quantityPerBox || null,
-        boxPrice: values.boxPrice || null,
+        quantityPerBox: values.quantityPerBox === undefined ? null : values.quantityPerBox,
+        boxPrice: values.boxPrice === undefined ? null : values.boxPrice,
+        imageUrl: values.imageUrl === undefined ? null : values.imageUrl,
         barcodes: barcodesArray
       };
       await onSave(dataToSave, productToEdit?.id);
@@ -407,5 +409,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     </>
   );
 }
+
+    
 
     
