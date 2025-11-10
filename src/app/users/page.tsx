@@ -183,40 +183,48 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedUsers.map((profile) => (
-                <TableRow key={profile.id}>
-                  <TableCell className="font-medium">{profile.email} {profile.id === user?.uid && `(${t.auth.you})`}</TableCell>
-                  <TableCell>
-                    <Badge variant={profile.status === 'approved' ? 'success' : 'destructive'}>
-                      {t.users[profile.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {profile.status === 'pending' ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleApprove(profile)}
-                            disabled={isLoading}
-                        >
-                            <ShieldCheck className="h-4 w-4 mr-2" />
-                            {t.users.approve}
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRevoke(profile)}
-                            disabled={profile.id === user?.uid || isLoading}
-                            title={profile.id === user?.uid ? "You cannot change your own status." : t.users.revoke}
-                        >
-                            <ShieldOff className="h-4 w-4 mr-2" />
-                            {t.users.revoke}
-                        </Button>
-                    )}
-                  </TableCell>
+              {sortedUsers.length > 0 ? (
+                sortedUsers.map((profile) => (
+                  <TableRow key={profile.id}>
+                    <TableCell className="font-medium">{profile.email} {profile.id === user?.uid && `(${t.auth.you})`}</TableCell>
+                    <TableCell>
+                      <Badge variant={profile.status === 'approved' ? 'success' : 'destructive'}>
+                        {t.users[profile.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {profile.status === 'pending' ? (
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleApprove(profile)}
+                              disabled={isLoading}
+                          >
+                              <ShieldCheck className="h-4 w-4 mr-2" />
+                              {t.users.approve}
+                          </Button>
+                      ) : (
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRevoke(profile)}
+                              disabled={profile.id === user?.uid || isLoading}
+                              title={profile.id === user?.uid ? "You cannot change your own status." : t.users.revoke}
+                          >
+                              <ShieldOff className="h-4 w-4 mr-2" />
+                              {t.users.revoke}
+                          </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                        No users yet.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
