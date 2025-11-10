@@ -41,7 +41,7 @@ export function useUser(): UseUserResult {
       id: userProfileData.id,
       email: userProfileData.email,
       status: userProfileData.status || 'pending',
-      isAdmin: userProfileData.isAdmin || false,
+      isAdmin: !!userProfileData.isAdmin,
       createdAt: userProfileData.createdAt,
     };
   }, [userProfileData]);
@@ -50,6 +50,6 @@ export function useUser(): UseUserResult {
     user,
     firebaseApp,
     userProfile,
-    isUserLoading: isAuthLoading || isProfileLoading,
+    isUserLoading: isAuthLoading || (user != null && isProfileLoading),
   };
 }
