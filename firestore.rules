@@ -12,11 +12,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Generic rule for all user-partitioned data.
-    // In anonymous mode, any signed-in (anonymous) user can access
-    // their own data partition.
     match /users/{userId}/{collection}/{docId} {
       allow read, write: if isOwner(userId);
+    }
+
+    match /userProfiles/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.email == request.auth.token.email;
     }
   }
 }

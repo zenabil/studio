@@ -199,41 +199,65 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["date", "category", "description", "amount"]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile information.",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "approved": { "type": "boolean" }
+      },
+      "required": ["email", "createdAt", "approved"]
     }
   },
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/{productId}",
+        "path": "/users/{userId}/products/{productId}",
+        "schema": "Product",
         "description": "Products collection, partitioned by user ID."
       },
       {
-        "path": "/users/{userId}/{customerId}",
+        "path": "/users/{userId}/customers/{customerId}",
+        "schema": "Customer",
         "description": "Customers collection, partitioned by user ID."
       },
       {
-        "path": "/users/{userId}/{saleId}",
+        "path": "/users/{userId}/sales/{saleId}",
+        "schema": "SaleRecord",
         "description": "Sales records, partitioned by user ID."
       },
       {
-        "path": "/users/{userId}/{orderId}",
+        "path": "/users/{userId}/bakeryOrders/{orderId}",
+        "schema": "BakeryOrder",
         "description": "Bakery orders, partitioned by user ID."
       },
       {
-        "path": "/users/{userId}/{supplierId}",
+        "path": "/users/{userId}/suppliers/{supplierId}",
+        "schema": "Supplier",
         "description": "Suppliers collection, partitioned by user ID."
       },
       {
-        "path": "/users/{userId}/{invoiceId}",
+        "path": "/users/{userId}/supplierInvoices/{invoiceId}",
+        "schema": "SupplierInvoice",
         "description": "Supplier invoices, partitioned by user ID."
       },
       {
-        "path": "/users/{userId}/{expenseId}",
+        "path": "/users/{userId}/expenses/{expenseId}",
+        "schema": "Expense",
         "description": "Expenses, partitioned by user ID."
+      },
+      {
+        "path": "/userProfiles/{userId}",
+        "schema": "UserProfile",
+        "description": "Stores profile information for each user."
       }
     ]
   },
   "auth": {
-    "providers": ["anonymous"]
+    "providers": ["emailPassword"]
   }
 }

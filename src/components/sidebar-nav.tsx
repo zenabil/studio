@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Sheet,
   SheetContent,
@@ -31,6 +31,7 @@ import {
   PanelLeft,
   Receipt,
   HandCoins,
+  LogOut,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -44,14 +45,17 @@ import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
+import { useAuth } from '@/firebase';
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { t, language, dir } = useLanguage();
   const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const auth = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
@@ -61,6 +65,11 @@ export function SidebarNav() {
 
     return () => clearInterval(timer);
   }, []);
+
+  const handleSignOut = async () => {
+    await auth.signOut();
+    router.push('/login');
+  };
 
   const dateLocale = useMemo(() => (language === 'ar' ? ar : fr), [language]);
 
@@ -189,6 +198,14 @@ export function SidebarNav() {
                         <Separator className="my-2" />
                         <LanguageSwitcher />
                         <Separator className="my-2" />
+                        <SidebarMenu>
+                           <SidebarMenuItem>
+                            <SidebarMenuButton onClick={handleSignOut}>
+                              <LogOut className="h-5 w-5" />
+                              <span>{t.auth.signOut}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        </SidebarMenu>
                     </SidebarFooter>
                 </div>
             </SheetContent>
@@ -241,7 +258,15 @@ export function SidebarNav() {
             <Separator className="my-2" />
             <LanguageSwitcher />
         </div>
-        <Separator className="my-2 group-data-[collapsible=icon]:hidden" />
+        <Separator className="my-2" />
+         <SidebarMenu>
+           <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} tooltip={t.auth.signOut}>
+              <LogOut className="h-5 w-5" />
+              <span className="group-data-[collapsible=icon]:hidden">{t.auth.signOut}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
     </>

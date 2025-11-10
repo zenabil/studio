@@ -8,6 +8,7 @@ import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import NextTopLoader from 'nextjs-toploader';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AuthLayout } from '@/components/auth-layout';
 
 export const metadata: Metadata = {
   title: 'Frucio',
@@ -47,9 +48,11 @@ export default function RootLayout({
         />
         <FirebaseClientProvider>
           <AppProviders>
+            <AuthLayout>
               <SidebarProvider>
                 <AppLayout>{children}</AppLayout>
               </SidebarProvider>
+            </AuthLayout>
             <Toaster />
           </AppProviders>
         </FirebaseClientProvider>

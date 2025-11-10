@@ -20,6 +20,7 @@ import {
     addDoc,
     updateDoc,
     deleteDoc,
+    getDoc,
 } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
@@ -116,6 +117,13 @@ export type SaleRecord = {
         balance: number;
     };
     date: string;
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  approved: boolean;
+  createdAt: string;
 }
 
 interface DataContextType {

@@ -16,6 +16,7 @@ import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase';
 
 
 type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
@@ -23,6 +24,7 @@ type CompanyInfoFormData = Pick<Settings, 'companyInfo' | 'paymentTermsDays'>;
 export default function SettingsPage() {
   const { settings, setSettings, colorPresets } = useSettings();
   const { t } = useLanguage();
+  const { user } = useUser();
   const { restoreData } = useData();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,8 +49,12 @@ export default function SettingsPage() {
   };
   
   const handleBackup = async () => {
+    if (!user?.uid) {
+        toast({ variant: 'destructive', title: t.errors.title, description: "You must be logged in to perform a backup." });
+        return;
+    }
     try {
-      const backupData = await getBackupData();
+      const backupData = await getBackupData(user.uid);
       const dataToBackup = {
         ...backupData,
         settings: settings,
@@ -84,7 +90,10 @@ export default function SettingsPage() {
         }
         const data = JSON.parse(text);
 
-        if (data.products && data.customers && data.salesHistory) {
+        const requiredCollections = ['products', 'customers', 'sales', 'bakeryOrders', 'suppliers', 'supplierInvoices', 'expenses'];
+        const hasAllData = requiredCollections.every(collection => data[collection] && Array.isArray(data[collection]));
+
+        if (hasAllData) {
           await restoreData(data);
           
           if (data.settings) {
