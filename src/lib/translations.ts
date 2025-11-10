@@ -60,6 +60,7 @@ export const translations = {
         approve: "Approuver",
         revoke: "Révoquer",
         approvalUpdated: "Le statut de l'utilisateur a été mis à jour.",
+        noUsers: "Il n'y a pas encore d'utilisateurs.",
     },
     pos: {
       searchProducts: "Rechercher des produits...",
@@ -585,6 +586,7 @@ export const translations = {
         approve: "موافقة",
         revoke: "إلغاء",
         approvalUpdated: "تم تحديث حالة المستخدم بنجاح.",
+        noUsers: "لا يوجد مستخدمون بعد.",
     },
     pos: {
       searchProducts: "البحث عن المنتجات...",

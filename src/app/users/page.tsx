@@ -221,7 +221,7 @@ export default function UsersPage() {
               ) : (
                 <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
-                        No users yet.
+                        {t.users.noUsers}
                     </TableCell>
                 </TableRow>
               )}
