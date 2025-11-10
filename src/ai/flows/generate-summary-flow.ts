@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating an AI-powered summary of sales data.
@@ -55,7 +56,7 @@ const generateSummaryFlow = ai.defineFlow(
     }
 
     const llmResponse = await generateSummaryPrompt(input);
-    return llmResponse.text;
+    return llmResponse.text();
   }
 );
 
