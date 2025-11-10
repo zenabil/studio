@@ -48,14 +48,13 @@ import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, language, dir } = useLanguage();
   const { products, customers, salesHistory, isLoading } = useData();
-  const { userProfile } = useUser();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -90,7 +89,7 @@ export function SidebarNav() {
   const totalAlertCount = lowStockCount + debtAlertCount;
   
   const navItems = useMemo(() => {
-    const items = [
+    return [
       { href: '/', label: t.nav.reports, icon: BarChartBig },
       { href: '/pos', label: t.nav.pos, icon: CircleDollarSign },
       { href: '/products', label: t.nav.products, icon: Package },
@@ -101,14 +100,10 @@ export function SidebarNav() {
       { href: '/expenses', label: t.nav.expenses, icon: Receipt },
       { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
       { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
+      { href: '/users', label: t.nav.userManagement, icon: Users },
+      { href: '/settings', label: t.nav.settings, icon: Settings },
     ];
-    if (userProfile?.isAdmin) {
-      items.push({ href: '/users', label: t.nav.userManagement, icon: Users });
-    }
-    items.push({ href: '/settings', label: t.nav.settings, icon: Settings });
-    
-    return items;
-  }, [t, totalAlertCount, userProfile?.isAdmin]);
+  }, [t, totalAlertCount]);
 
   const AppLogo = () => (
     <div className="bg-primary/10 p-2 rounded-lg group">

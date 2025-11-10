@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 import withPWA from 'next-pwa';
 
@@ -27,6 +28,9 @@ const nextConfig: NextConfig = {
         hostname: 'picsum.photos',
       },
     ],
+  },
+  env: {
+    ADMIN_PASSWORD: 'admin123',
   },
 };
 

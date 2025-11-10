@@ -1,12 +1,11 @@
 
 'use client';
-import { useMemo } from 'react';
+import { useState, useMemo, FormEvent } from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
 } from '@/components/ui/card';
 import {
   Table,
@@ -23,14 +22,67 @@ import { UserProfile } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, ShieldOff, LoaderCircle } from 'lucide-react';
+import { ShieldCheck, ShieldOff, LoaderCircle, Lock } from 'lucide-react';
 import { useUser } from '@/firebase';
+import { useAdminAuth } from '@/contexts/admin-auth-context';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+function AdminPasswordPrompt({ onCorrectPassword }: { onCorrectPassword: () => void }) {
+  const { t } = useLanguage();
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { checkPassword } = useAdminAuth();
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (checkPassword(password)) {
+      onCorrectPassword();
+    } else {
+      setError('Incorrect password.');
+      setPassword('');
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Admin Access Required
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-password">Admin Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full">
+              Unlock
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function UsersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { userProfiles, approveUser, revokeUser, isLoading, userProfile } = useData();
+  const { userProfiles, approveUser, revokeUser, isLoading } = useData();
   const { user } = useUser();
+  const { isAuthorized, setIsAuthorized } = useAdminAuth();
+
 
   const sortedUsers = useMemo(() => {
     if (!userProfiles) return [];
@@ -65,23 +117,13 @@ export default function UsersPage() {
     }
   };
   
-  if (isLoading || !userProfile) {
+  if (!isAuthorized) {
+    return <AdminPasswordPrompt onCorrectPassword={() => setIsAuthorized(true)} />;
+  }
+
+  if (isLoading) {
     return <Loading />;
   }
-
-  if (!userProfile?.isAdmin) {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Access Denied</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p>You do not have permission to view this page.</p>
-            </CardContent>
-        </Card>
-    );
-  }
-
 
   return (
     <div className="space-y-6">
