@@ -17,23 +17,21 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/language-context';
-import { useAuth, useFirestore } from '@/firebase';
-import {
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useData } from '@/contexts/data-context';
 import { FirebaseError } from 'firebase/app';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 
 export default function SignupPage() {
   const { t } = useLanguage();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
-  const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { addPendingUser } = useData();
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const formSchema = z
     .object({
@@ -56,48 +54,44 @@ export default function SignupPage() {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    setFirebaseError(null);
+    setFormError(null);
     try {
-      const isAdmin = data.email.toLowerCase() === 'zenaguibilal2@gmail.com';
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        data.email,
-        data.password
-      );
-
-      const user = userCredential.user;
-      
-      const userProfileRef = doc(firestore, 'userProfiles', user.uid);
-      await setDoc(userProfileRef, {
-        email: user.email,
-        createdAt: serverTimestamp(),
-        // Admin is auto-approved, others are pending
-        status: isAdmin ? 'approved' : 'pending',
-        isAdmin: isAdmin,
-      });
-
-      router.push('/');
+      await addPendingUser(data.email, data.password);
+      setIsSuccess(true);
     } catch (error) {
       if (error instanceof FirebaseError) {
-        switch (error.code) {
-          case 'auth/email-already-in-use':
-            setFirebaseError(t.auth.emailInUse);
-            break;
-          case 'auth/weak-password':
-            setFirebaseError(t.auth.weakPassword);
-            break;
-          default:
-            setFirebaseError(t.auth.genericError);
-            break;
+        // This might be a custom error from the function if you check for existing emails
+        if (error.code === 'already-exists') {
+          setFormError(t.auth.emailInUse);
+        } else {
+          setFormError(t.auth.genericError);
         }
       } else {
-        setFirebaseError(t.auth.genericError);
+        setFormError(t.auth.genericError);
       }
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center p-4">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl">{t.auth.pendingApprovalTitle}</CardTitle>
+              <CardDescription>{t.auth.pendingApprovalDescription}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">{t.auth.pendingApprovalContact}</p>
+              <Button asChild className="mt-6 w-full">
+                <Link href="/login">{t.auth.loginLink}</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -111,11 +105,11 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-            {firebaseError && (
+            {formError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>{t.errors.title}</AlertTitle>
-                <AlertDescription>{firebaseError}</AlertDescription>
+                <AlertDescription>{formError}</AlertDescription>
               </Alert>
             )}
             <div className="grid gap-2">

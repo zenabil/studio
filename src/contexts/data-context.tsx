@@ -29,6 +29,7 @@ import { useLanguage } from './language-context';
 import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 
 // Data type definitions moved here for better co-location
@@ -137,7 +138,7 @@ export interface SupplierInvoice {
 export interface UserProfile {
   id: string;
   email: string;
-  status: 'approved' | 'pending';
+  status: 'approved' | 'pending' | 'revoked';
   isAdmin: boolean;
   createdAt: string;
 }
@@ -178,7 +179,9 @@ interface DataContextType {
     addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
-    updateUserProfile: (userId: string, profileData: Partial<UserProfile>) => Promise<void>;
+    addPendingUser: (email: string, password: string) => Promise<void>;
+    approveUser: (userId: string) => Promise<void>;
+    revokeUser: (userId: string) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
 }
 
@@ -646,12 +649,51 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         toast({ title: t.expenses.expenseDeleted });
     }, [getCollectionRef, t, toast]);
     
-    const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
+    const addPendingUser = useCallback(async (email: string, password: string) => {
+        if (!firestore) throw new Error("Firestore not available");
+        const collectionRef = collection(firestore, 'userProfiles');
+        const q = query(collectionRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const err = new Error("Email already in use") as any;
+            err.code = "already-exists";
+            throw err;
+        }
+
+        const isAdmin = email.toLowerCase() === 'zenaguibilal2@gmail.com';
+        
+        await addDoc(collectionRef, {
+            email,
+            password, // Storing password temporarily, will be used by Cloud Function
+            status: isAdmin ? 'approved' : 'pending',
+            isAdmin: isAdmin,
+            createdAt: serverTimestamp()
+        }).catch(error => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: { email } }));
+             throw error;
+        });
+
+        // If admin, create auth user immediately (can be done via a cloud function trigger in a real app)
+        if (isAdmin) {
+             const functions = getFunctions();
+             const createUser = httpsCallable(functions, 'createUser');
+             await createUser({ email, password });
+        }
+    }, [firestore]);
+
+    const approveUser = useCallback(async (userId: string) => {
+        const functions = getFunctions();
+        const approve = httpsCallable(functions, 'approveUser');
+        await approve({ userId });
+    }, []);
+
+    const revokeUser = useCallback(async (userId: string) => {
         const collectionRef = getCollectionRef('userProfiles', true);
         if (!collectionRef) return;
         const docRef = doc(collectionRef, userId);
-        updateDoc(docRef, profileData).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: profileData }));
+        return updateDoc(docRef, { status: 'revoked' }).catch(error => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status: 'revoked' } }));
         });
     }, [getCollectionRef]);
 
@@ -720,7 +762,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addExpense,
         updateExpense,
         deleteExpense,
-        updateUserProfile,
+        addPendingUser,
+        approveUser,
+        revokeUser,
         restoreData,
     }), [
         products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, purchaseOrders, expenses, userProfiles, userProfile, isLoading,
@@ -728,7 +772,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
         deleteSupplier, addSupplierInvoice, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
-        updateUserProfile, restoreData,
+        addPendingUser, approveUser, revokeUser, restoreData,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

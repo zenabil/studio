@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo } from 'react';
 import {
@@ -22,13 +23,13 @@ import { UserProfile } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, ShieldOff } from 'lucide-react';
+import { ShieldCheck, ShieldOff, LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 
 export default function UsersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { userProfiles, updateUserProfile, isLoading, userProfile } = useData();
+  const { userProfiles, approveUser, revokeUser, isLoading, userProfile } = useData();
   const { user } = useUser();
 
   const sortedUsers = useMemo(() => {
@@ -36,18 +37,32 @@ export default function UsersPage() {
     return [...userProfiles].sort((a, b) => {
         if (a.id === user?.uid) return -1;
         if (b.id === user?.uid) return 1;
-        return a.email.localeCompare(b.email);
+        return (a.createdAt && b.createdAt) ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : a.email.localeCompare(b.email);
     });
   }, [userProfiles, user?.uid]);
 
-  const handleToggleApproval = (profile: UserProfile) => {
+  const handleApprove = async (profile: UserProfile) => {
+    try {
+        await approveUser(profile.id);
+        toast({ title: t.users.approvalUpdated });
+    } catch (error) {
+        console.error("Approval failed:", error);
+        toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
+    }
+  };
+  
+  const handleRevoke = async (profile: UserProfile) => {
     if (profile.id === user?.uid) {
         toast({ variant: 'destructive', title: t.errors.title, description: "You cannot change your own status." });
         return;
     }
-    const newStatus = profile.status === 'approved' ? 'pending' : 'approved';
-    updateUserProfile(profile.id, { status: newStatus });
-    toast({ title: t.users.approvalUpdated });
+    try {
+        await revokeUser(profile.id);
+        toast({ title: t.users.approvalUpdated });
+    } catch (error) {
+        console.error("Revocation failed:", error);
+        toast({ variant: 'destructive', title: t.errors.title, description: t.errors.unknownError });
+    }
   };
   
   if (isLoading || !userProfile) {
@@ -96,16 +111,28 @@ export default function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleApproval(profile)}
-                      disabled={profile.id === user?.uid}
-                      title={profile.status === 'approved' ? t.users.revoke : t.users.approve}
-                    >
-                        {profile.status === 'approved' ? <ShieldOff className="h-4 w-4 mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-                      {profile.status === 'approved' ? t.users.revoke : t.users.approve}
-                    </Button>
+                    {profile.status === 'pending' ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleApprove(profile)}
+                            disabled={isLoading}
+                        >
+                            <ShieldCheck className="h-4 w-4 mr-2" />
+                            {t.users.approve}
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRevoke(profile)}
+                            disabled={profile.id === user?.uid || isLoading}
+                            title={profile.id === user?.uid ? "You cannot change your own status." : t.users.revoke}
+                        >
+                            <ShieldOff className="h-4 w-4 mr-2" />
+                            {t.users.revoke}
+                        </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

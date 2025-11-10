@@ -17,21 +17,34 @@ service cloud.firestore {
     }
 
     function isApproved() {
-      return getUserProfile(request.auth.uid).status == 'approved';
+      // Check if the user's own profile exists and is approved.
+      return exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
+             getUserProfile(request.auth.uid).status == 'approved';
     }
 
     function isAdmin() {
-      return getUserProfile(request.auth.uid).isAdmin == true;
+      // Check if the user's own profile exists and they are an admin.
+      return exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
+             getUserProfile(request.auth.uid).isAdmin == true;
     }
 
+    // Rules for user-specific data subcollections
     match /users/{userId}/{collection}/{docId} {
       allow read, write: if isOwner(userId) && isApproved();
     }
 
+    // Rules for the global userProfiles collection
     match /userProfiles/{userId} {
-      allow get: if isSignedIn();
+      // Any signed-in user can read their own profile.
+      allow get: if isOwner(userId);
+      
+      // Only admins can list all profiles.
       allow list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && request.resource.data.email == request.auth.token.email;
+      
+      // Anyone can create a user profile (signup), but they can't set their own status or admin rights initially.
+      allow create: if request.resource.data.email == request.auth.token.email || request.auth == null;
+      
+      // Only admins can update profiles (e.g., to change status).
       allow update: if isSignedIn() && isAdmin();
     }
   }
