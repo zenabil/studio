@@ -40,6 +40,7 @@ import {
 import { Trash2, PlusCircle, Loader2 } from 'lucide-react';
 import { useSettings } from '@/contexts/settings-context';
 import { Textarea } from './ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddPurchaseOrderDialogProps {
   isOpen: boolean;
@@ -321,5 +322,3 @@ export function AddPurchaseOrderDialog({ isOpen, onClose, purchaseOrderToEdit }:
     </>
   );
 }
-
-    
