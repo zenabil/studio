@@ -24,9 +24,10 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
   const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
   const { seed, width, height, hint } = placeholderImageData.productCard;
   
-  // Create a somewhat unique seed for each product based on its ID
   const productSeed = seed + (product.id.charCodeAt(0) || 0) + (product.id.charCodeAt(1) || 0);
-  const imageUrl = `https://picsum.photos/seed/${productSeed}/${width}/${height}`;
+  const placeholderImageUrl = `https://picsum.photos/seed/${productSeed}/${width}/${height}`;
+
+  const imageUrl = product.imageUrl || placeholderImageUrl;
 
   return (
     <Card 
@@ -44,7 +45,7 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
             alt={product.name}
             width={width}
             height={height}
-            className="object-cover transition-transform duration-300 group-hover:scale-110"
+            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
             data-ai-hint={hint}
             unoptimized
           />

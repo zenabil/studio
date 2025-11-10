@@ -42,6 +42,7 @@ export type Product = {
   quantityPerBox?: number | null;
   boxPrice?: number | null;
   barcodes: string[];
+  imageUrl?: string | null;
 };
 
 export type Customer = {
@@ -229,6 +230,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const sanitizedData = { ...productData };
         if (sanitizedData.quantityPerBox === undefined) sanitizedData.quantityPerBox = null;
         if (sanitizedData.boxPrice === undefined) sanitizedData.boxPrice = null;
+        if (sanitizedData.imageUrl === undefined) sanitizedData.imageUrl = null;
+
 
         const newProductData = {
             ...sanitizedData,
@@ -704,5 +707,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    

@@ -24,9 +24,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { BarcodeScannerDialog } from './barcode-scanner-dialog';
-import { Barcode } from 'lucide-react';
+import { Barcode, Upload, Package } from 'lucide-react';
+import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddProductDialogProps {
   isOpen: boolean;
@@ -42,6 +44,9 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const formSchema = useMemo(() => {
     return z.object({
@@ -51,9 +56,10 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       price: z.coerce.number().min(0, { message: 'Price must be a positive number.' }),
       stock: z.coerce.number().int().min(0, { message: 'Stock must be a positive integer.' }),
       minStock: z.coerce.number().int().min(0, { message: 'Min. stock must be a positive integer.' }),
-      quantityPerBox: z.coerce.number().int().min(0).optional().or(z.literal('')).transform(val => val === '' ? null : val),
-      boxPrice: z.coerce.number().min(0).optional().or(z.literal('')).transform(val => val === '' ? null : val),
+      quantityPerBox: z.coerce.number().int().min(0).optional().nullable(),
+      boxPrice: z.coerce.number().min(0).optional().nullable(),
       barcodes: z.string(),
+      imageUrl: z.string().optional().nullable(),
     }).superRefine((data, ctx) => {
         // Barcode check
         const barcodes = data.barcodes.split(',').map(b => b.trim()).filter(Boolean);
@@ -111,6 +117,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       quantityPerBox: null,
       boxPrice: null,
       barcodes: '',
+      imageUrl: null,
     },
   });
   
@@ -129,7 +136,9 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           quantityPerBox: productToEdit.quantityPerBox || null,
           boxPrice: productToEdit.boxPrice || null,
           barcodes: (productToEdit.barcodes || []).join(', '),
+          imageUrl: productToEdit.imageUrl || null,
         });
+        setImagePreview(productToEdit.imageUrl || null);
       } else {
         form.reset({
           name: initialName || '',
@@ -141,7 +150,9 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           quantityPerBox: null,
           boxPrice: null,
           barcodes: initialBarcode || '',
+          imageUrl: null,
         });
+        setImagePreview(null);
       }
     }
   }, [productToEdit, form, isOpen, initialBarcode, initialName]);
@@ -152,8 +163,8 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
       const dataToSave = {
         ...values,
-        quantityPerBox: values.quantityPerBox || 0,
-        boxPrice: values.boxPrice || 0,
+        quantityPerBox: values.quantityPerBox || null,
+        boxPrice: values.boxPrice || null,
         barcodes: barcodesArray
       };
       await onSave(dataToSave, productToEdit?.id);
@@ -174,42 +185,99 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     form.setValue('barcodes', newBarcodes, { shouldValidate: true });
     setIsScannerOpen(false);
   };
+  
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) { // 1MB size limit
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.fileTooLarge,
+        });
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setImagePreview(dataUrl);
+        form.setValue('imageUrl', dataUrl, { shouldDirty: true });
+    };
+    reader.onerror = () => {
+         toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.fileReadError,
+        });
+    }
+    reader.readAsDataURL(file);
+  };
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{productToEdit ? t.products.editProduct : t.products.newProduct}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.products.name}</FormLabel>
-                    <FormControl>
-                      <Input placeholder={t.products.namePlaceholder} {...field} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.products.category}</FormLabel>
-                    <FormControl>
-                      <Input placeholder={t.products.categoryPlaceholder} {...field} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 space-y-4">
+                 <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.products.name}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t.products.namePlaceholder} {...field} disabled={isSaving}/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.products.category}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t.products.categoryPlaceholder} {...field} disabled={isSaving}/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </div>
+               <div className="space-y-2">
+                  <Label>{t.settings.companyLogo}</Label>
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-full h-24 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
+                        {imagePreview ? (
+                            <Image src={imagePreview} alt="Product Preview" width={96} height={96} className="object-contain w-full h-full rounded-lg" unoptimized/>
+                        ) : (
+                            <Package className="w-10 h-10 text-muted-foreground"/>
+                        )}
+                    </div>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => imageInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4"/>
+                        {t.settings.uploadLogo}
+                    </Button>
+                     <input
+                        type="file"
+                        ref={imageInputRef}
+                        onChange={handleImageFileChange}
+                        accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                        className="hidden"
+                     />
+                  </div>
+                </div>
+            </div>
+             
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}

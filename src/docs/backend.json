@@ -50,6 +50,10 @@
           },
           "description": "List of barcode strings for the product."
         },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL of the product image, stored as a Data URL."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",

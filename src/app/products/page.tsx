@@ -20,11 +20,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/add-product-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Pencil, Trash2, ChevronsUpDown, ArrowDown, ArrowUp, LineChart } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, ChevronsUpDown, ArrowDown, ArrowUp, LineChart, Package } from 'lucide-react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useSettings } from '@/contexts/settings-context';
 import Loading from '@/app/loading';
 import { ProductSalesHistoryDialog } from '@/components/product-sales-history-dialog';
+import Image from 'next/image';
 
 type SortableKeys = keyof Pick<Product, 'name' | 'category' | 'purchasePrice' | 'price' | 'stock' | 'minStock' | 'quantityPerBox' | 'boxPrice'>;
 
@@ -187,7 +188,18 @@ export default function ProductsPage() {
               {filteredAndSortedProducts.length > 0 ? (
                 filteredAndSortedProducts.map((product) => (
                   <TableRow key={product.id} className={product.stock <= (product.minStock || 0) ? 'bg-destructive/10' : ''}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                          {product.imageUrl ? (
+                            <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="object-cover h-full w-full" unoptimized/>
+                          ) : (
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span>{product.name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell>{(product.barcodes || []).join(', ')}</TableCell>
                     <TableCell className="text-right">{settings.currency}{(product.purchasePrice || 0).toFixed(2)}</TableCell>
