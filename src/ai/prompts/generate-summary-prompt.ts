@@ -1,10 +1,18 @@
 'use server';
+import { genkit, ai } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
-import {ai} from '@/ai/genkit';
 import {
   GenerateSummaryFlowInputSchema,
   GenerateSummaryFlowOutputSchema,
 } from '@/ai/flows/generate-summary-flow';
+
+genkit({
+    plugins: [googleAI({ apiVersion: 'v1beta' })],
+    logLevel: 'debug',
+    enableTracingAndMetrics: true,
+});
+
 
 export const generateSummaryPrompt = ai.definePrompt(
   {

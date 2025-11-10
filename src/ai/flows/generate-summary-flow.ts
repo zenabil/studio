@@ -2,11 +2,18 @@
 /**
  * @fileOverview A flow for generating an AI-powered summary of sales data.
  */
-
-import { ai } from '@/ai/genkit';
+import { genkit, ai } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
 import { generateSummaryPrompt } from '@/ai/prompts/generate-summary-prompt';
 import { Language } from '@/contexts/language-context';
+
+genkit({
+    plugins: [googleAI({ apiVersion: 'v1beta' })],
+    logLevel: 'debug',
+    enableTracingAndMetrics: true,
+});
+
 
 // Define the input schema for the sales summary data
 const SalesSummaryDataSchema = z.object({

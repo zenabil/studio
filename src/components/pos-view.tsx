@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -223,7 +222,7 @@ export function PosView() {
               quantity: newQuantity, // The current quantity in cart, adjusted for stock.
             };
           })
-          .filter((item): item is CartItem => item !== null);
+          .filter((item): item is CartItem => item !== null && item.quantity > 0);
   
         // Determine if there were any significant changes that require user notification
         const hasDeletions = deletedProductNames.length > 0;
