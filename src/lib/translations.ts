@@ -292,9 +292,10 @@ export const translations = {
     },
     purchaseOrders: {
         title: "Bons de Commande",
-        addPO: "Créer un bon de commande",
-        editPO: "Modifier le bon de commande",
-        searchPOs: "Rechercher des bons de commande...",
+        addPO: "Créer un bon",
+        editPO: "Modifier le bon",
+        createNewPO: "Créer un nouveau bon de commande.",
+        searchPOs: "Rechercher...",
         supplier: "Fournisseur",
         status: "Statut",
         createdAt: "Créé le",
@@ -302,6 +303,8 @@ export const translations = {
         actions: "Actions",
         noPOs: "Aucun bon de commande trouvé.",
         poCreated: "Bon de commande créé.",
+        poUpdated: "Bon de commande mis à jour.",
+        poDeleted: "Bon de commande supprimé.",
         poCreatedFor: "Bon de commande créé pour {supplierName}.",
         statuses: {
             draft: "Brouillon",
@@ -309,7 +312,12 @@ export const translations = {
             partially_received: "Partiellement Reçu",
             completed: "Terminé",
             cancelled: "Annulé"
-        }
+        },
+        deletePOTitle: "Supprimer le Bon de Commande ?",
+        deletePODescription: "Êtes-vous sûr de vouloir supprimer ce bon de commande ? Cette action est irréversible.",
+        selectSupplierPlaceholder: "Sélectionnez un fournisseur",
+        notes: "Notes",
+        notesPlaceholder: "Ajoutez des notes pour ce bon de commande...",
     },
     reports: {
       title: "Rapports et Analyses",
@@ -799,6 +807,7 @@ export const translations = {
         title: "أوامر الشراء",
         addPO: "إنشاء أمر شراء",
         editPO: "تعديل أمر الشراء",
+        createNewPO: "إنشاء أمر شراء جديد.",
         searchPOs: "البحث عن أوامر الشراء...",
         supplier: "المورد",
         status: "الحالة",
@@ -807,6 +816,8 @@ export const translations = {
         actions: "الإجراءات",
         noPOs: "لم يتم العثور على أوامر شراء.",
         poCreated: "تم إنشاء أمر الشراء.",
+        poUpdated: "تم تحديث أمر الشراء.",
+        poDeleted: "تم حذف أمر الشراء.",
         poCreatedFor: "تم إنشاء أمر شراء للمورد {supplierName}.",
         statuses: {
             draft: "مسودة",
@@ -814,7 +825,12 @@ export const translations = {
             partially_received: "مستلم جزئياً",
             completed: "مكتمل",
             cancelled: "ملغى"
-        }
+        },
+        deletePOTitle: "حذف أمر الشراء؟",
+        deletePODescription: "هل أنت متأكد من رغبتك في حذف أمر الشراء هذا؟ لا يمكن التراجع عن هذا الإجراء.",
+        selectSupplierPlaceholder: "اختر موردًا",
+        notes: "ملاحظات",
+        notesPlaceholder: "أضف أي ملاحظات لأمر الشراء هذا...",
     },
     reports: {
       title: "التقارير والتحليلات",
@@ -1015,3 +1031,5 @@ export const translations = {
     }
   },
 };
+
+    

@@ -27,10 +27,11 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import Loading from '@/app/loading';
 import { Badge } from '@/components/ui/badge';
+import { AddPurchaseOrderDialog } from '@/components/add-purchase-order-dialog';
 
 export default function PurchaseOrdersPage() {
   const { t } = useLanguage();
-  const { purchaseOrders, suppliers, isLoading } = useData();
+  const { purchaseOrders, suppliers, deletePurchaseOrder, isLoading } = useData();
   const { settings } = useSettings();
   const { toast } = useToast();
 
@@ -73,14 +74,12 @@ export default function PurchaseOrdersPage() {
   }
 
   const handleOpenDialog = (po: PurchaseOrder | null = null) => {
-    // setEditingPO(po);
-    // setIsDialogOpen(true);
-    toast({ title: "Coming soon!", description: "This feature is under construction." });
+    setEditingPO(po);
+    setIsDialogOpen(true);
   };
 
   const handleOpenDeleteDialog = (po: PurchaseOrder) => {
-    // setPoToDelete(po);
-    toast({ title: "Coming soon!", description: "This feature is under construction." });
+    setPoToDelete(po);
   };
 
   const handleCloseDeleteDialog = () => {
@@ -89,7 +88,8 @@ export default function PurchaseOrdersPage() {
   
   const handleDeletePO = () => {
     if (!poToDelete) return;
-    // deletePurchaseOrder(poToDelete.id);
+    deletePurchaseOrder(poToDelete.id);
+    toast({ title: t.purchaseOrders.poDeleted || "Purchase order deleted." });
     handleCloseDeleteDialog();
   };
 
@@ -164,20 +164,22 @@ export default function PurchaseOrdersPage() {
           </CardContent>
         </Card>
       </div>
-      {/*
+      
       <AddPurchaseOrderDialog
         isOpen={isDialogOpen}
         onClose={() => {setIsDialogOpen(false); setEditingPO(null);}}
         purchaseOrderToEdit={editingPO}
       />
-      */}
+      
       <ConfirmDialog
         isOpen={!!poToDelete}
         onClose={handleCloseDeleteDialog}
         onConfirm={handleDeletePO}
-        title={t.deleteConfirmationTitle}
-        description={"Are you sure you want to delete this purchase order?"}
+        title={t.purchaseOrders.deletePOTitle || "Delete Purchase Order"}
+        description={t.purchaseOrders.deletePODescription || "Are you sure you want to delete this purchase order?"}
       />
     </>
   );
 }
+
+    

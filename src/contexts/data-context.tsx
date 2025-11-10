@@ -82,17 +82,6 @@ export interface SupplierInvoiceItem {
   barcode?: string;
 }
 
-export interface SupplierInvoice {
-  id: string;
-  supplierId: string;
-  date: string;
-  items: SupplierInvoiceItem[];
-  totalAmount: number;
-  amountPaid?: number;
-  isPayment?: boolean;
-  priceUpdateStrategy?: 'master' | 'average' | 'none';
-}
-
 export interface PurchaseOrder {
     id: string;
     supplierId: string;
@@ -129,6 +118,18 @@ export type SaleRecord = {
     date: string;
 }
 
+export interface SupplierInvoice {
+  id: string;
+  supplierId: string;
+  date: string;
+  items: SupplierInvoiceItem[];
+  totalAmount: number;
+  amountPaid?: number;
+  isPayment?: boolean;
+  priceUpdateStrategy?: 'master' | 'average' | 'none';
+}
+
+
 interface UserProfile {
   id: string;
   email: string;
@@ -163,7 +164,9 @@ interface DataContextType {
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
     addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => Promise<void>;
-    addPurchaseOrder: (poData: { supplierId: string, items: SupplierInvoiceItem[], notes?: string }) => Promise<void>;
+    addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<void>;
+    updatePurchaseOrder: (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => Promise<void>;
+    deletePurchaseOrder: (poId: string) => Promise<void>;
     makePaymentToSupplier: (supplierId: string, amount: number) => Promise<void>;
     addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
@@ -504,7 +507,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
     }, [firestore, dataUserId, products, suppliers]);
 
-    const addPurchaseOrder = useCallback(async (poData: { supplierId: string, items: SupplierInvoiceItem[], notes?: string }) => {
+    const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
         const collectionRef = getCollectionRef('purchaseOrders');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
         
@@ -516,11 +519,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             updatedAt: now,
         };
 
-        addDoc(collectionRef, newPO).catch(error => {
+        return addDoc(collectionRef, newPO).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newPO }));
+            throw error;
         });
     }, [getCollectionRef]);
     
+    const updatePurchaseOrder = useCallback(async (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => {
+        const collectionRef = getCollectionRef('purchaseOrders');
+        if (!collectionRef) throw new Error("User not authenticated or data path not available.");
+
+        const poRef = doc(collectionRef, poId);
+        const dataToUpdate = {
+            ...poData,
+            updatedAt: new Date().toISOString(),
+        };
+
+        return updateDoc(poRef, dataToUpdate).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: poRef.path, operation: 'update', requestResourceData: dataToUpdate }));
+            throw error;
+        });
+    }, [getCollectionRef]);
+
+    const deletePurchaseOrder = useCallback(async (poId: string) => {
+        const collectionRef = getCollectionRef('purchaseOrders');
+        if (!collectionRef) throw new Error("User not authenticated or data path not available.");
+
+        const poRef = doc(collectionRef, poId);
+        
+        return deleteDoc(poRef).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: poRef.path, operation: 'delete' }));
+            throw error;
+        });
+    }, [getCollectionRef]);
+
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         const batch = writeBatch(firestore);
@@ -626,6 +658,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteSupplier,
         addSupplierInvoice,
         addPurchaseOrder,
+        updatePurchaseOrder,
+        deletePurchaseOrder,
         makePaymentToSupplier,
         addExpense,
         updateExpense,
@@ -636,7 +670,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
-        deleteSupplier, addSupplierInvoice, addPurchaseOrder, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
+        deleteSupplier, addSupplierInvoice, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
         restoreData,
     ]);
 
@@ -650,3 +684,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    
