@@ -17,11 +17,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserSessionPersistence,
+  browserLocalPersistence,
+} from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function LoginPage() {
   const { t } = useLanguage();
@@ -33,6 +39,7 @@ export default function LoginPage() {
   const formSchema = z.object({
     email: z.string().email({ message: t.auth.emailInvalid }),
     password: z.string().min(1, { message: t.auth.passwordRequired }),
+    rememberMe: z.boolean().default(false),
   });
 
   const {
@@ -41,12 +48,19 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      rememberMe: false,
+    },
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setFirebaseError(null);
     try {
+      const persistence = data.rememberMe
+        ? browserLocalPersistence
+        : browserSessionPersistence;
+      await setPersistence(auth, persistence);
       await signInWithEmailAndPassword(auth, data.email, data.password);
       router.push('/');
     } catch (error) {
@@ -110,6 +124,15 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
+             <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <Checkbox id="rememberMe" {...register('rememberMe')} disabled={isLoading} />
+                <label
+                    htmlFor="rememberMe"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                    {t.auth.rememberMe}
+                </label>
+             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>

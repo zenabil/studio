@@ -47,6 +47,7 @@ export const translations = {
       pendingApprovalDescription: "Votre compte a été créé avec succès et attend l'approbation de l'administrateur.",
       pendingApprovalContact: "Veuillez contacter l'administrateur de votre système pour activer votre compte.",
       adminContact: "Informations de contact de l'administrateur",
+      rememberMe: "Se souvenir de moi",
     },
     users: {
         title: "Gestion des utilisateurs",
@@ -573,6 +574,7 @@ export const translations = {
       pendingApprovalDescription: "تم إنشاء حسابك بنجاح وهو في انتظار موافقة المسؤول.",
       pendingApprovalContact: "يرجى الاتصال بمسؤول النظام لتفعيل حسابك.",
       adminContact: "معلومات الاتصال بالمسؤول",
+      rememberMe: "تذكرني",
     },
     users: {
         title: "إدارة المستخدمين",
