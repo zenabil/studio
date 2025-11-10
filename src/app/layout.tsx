@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/components/app-providers';
-import { AppLayout } from '@/components/app-layout';
+import { AppLayout } from '@/app/app-layout';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import NextTopLoader from 'nextjs-toploader';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthLayout } from '@/components/auth-layout';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
 
 export const metadata: Metadata = {
   title: 'Frucio',
@@ -55,6 +56,7 @@ export default function RootLayout({
               </SidebarProvider>
             </AuthLayout>
             <Toaster />
+            <PwaInstallBanner />
           </AppProviders>
         </FirebaseClientProvider>
       </body>
