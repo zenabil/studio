@@ -9,6 +9,7 @@ import {
     useCollection,
     useMemoFirebase,
     useDoc,
+    getSdks,
 } from '@/firebase';
 import {
     collection,
@@ -25,6 +26,7 @@ import {
     deleteDoc,
     getDoc,
 } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
 import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
@@ -144,6 +146,8 @@ export interface UserProfile {
   createdAt: string;
 }
 
+type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
+
 interface DataContextType {
     products: WithId<Product>[];
     customers: WithId<Customer>[];
@@ -156,8 +160,8 @@ interface DataContextType {
     userProfiles: WithId<UserProfile>[];
     userProfile: UserProfile | null;
     isLoading: boolean;
-    addProduct: (productData: Omit<Product, 'id'>) => Promise<WithId<Product>>;
-    updateProduct: (productId: string, productData: Partial<Omit<Product, 'id'>>) => Promise<void>;
+    addProduct: (productData: ProductFormData) => Promise<WithId<Product>>;
+    updateProduct: (productId: string, productData: Partial<ProductFormData>) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
     addCustomer: (customerData: Omit<Customer, 'id' | 'spent' | 'balance'>) => Promise<WithId<Customer>>;
     updateCustomer: (customerId: string, customerData: Partial<Omit<Customer, 'id' | 'spent' | 'balance'>>) => Promise<void>;
@@ -188,9 +192,8 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const AdminDataProvider = ({ children }: { children: React.ReactNode}) => {
+const AdminDataProvider = ({ children, userProfile }: { children: React.ReactNode, userProfile: UserProfile | null }) => {
     const firestore = useFirestore();
-    const { userProfile } = useData();
 
     const userProfilesRef = useMemoFirebase(() => {
         if (!firestore || !userProfile?.isAdmin) return null;
@@ -199,25 +202,29 @@ const AdminDataProvider = ({ children }: { children: React.ReactNode}) => {
 
     const { data: userProfilesData, isLoading: userProfilesLoading } = useCollection<UserProfile>(userProfilesRef);
 
-    return React.cloneElement(children as React.ReactElement, {
-        adminData: {
-            userProfiles: userProfilesData,
-            userProfilesLoading
+    const mergedChildren = React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+            return React.cloneElement(child, {
+                userProfiles: userProfilesData || [],
+                userProfilesLoading: userProfilesLoading
+            } as any);
         }
+        return child;
     });
+
+    return <>{mergedChildren}</>;
 };
 
-export const DataProvider = ({ children, adminData }: { children: ReactNode, adminData?: any }) => {
+export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, isUserLoading } = useUser();
+    const { user, isUserLoading, firebaseApp } = useUser();
     const firestore = useFirestore();
 
     const dataUserId = user?.uid;
 
     const getCollectionRef = useCallback((collectionName: string) => {
-        if (!firestore) return null;
-        if (!dataUserId) return null;
+        if (!firestore || !dataUserId) return null;
         const path = `users/${dataUserId}/${collectionName}`;
         return collection(firestore, path) as CollectionReference;
     }, [firestore, dataUserId]);
@@ -237,7 +244,6 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
     }, [firestore, dataUserId]);
     
     const { data: userProfileData, isLoading: userProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
-
     const { data: productsData, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customersData, isLoading: customersLoading } = useCollection<Customer>(customersRef);
     const { data: salesHistoryData, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
@@ -247,9 +253,12 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
     const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expensesData, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
     
+    const [userProfiles, setUserProfiles] = useState<WithId<UserProfile>[]>([]);
+    const [userProfilesLoading, setUserProfilesLoading] = useState(true);
+
     const userProfile = useMemo(() => userProfileData || null, [userProfileData]);
 
-    const isLoadingAllData = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (userProfile?.isAdmin && adminData?.userProfilesLoading);
+    const isLoadingAllData = isUserLoading || userProfileLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
     
     const contextValue = useMemo(() => ({
         products: productsData || [],
@@ -260,16 +269,36 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
         supplierInvoices: supplierInvoicesData || [],
         purchaseOrders: purchaseOrdersData || [],
         expenses: expensesData || [],
-        userProfiles: adminData?.userProfiles || [],
+        userProfiles: userProfiles,
         userProfile,
         isLoading: isLoadingAllData,
-    }), [productsData, customersData, salesHistoryData, bakeryOrdersData, suppliersData, supplierInvoicesData, purchaseOrdersData, expensesData, adminData?.userProfiles, userProfile, isLoadingAllData]);
+    }), [productsData, customersData, salesHistoryData, bakeryOrdersData, suppliersData, supplierInvoicesData, purchaseOrdersData, expensesData, userProfiles, userProfile, isLoadingAllData]);
+    
+    const uploadImage = useCallback(async (file: File): Promise<string> => {
+        if (!dataUserId || !firebaseApp) throw new Error("User not authenticated or Firebase app not available.");
+        
+        const storage = getStorage(firebaseApp);
+        const filePath = `users/${dataUserId}/product_images/${Date.now()}-${file.name}`;
+        const imageRef = storageRef(storage, filePath);
+        
+        await uploadBytes(imageRef, file);
+        const downloadURL = await getDownloadURL(imageRef);
+        
+        return downloadURL;
+    }, [dataUserId, firebaseApp]);
 
-    const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
+    const addProduct = useCallback(async (productData: ProductFormData): Promise<WithId<Product>> => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
-        const sanitizedData: any = { ...productData };
+        const { imageFile, ...restOfProductData } = productData;
+        let imageUrl = productData.imageUrl || null;
+
+        if (imageFile) {
+            imageUrl = await uploadImage(imageFile);
+        }
+
+        const sanitizedData: any = { ...restOfProductData, imageUrl };
         Object.keys(sanitizedData).forEach(key => {
             if (sanitizedData[key] === undefined) {
                 sanitizedData[key] = null;
@@ -283,18 +312,25 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
 
         const docRef = await addDoc(collectionRef, newProductData)
             .catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
-            throw error;
+                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
+                throw error;
             });
-        return { id: docRef.id, ...productData };
         
-    }, [getCollectionRef]);
+        return { id: docRef.id, ...restOfProductData, imageUrl };
+    }, [getCollectionRef, uploadImage]);
 
-    const updateProduct = useCallback(async (productId: string, productData: Partial<Product>) => {
+    const updateProduct = useCallback(async (productId: string, productData: Partial<ProductFormData>) => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) return;
         
-        const sanitizedData: any = { ...productData };
+        const { imageFile, ...restOfProductData } = productData;
+        let imageUrl = productData.imageUrl;
+
+        if (imageFile) {
+            imageUrl = await uploadImage(imageFile);
+        }
+
+        const sanitizedData: any = { ...restOfProductData, imageUrl };
         Object.keys(sanitizedData).forEach(key => {
             if (sanitizedData[key] === undefined) {
                 sanitizedData[key] = null;
@@ -302,10 +338,10 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
         });
 
         const docRef = doc(collectionRef, productId);
-        updateDoc(docRef, sanitizedData).catch(error => {
+        await updateDoc(docRef, sanitizedData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: sanitizedData }));
         });
-    }, [getCollectionRef]);
+    }, [getCollectionRef, uploadImage]);
 
     const deleteProduct = useCallback(async (productId: string) => {
         const collectionRef = getCollectionRef('products');
@@ -671,37 +707,9 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
     
     const addPendingUser = useCallback(async (email: string, password: string) => {
         if (!firestore) throw new Error("Firestore not initialized");
-
-        // We are creating a user document, not an auth user.
-        // The admin will later approve and an auth user will be created.
-        const userProfilesRef = collection(firestore, 'userProfiles');
-        
-        // Check if user email already exists
-        const q = query(userProfilesRef, where("email", "==", email));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            throw new Error("auth/email-already-in-use");
-        }
-
-        const newUserProfile = {
-            email: email,
-            password: password, // Storing password temporarily, to be used by admin
-            status: email === 'zenaguibilal2@gmail.com' ? 'approved' : 'pending',
-            isAdmin: email === 'zenaguibilal2@gmail.com',
-            createdAt: new Date().toISOString(),
-        };
-
-        if (email === 'zenaguibilal2@gmail.com') {
-            const functions = getFunctions();
-            const createAndApproveAdmin = httpsCallable(functions, 'createAndApproveAdmin');
-            await createAndApproveAdmin({ email, password });
-
-        } else {
-             await addDoc(userProfilesRef, newUserProfile).catch(error => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userProfilesRef.path, operation: 'create', requestResourceData: newUserProfile }));
-                throw error;
-            });
-        }
+        const functions = getFunctions();
+        const createPendingUser = httpsCallable(functions, 'createPendingUser');
+        await createPendingUser({ email, password });
     }, [firestore]);
 
 
@@ -788,20 +796,26 @@ export const DataProvider = ({ children, adminData }: { children: ReactNode, adm
         addPendingUser, approveUser, revokeUser, restoreData
     ]);
 
-    if (userProfile?.isAdmin) {
-        return (
-            <DataContext.Provider value={fullContext}>
-                <AdminDataProvider>
-                    {children}
-                </AdminDataProvider>
-            </DataContext.Provider>
-        );
-    }
-    
+    const childProps = {
+        userProfiles,
+        userProfilesLoading,
+    };
+
     return (
-        <DataContext.Provider value={fullContext}>
-            {children}
-        </DataContext.Provider>
+      <DataContext.Provider value={fullContext}>
+        <AdminDataProvider userProfile={userProfile}>
+            {React.Children.map(children, child =>
+                React.isValidElement(child)
+                    ? React.cloneElement(child, {
+                          ...child.props,
+                          ...childProps,
+                          setUserProfiles,
+                          setUserProfilesLoading,
+                      })
+                    : child
+            )}
+        </AdminDataProvider>
+      </DataContext.Provider>
     );
 };
 
@@ -812,6 +826,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    
-

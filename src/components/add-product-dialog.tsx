@@ -31,10 +31,12 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
 
+type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
+
 interface AddProductDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: Omit<Product, 'id'>, id?:string) => Promise<void>;
+  onSave: (product: ProductFormData, id?:string) => Promise<void>;
   productToEdit?: Product | null;
   initialBarcode?: string;
   initialName?: string;
@@ -61,6 +63,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       boxPrice: z.coerce.number().min(0).optional().nullable(),
       barcodes: z.string(),
       imageUrl: z.string().optional().nullable(),
+      imageFile: z.instanceof(File).optional().nullable(),
     }).superRefine((data, ctx) => {
         // Barcode check
         const barcodes = data.barcodes.split(',').map(b => b.trim()).filter(Boolean);
@@ -119,6 +122,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       boxPrice: null,
       barcodes: '',
       imageUrl: null,
+      imageFile: null,
     },
   });
   
@@ -138,6 +142,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           boxPrice: productToEdit.boxPrice || null,
           barcodes: (productToEdit.barcodes || []).join(', '),
           imageUrl: productToEdit.imageUrl || null,
+          imageFile: null,
         });
         setImagePreview(productToEdit.imageUrl || null);
       } else {
@@ -152,6 +157,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           boxPrice: null,
           barcodes: initialBarcode || '',
           imageUrl: null,
+          imageFile: null,
         });
         setImagePreview(null);
       }
@@ -162,7 +168,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     setIsSaving(true);
     try {
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
-      const dataToSave: Omit<Product, 'id'> = {
+      const dataToSave: ProductFormData = {
         ...values,
         quantityPerBox: values.quantityPerBox === undefined ? null : values.quantityPerBox,
         boxPrice: values.boxPrice === undefined ? null : values.boxPrice,
@@ -205,7 +211,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     reader.onload = (e) => {
         const dataUrl = e.target?.result as string;
         setImagePreview(dataUrl);
-        form.setValue('imageUrl', dataUrl, { shouldDirty: true });
+        form.setValue('imageFile', file, { shouldDirty: true });
     };
     reader.onerror = () => {
          toast({
@@ -409,7 +415,3 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     </>
   );
 }
-
-    
-
-    
