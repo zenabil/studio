@@ -48,7 +48,7 @@ const addDeletedRecurringForToday = (orderName: string) => {
   if (typeof window === 'undefined') return;
   const key = getTodaysDeletedRecurringKey();
   const deletedNames = getDeletedRecurringForToday();
-  if (!deletedNames.includes(deletedNames)) {
+  if (!deletedNames.includes(orderName)) {
     deletedNames.push(orderName);
     localStorage.setItem(key, JSON.stringify(deletedNames));
   }
