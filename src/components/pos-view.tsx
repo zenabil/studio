@@ -162,7 +162,7 @@ export function PosView() {
     setSessions([initialSession]);
     setActiveSessionId(initialSession.id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createNewSession]);
+  }, []);
 
   // This effect runs whenever sessions or the active session ID changes, to save the state.
   useEffect(() => {
@@ -260,7 +260,7 @@ export function PosView() {
   
       return currentSessions;
     });
-  }, [products, t.pos.stockAdjustedMessage, t.pos.stockAdjustedTitle, t.pos.productRemovedMessage, t.pos.productRemovedTitle, toast]);
+  }, [products, t.pos.stockAdjustedMessage, t.pos.stockAdjustedTitle, t.pos.productRemovedMessage, t.pos.productRemovedTitle, toast, sessions]);
 
   const activeSession = useMemo(() => {
     if (!activeSessionId) return undefined;
@@ -294,7 +294,7 @@ export function PosView() {
     ).filter(item => item.quantity > 0);
     
     updateActiveSession({ cart: newCart });
-  }, [activeSession, updateActiveSession, products, t, toast]);
+  }, [activeSession, updateActiveSession, products]);
   
   const handleQuantityInputChange = (productId: string, value: string) => {
     setCartQuantities(prev => ({ ...prev, [productId]: value }));
@@ -401,7 +401,7 @@ export function PosView() {
         newCart.push({ ...product, quantity: quantityToAdd });
     }
     updateActiveSession({ cart: newCart });
-  }, [activeSession, updateActiveSession, t, toast]);
+  }, [activeSession, updateActiveSession]);
   
   const resetSale = useCallback(() => {
     if (!activeSessionId) return;
