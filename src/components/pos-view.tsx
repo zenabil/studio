@@ -205,21 +205,11 @@ export function PosView() {
               return null;
             }
   
-            // Handle stock adjustment
-            const newQuantity = Math.min(cartItem.quantity, productFromDb.stock);
-            if (newQuantity < cartItem.quantity) {
-              quantityAdjustments.push({
-                productName: productFromDb.name,
-                oldQty: cartItem.quantity,
-                newQty: newQuantity,
-              });
-            }
-  
             // Construct the updated cart item, preserving the locked-in price and adjusted quantity.
             return {
               ...productFromDb,      // All latest data from the DB
               price: cartItem.price, // The price at the time of adding to cart is locked.
-              quantity: newQuantity, // The current quantity in cart, adjusted for stock.
+              quantity: cartItem.quantity, // The current quantity in cart
             };
           })
           .filter((item): item is CartItem => item !== null && item.quantity > 0);
@@ -298,17 +288,6 @@ export function PosView() {
     if (!productDetails) return;
 
     let finalQuantity = Math.max(0, newQuantity);
-    
-    if (finalQuantity > productDetails.stock) {
-        finalQuantity = productDetails.stock;
-        toast({
-            variant: 'destructive',
-            title: t.errors.title,
-            description: t.errors.quantityExceedsStock
-                .replace('{productName}', productDetails.name)
-                .replace('{stock}', String(productDetails.stock)),
-        });
-    }
 
     const newCart = activeSession.cart.map(item => 
         item.id === productId ? { ...item, quantity: finalQuantity } : item
@@ -412,29 +391,6 @@ export function PosView() {
 
   const addToCart = useCallback((product: Product, quantityToAdd: number = 1) => {
     if (!activeSession) return;
-
-    if (product.stock <= 0) {
-       toast({
-         variant: 'destructive',
-         title: t.errors.title,
-         description: t.errors.outOfStock.replace('{productName}', product.name),
-       });
-       return;
-    }
-
-    const existingItem = activeSession.cart.find(item => item.id === product.id);
-    const currentQuantityInCart = existingItem ? existingItem.quantity : 0;
-
-    if (currentQuantityInCart + quantityToAdd > product.stock) {
-        toast({
-            variant: 'destructive',
-            title: t.errors.title,
-            description: t.errors.quantityExceedsStock
-                .replace('{productName}', product.name)
-                .replace('{stock}', String(product.stock)),
-        });
-        return;
-    }
     
     const newCart = [...activeSession.cart];
     const existingItemIndex = newCart.findIndex((item) => item.id === product.id);
@@ -794,10 +750,9 @@ export function PosView() {
                           </TableHeader>
                           <TableBody>
                               {filteredProducts.map((product) => {
-                                  const isOutOfStock = product.stock <= 0;
                                   const canSellByBox = product.quantityPerBox && product.quantityPerBox > 0 && product.boxPrice && product.boxPrice > 0;
                                   return (
-                                  <TableRow key={product.id} className={cn(isOutOfStock && "opacity-60")}>
+                                  <TableRow key={product.id} className={cn(product.stock <= 0 && "text-muted-foreground")}>
                                       <TableCell className="font-medium">{product.name}</TableCell>
                                       <TableCell>{product.category}</TableCell>
                                       <TableCell className="text-right">{settings.currency}{product.price.toFixed(2)}</TableCell>
@@ -809,7 +764,6 @@ export function PosView() {
                                                       size="icon"
                                                       variant="outline"
                                                       onClick={() => addToCart(product, product.quantityPerBox!)}
-                                                      disabled={isOutOfStock || product.stock < product.quantityPerBox!}
                                                       title={`${t.pos.addBox} (${product.quantityPerBox})`}
                                                   >
                                                       <Box className="h-4 w-4" />
@@ -818,7 +772,6 @@ export function PosView() {
                                               <Button
                                                   size="sm"
                                                   onClick={() => addToCart(product, 1)}
-                                                  disabled={isOutOfStock}
                                                   variant="outline"
                                               >
                                                   <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />

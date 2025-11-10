@@ -24,12 +24,9 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
   return (
     <Card 
       className={cn(
-        "overflow-hidden transition-all duration-200 flex flex-col group",
-        isOutOfStock 
-          ? "opacity-60 grayscale cursor-not-allowed" 
-          : "hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+        "overflow-hidden transition-all duration-200 flex flex-col group hover:shadow-xl hover:-translate-y-1 cursor-pointer"
       )}
-      onClick={() => !isOutOfStock && onAddToCart(product, 1)}
+      onClick={() => onAddToCart(product, 1)}
     >
       <div className="aspect-square w-full overflow-hidden relative bg-muted flex items-center justify-center">
           {product.imageUrl ? (
@@ -63,7 +60,6 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
                         variant="outline"
                         className="h-8 w-8 flex-shrink-0"
                         onClick={(e) => { e.stopPropagation(); onAddToCart(product, product.quantityPerBox!); }}
-                        disabled={isOutOfStock || product.stock < product.quantityPerBox!}
                         title={`${t.pos.addBox} (${product.quantityPerBox})`}
                     >
                         <Box className="h-4 w-4" />
@@ -73,7 +69,6 @@ const PosProductCardComponent: React.FC<PosProductCardProps> = ({ product, onAdd
                     size="icon"
                     className="h-8 w-8"
                     onClick={(e) => { e.stopPropagation(); onAddToCart(product, 1); }}
-                    disabled={isOutOfStock}
                 >
                     <PlusCircle className="h-4 w-4" />
                 </Button>
