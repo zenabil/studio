@@ -31,9 +31,6 @@ import {
   PanelLeft,
   Receipt,
   HandCoins,
-  LogOut,
-  ShieldCheck,
-  Clock,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -45,19 +42,15 @@ import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
-import { useAuth, useUser } from '@/firebase';
-import { AdminUserSwitcher } from './admin-user-switcher';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { t, language, dir } = useLanguage();
-  const { products, customers, salesHistory, isLoading, isAdmin } = useData();
+  const { products, customers, salesHistory, isLoading } = useData();
   const { settings } = useSettings();
   const [isMounted, setIsMounted] = useState(false);
-  const auth = useAuth();
-  const { user } = useUser();
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   useEffect(() => {
@@ -95,19 +88,10 @@ export function SidebarNav() {
       { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
       { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
     ];
-
-    if (isAdmin) {
-      items.push({ href: '/users', label: t.nav.userManagement, icon: ShieldCheck });
-    }
-
     items.push({ href: '/settings', label: t.nav.settings, icon: Settings });
     
     return items;
-  }, [t, totalAlertCount, isAdmin]);
-
-  const handleSignOut = () => {
-    auth.signOut();
-  };
+  }, [t, totalAlertCount]);
 
   const AppLogo = () => (
     <div className="bg-primary/10 p-2 rounded-lg group">
@@ -122,7 +106,7 @@ export function SidebarNav() {
             className="h-10 w-10 text-primary transition-transform duration-300 group-hover:scale-110"
         >
             <path d="M7 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2-0 0 1-2 2H7Z" />
-            <path d="M16 2v4a2 2-0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
+            <path d="M16 2v4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4" />
             <path d="M12 18h.01" />
         </svg>
     </div>
@@ -178,7 +162,6 @@ export function SidebarNav() {
                         </div>
                     </SidebarHeader>
                     <SidebarContent className="flex flex-col">
-                        <AdminUserSwitcher />
                         <Separator className="my-2" />
                         <SidebarMenu>
                         {navItems.map((item) => (
@@ -206,14 +189,6 @@ export function SidebarNav() {
                         <Separator className="my-2" />
                         <LanguageSwitcher />
                         <Separator className="my-2" />
-                        <SidebarMenu>
-                          <SidebarMenuItem>
-                            <SidebarMenuButton onClick={handleSignOut} variant="ghost">
-                              <LogOut className="h-5 w-5" />
-                              <span>{t.auth.signOut}</span>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        </SidebarMenu>
                     </SidebarFooter>
                 </div>
             </SheetContent>
@@ -237,7 +212,6 @@ export function SidebarNav() {
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col">
-        <AdminUserSwitcher />
         <Separator className="my-2" />
         <SidebarMenu>
           {navItems.map((item) => (
@@ -268,14 +242,6 @@ export function SidebarNav() {
             <LanguageSwitcher />
         </div>
         <Separator className="my-2 group-data-[collapsible=icon]:hidden" />
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleSignOut} tooltip={t.auth.signOut} variant="ghost">
-                <LogOut className="h-5 w-5" />
-                <span className="group-data-[collapsible=icon]:hidden">{t.auth.signOut}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
     </>

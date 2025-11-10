@@ -5,7 +5,6 @@ import {
     useUser,
     useFirestore,
     useCollection,
-    useDoc,
     useMemoFirebase,
 } from '@/firebase';
 import {
@@ -119,21 +118,7 @@ export type SaleRecord = {
     date: string;
 }
 
-export interface UserDoc {
-    email: string;
-    createdAt: string;
-    approved: boolean;
-}
-
-interface AdminState {
-    isAdmin: boolean;
-    allUsers: WithId<UserDoc>[];
-    selectedUserId: string | null;
-    setSelectedUserId: (userId: string | null) => void;
-}
-
-
-interface DataContextType extends AdminState {
+interface DataContextType {
     products: WithId<Product>[];
     customers: WithId<Customer>[];
     salesHistory: WithId<SaleRecord>[];
@@ -164,7 +149,6 @@ interface DataContextType extends AdminState {
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
-    updateUserApproval: (userId: string, approved: boolean) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -174,35 +158,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { t } = useLanguage();
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-    // Admin state management
-    const adminConfigRef = useMemoFirebase(() => firestore ? doc(firestore, 'config/admin') : null, [firestore]);
-    const { data: adminConfig } = useDoc<{ uid: string }>(adminConfigRef);
-    const isAdmin = useMemo(() => !!user && !!adminConfig && user.uid === adminConfig.uid, [user, adminConfig]);
-
-    const usersCollectionRef = useMemoFirebase(() => (firestore && isAdmin) ? collection(firestore, 'users') : null, [firestore, isAdmin]);
-    const { data: allUsersData } = useCollection<UserDoc>(usersCollectionRef);
-    const allUsers = useMemo(() => allUsersData || [], [allUsersData]);
-
-    const dataUserId = useMemo(() => {
-      if (isAdmin && selectedUserId) {
-        return selectedUserId;
-      }
-      return user?.uid;
-    }, [isAdmin, selectedUserId, user?.uid]);
-
-    // This is to check if the current logged-in user is approved.
-    const currentUserDocRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, `users/${user.uid}`) : null, [firestore, user]);
-    const { data: currentUserDoc } = useDoc<UserDoc>(currentUserDocRef);
-    const isCurrentUserApproved = currentUserDoc?.approved ?? false;
-
+    const dataUserId = user?.uid;
 
     const getCollectionRef = useCallback((collectionName: string) => {
-        if (!dataUserId || !firestore || (!isCurrentUserApproved && !isAdmin)) return null;
-        const path = collectionName === 'users' ? 'users' : `users/${dataUserId}/${collectionName}`;
+        if (!dataUserId || !firestore) return null;
+        const path = `users/${dataUserId}/${collectionName}`;
         return collection(firestore, path) as CollectionReference;
-    }, [firestore, dataUserId, isCurrentUserApproved, isAdmin]);
+    }, [firestore, dataUserId]);
 
     const productsRef = useMemoFirebase(() => getCollectionRef('products'), [getCollectionRef]);
     const customersRef = useMemoFirebase(() => getCollectionRef('customers'), [getCollectionRef]);
@@ -230,14 +193,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || expensesLoading;
     
-    const updateUserApproval = useCallback(async (userIdToUpdate: string, approved: boolean) => {
-        if (!firestore || !isAdmin) return;
-        const userDocRef = doc(firestore, 'users', userIdToUpdate);
-        updateDoc(userDocRef, { approved }).catch(error => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userDocRef.path, operation: 'update', requestResourceData: { approved } }));
-        });
-    }, [firestore, isAdmin]);
-
     const addProduct = useCallback(async (productData: Omit<Product, 'id'>): Promise<WithId<Product>> => {
         const collectionRef = getCollectionRef('products');
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
@@ -612,10 +567,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         supplierInvoices,
         expenses,
         isLoading,
-        isAdmin,
-        allUsers,
-        selectedUserId,
-        setSelectedUserId,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -638,15 +589,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updateExpense,
         deleteExpense,
         restoreData,
-        updateUserApproval,
     }), [
         products, customers, salesHistory, bakeryOrders, suppliers, supplierInvoices, expenses, isLoading,
-        isAdmin, allUsers, selectedUserId, 
         addProduct, updateProduct, deleteProduct, addCustomer, updateCustomer, deleteCustomer,
         addSaleRecord, makePayment, addBakeryOrder, updateBakeryOrder, deleteBakeryOrder,
         deleteRecurringPattern, setAsRecurringTemplate, addSupplier, updateSupplier,
         deleteSupplier, addSupplierInvoice, makePaymentToSupplier, addExpense, updateExpense, deleteExpense,
-        restoreData, updateUserApproval,
+        restoreData,
     ]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

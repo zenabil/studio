@@ -3,7 +3,7 @@
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 // Custom hook to manage auth state
@@ -17,6 +17,12 @@ function useAuthState(auth: Auth | null) {
         setIsLoading(false);
         return;
     }
+    
+    signInAnonymously(auth).catch(err => {
+      console.error("Anonymous sign-in failed", err);
+      setError(err);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setIsLoading(false);

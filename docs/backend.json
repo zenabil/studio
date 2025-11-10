@@ -96,27 +96,6 @@
       },
       "required": ["name", "spent", "balance"]
     },
-    "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
-      "description": "Represents an application user's profile.",
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string",
-          "format": "email"
-        },
-        "approved": {
-          "type": "boolean",
-          "description": "Approval status for the user, now defaults to true."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["email", "approved", "createdAt"]
-    },
     "SaleRecord": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "SaleRecord",
@@ -225,41 +204,32 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}",
-        "description": "A document storing user profile information, including approval status.",
-        "schema": "User"
-      },
-      {
-        "path": "/products/{userId}/{productId}",
+        "path": "/users/{userId}/{productId}",
         "description": "Products collection, partitioned by user ID."
       },
       {
-        "path": "/customers/{userId}/{customerId}",
+        "path": "/users/{userId}/{customerId}",
         "description": "Customers collection, partitioned by user ID."
       },
       {
-        "path": "/sales/{userId}/{saleId}",
+        "path": "/users/{userId}/{saleId}",
         "description": "Sales records, partitioned by user ID."
       },
       {
-        "path": "/bakeryOrders/{userId}/{orderId}",
+        "path": "/users/{userId}/{orderId}",
         "description": "Bakery orders, partitioned by user ID."
       },
       {
-        "path": "/suppliers/{userId}/{supplierId}",
+        "path": "/users/{userId}/{supplierId}",
         "description": "Suppliers collection, partitioned by user ID."
       },
       {
-        "path": "/supplierInvoices/{userId}/{invoiceId}",
+        "path": "/users/{userId}/{invoiceId}",
         "description": "Supplier invoices, partitioned by user ID."
       },
       {
-        "path": "/expenses/{userId}/{expenseId}",
+        "path": "/users/{userId}/{expenseId}",
         "description": "Expenses, partitioned by user ID."
-      },
-      {
-        "path": "/config/admin",
-        "description": "A special document that stores the UID of the admin user."
       }
     ]
   },
