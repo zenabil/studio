@@ -48,7 +48,7 @@ export function BarcodeScannerDialog({ isOpen, onClose, onScanSuccess }: Barcode
 
           while (active) {
             try {
-              const result = await codeReaderRef.current.decodeOnceFromVideoElement(videoRef.current);
+              const result = await codeReaderRef.current.decodeOnce(videoRef.current);
               if (result) {
                 onScanSuccess(result.getText());
                 break; 
