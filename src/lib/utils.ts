@@ -39,7 +39,7 @@ export interface DebtAlert {
   customerName: string;
   balance: number;
   dueDate: Date;
-  phone: string | undefined;
+  phone?: string;
   isOverdue: boolean;
 }
 
