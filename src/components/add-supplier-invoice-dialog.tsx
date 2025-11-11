@@ -17,7 +17,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Supplier, SupplierInvoiceItem, Product } from '@/lib/data';
+import type { Supplier, SupplierInvoiceItem, Product, AddSupplierInvoiceData } from '@/contexts/data-context';
 import {
   Form,
   FormControl,

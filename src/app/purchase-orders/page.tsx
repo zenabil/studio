@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
-import type { PurchaseOrder, Supplier, SupplierInvoiceItem } from '@/contexts/data-context';
+import type { PurchaseOrder, Supplier, AddSupplierInvoiceData } from '@/contexts/data-context';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import Loading from '@/app/loading';
@@ -103,7 +103,7 @@ export default function PurchaseOrdersPage() {
     handleCloseDeleteDialog();
   };
 
-  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: 'master' | 'average' | 'none'; purchaseOrderId?: string; }) => {
+  const handleSaveInvoice = async (invoiceData: AddSupplierInvoiceData) => {
     await addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);

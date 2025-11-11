@@ -148,7 +148,7 @@ export interface UserProfile {
 
 export type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
 
-type AddSupplierInvoiceData = {
+export type AddSupplierInvoiceData = {
   supplierId: string;
   items: SupplierInvoiceItem[];
   amountPaid?: number;

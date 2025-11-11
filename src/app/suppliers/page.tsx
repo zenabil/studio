@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Supplier, Product, SupplierInvoiceItem } from '@/contexts/data-context';
+import type { Supplier, Product, AddSupplierInvoiceData } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useData } from '@/contexts/data-context';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,8 @@ import { SupplierRestockListDialog } from '@/components/supplier-restock-list-di
 import Loading from '@/app/loading';
 import { useSettings } from '@/contexts/settings-context';
 import { MakeSupplierPaymentDialog } from '@/components/make-supplier-payment-dialog';
+import { SupplierInvoiceItem } from '@/contexts/data-context';
+
 
 type SortableKeys = keyof Pick<Supplier, 'name' | 'phone' | 'productCategory' | 'balance'>;
 
@@ -155,7 +157,7 @@ export default function SuppliersPage() {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: 'master' | 'average' | 'none'; }) => {
+  const handleSaveInvoice = async (invoiceData: AddSupplierInvoiceData) => {
     await addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);
