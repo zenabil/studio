@@ -190,6 +190,8 @@ interface DataContextType {
     approveUser: (userId: string) => Promise<void>;
     revokeUser: (userId: string) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
+    setUserProfiles: (profiles: WithId<UserProfile>[]) => void;
+    setUserProfilesLoading: (loading: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -881,3 +883,4 @@ export const useData = () => {
     }
     return context;
 };
+
