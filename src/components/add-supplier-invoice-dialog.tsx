@@ -455,7 +455,3 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     </>
   );
 }
-
-    
-
-    
