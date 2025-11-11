@@ -1,7 +1,6 @@
 'use server';
 
 import { getFirebaseAdmin } from '@/firebase/server';
-import { collection, getDocs } from 'firebase/firestore';
 
 export async function getBackupData(userId: string) {
   const { firestore } = getFirebaseAdmin();
@@ -17,14 +16,14 @@ export async function getBackupData(userId: string) {
     'suppliers',
     'supplierInvoices',
     'expenses',
-    'purchaseOrders', // Added this line
+    'purchaseOrders',
   ];
 
   const backupData: { [key: string]: any[] } = {};
 
   for (const collectionName of collectionsToBackup) {
-    const collRef = collection(firestore, `users/${userId}/${collectionName}`);
-    const snapshot = await getDocs(collRef);
+    const collRef = firestore.collection(`users/${userId}/${collectionName}`);
+    const snapshot = await collRef.get();
     backupData[collectionName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
