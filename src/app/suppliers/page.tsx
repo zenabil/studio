@@ -154,7 +154,7 @@ export default function SuppliersPage() {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: string }) => {
+  const handleSaveInvoice = async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: 'master' | 'average' | 'none'; }) => {
     await addSupplierInvoice(invoiceData);
     toast({ title: t.suppliers.invoiceAdded });
     setIsInvoiceDialogOpen(false);
