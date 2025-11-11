@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { CartItem, Customer, SaleRecord, Product, SupplierInvoiceItem } from "./contexts/data-context";
+import type { CartItem, Customer, SaleRecord, Product, SupplierInvoiceItem } from "@/contexts/data-context";
 import { addDays, differenceInCalendarDays, isBefore, addMonths, set } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
