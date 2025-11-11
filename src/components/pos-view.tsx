@@ -870,7 +870,7 @@ export function PosView() {
                                     <MinusCircle className="h-4 w-4" />
                                 </Button>
                                 <Input
-                                    ref={(el) => (quantityInputRefs.current[index] = el)}
+                                    ref={(el) => { quantityInputRefs.current[index] = el; }}
                                     type="text"
                                     value={cartQuantities[item.id] || ''}
                                     onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
