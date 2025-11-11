@@ -68,7 +68,7 @@ const formSchema = z.object({
   supplierId: z.string(),
   items: z.array(invoiceItemSchema).min(1, "Please add at least one item to the invoice."),
   amountPaid: z.coerce.number().min(0).optional(),
-  priceUpdateStrategy: z.string().default('average'),
+  priceUpdateStrategy: z.enum(['master', 'average', 'none']).default('average'),
   purchaseOrderId: z.string().optional(),
 });
 
@@ -455,5 +455,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     </>
   );
 }
+
+    
 
     
