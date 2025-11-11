@@ -136,6 +136,9 @@ export function AddPurchaseOrderDialog({ isOpen, onClose, purchaseOrderToEdit }:
 
   const watchedItems = form.watch('items');
   const totalAmount = useMemo(() => {
+    if (!watchedItems) {
+      return 0;
+    }
     return watchedItems.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
   }, [watchedItems]);
 
