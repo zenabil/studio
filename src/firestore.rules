@@ -7,40 +7,25 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function getUserProfile(userId) {
-      return get(/databases/$(database)/documents/userProfiles/$(userId)).data;
-    }
-
-    function isAdmin() {
-      // Check if the user's own profile exists and they are an admin.
-      return exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
-             getUserProfile(request.auth.uid).isAdmin == true;
-    }
 
     // Rules for user-specific data subcollections
     match /users/{userId}/{collection}/{docId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Rules for the global userProfiles collection
     match /userProfiles/{userId} {
       // Any signed-in user can read their own profile.
-      allow get: if isOwner(userId);
+      allow get: if request.auth != null && request.auth.uid == userId;
       
       // Only admins can list all profiles.
-      allow list: if isSignedIn() && isAdmin();
+      allow list: if isSignedIn() && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true;
       
-      // Anyone can create a user profile (signup), but they can't set their own status or admin rights initially.
-      // The status will be 'approved' by default from the cloud function.
-      allow create: if request.resource.data.email == request.auth.token.email || request.auth == null;
+      // Anyone can create their own user profile (signup).
+      allow create: if request.resource.data.email == request.auth.token.email;
       
-      // Only admins can update profiles (e.g., to change status).
-      allow update: if isSignedIn() && isAdmin();
+      // Only admins can update other profiles. Users can't update their own status/role.
+      allow update: if isSignedIn() && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true;
     }
   }
 }
