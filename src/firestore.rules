@@ -16,12 +16,6 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(userId)).data;
     }
 
-    function isApproved() {
-      // Check if the user's own profile exists and is approved.
-      return exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
-             getUserProfile(request.auth.uid).status == 'approved';
-    }
-
     function isAdmin() {
       // Check if the user's own profile exists and they are an admin.
       return exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
@@ -30,7 +24,7 @@ service cloud.firestore {
 
     // Rules for user-specific data subcollections
     match /users/{userId}/{collection}/{docId} {
-      allow read, write: if isOwner(userId) && isApproved();
+      allow read, write: if isOwner(userId);
     }
 
     // Rules for the global userProfiles collection
