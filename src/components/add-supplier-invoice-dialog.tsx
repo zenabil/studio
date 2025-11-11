@@ -120,7 +120,11 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     if (!watchedItems) {
       return 0;
     }
-    return watchedItems.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
+    return watchedItems.reduce((acc, item) => {
+        const quantity = Number(item.quantity) || 0;
+        const price = Number(item.purchasePrice) || 0;
+        return acc + (quantity * price);
+    }, 0);
   }, [watchedItems]);
 
   useEffect(() => {
