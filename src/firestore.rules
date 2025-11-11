@@ -42,6 +42,7 @@ service cloud.firestore {
       allow list: if isSignedIn() && isAdmin();
       
       // Anyone can create a user profile (signup), but they can't set their own status or admin rights initially.
+      // The status will be 'approved' by default from the cloud function.
       allow create: if request.resource.data.email == request.auth.token.email || request.auth == null;
       
       // Only admins can update profiles (e.g., to change status).
