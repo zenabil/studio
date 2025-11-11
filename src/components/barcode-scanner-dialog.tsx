@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
+import { BrowserMultiFormatReader, NotFoundException, ChecksumException, FormatException } from '@zxing/library';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,6 @@ import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { useData } from '@/contexts/data-context';
 
 interface BarcodeScannerDialogProps {
   isOpen: boolean;
@@ -24,59 +24,74 @@ interface BarcodeScannerDialogProps {
 export function BarcodeScannerDialog({ isOpen, onClose, onScanSuccess }: BarcodeScannerDialogProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { products } = useData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const codeReaderRef = useRef(new BrowserMultiFormatReader());
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     let active = true;
-    if (isOpen) {
-      setHasCameraPermission(null);
-      const startScanner = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          if (!active) {
-            stream.getTracks().forEach(track => track.stop());
-            return;
-          }
-          setHasCameraPermission(true);
 
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            await videoRef.current.play();
-            
-            codeReaderRef.current.decodeFromVideoElement(videoRef.current, (result, err) => {
+    const startScanner = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (!active) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+
+          while (active) {
+            try {
+              const result = await codeReaderRef.current.decodeOnceFromVideoElement(videoRef.current);
               if (result) {
                 onScanSuccess(result.getText());
+                break; 
               }
-              if (err && !(err instanceof NotFoundException)) {
+            } catch (err) {
+              if (err instanceof NotFoundException || err instanceof ChecksumException || err instanceof FormatException) {
+                // Common errors, continue scanning
+              } else {
                 console.error('Barcode scan error:', err);
-                 toast({
-                    variant: 'destructive',
-                    title: t.errors.title,
-                    description: t.errors.scanError,
+                toast({
+                  variant: 'destructive',
+                  title: t.errors.title,
+                  description: t.errors.scanError,
                 });
+                break; 
               }
-            });
+            }
           }
-        } catch (error) {
+        }
+      } catch (error) {
+        if (active) {
           console.error('Error accessing camera:', error);
           setHasCameraPermission(false);
         }
-      };
-      startScanner();
+      }
+    };
 
-      return () => {
-        active = false;
-        codeReaderRef.current.reset();
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-      };
+    if (isOpen) {
+      setHasCameraPermission(null);
+      startScanner();
     }
+
+    return () => {
+      active = false;
+      codeReaderRef.current.reset();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
   }, [isOpen, onScanSuccess, t.errors.scanError, t.errors.title, toast]);
 
   return (
