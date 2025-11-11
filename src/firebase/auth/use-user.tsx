@@ -1,9 +1,11 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase } from '@/firebase';
-import type { UserProfile, WithId } from '@/lib/data';
+import type { UserProfile } from '@/contexts/data-context';
+import { WithId } from '@/lib/utils';
 
 export interface UseUserResult {
   user: User | null;

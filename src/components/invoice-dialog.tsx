@@ -1,4 +1,5 @@
 
+
 'use client';
 import {
   Dialog,
@@ -15,7 +16,7 @@ import { Separator } from './ui/separator';
 import {
     Package
   } from 'lucide-react';
-import type { Product, Customer } from '@/lib/data';
+import type { Product, Customer } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
 import { calculateItemTotal } from '@/lib/utils';
 import Image from 'next/image';

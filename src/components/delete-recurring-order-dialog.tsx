@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
-import type { BakeryOrder } from '@/lib/data';
+import type { BakeryOrder } from '@/contexts/data-context';
 
 interface DeleteRecurringOrderDialogProps {
   isOpen: boolean;

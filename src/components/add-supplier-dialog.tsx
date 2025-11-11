@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -14,7 +15,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Supplier } from '@/lib/data';
+import type { Supplier } from '@/contexts/data-context';
 import {
   Form,
   FormControl,

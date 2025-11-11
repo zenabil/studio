@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
-import type { BakeryOrder } from '@/lib/data';
+import type { BakeryOrder } from '@/contexts/data-context';
 
 interface AddBakeryOrderDialogProps {
   isOpen: boolean;

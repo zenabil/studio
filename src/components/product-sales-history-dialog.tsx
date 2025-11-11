@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
-import type { Product, SaleRecord } from '@/lib/data';
+import type { Product, SaleRecord } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
 import { useMemo } from 'react';
 import { calculateItemTotal } from '@/lib/utils';

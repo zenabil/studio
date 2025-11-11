@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import React from 'react';
-import type { Product } from '@/lib/data';
+import type { Product } from '@/contexts/data-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Box, Package } from 'lucide-react';

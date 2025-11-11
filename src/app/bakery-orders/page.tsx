@@ -422,7 +422,3 @@ export default function BakeryOrdersPage() {
     </>
   );
 }
-
-    
-
-    

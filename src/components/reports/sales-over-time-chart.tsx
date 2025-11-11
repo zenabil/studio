@@ -1,8 +1,9 @@
+
 'use client';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { useLanguage } from '@/contexts/language-context';
 import { useMemo } from 'react';
-import type { SaleRecord } from '@/lib/data';
+import type { SaleRecord } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
 import { format } from 'date-fns';
 import { LineChart as LineChartIcon } from 'lucide-react';

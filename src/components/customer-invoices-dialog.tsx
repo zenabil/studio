@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Dialog,
@@ -10,7 +11,7 @@ import {
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table';
-import type { Customer, SaleRecord } from '@/lib/data';
+import type { Customer, SaleRecord } from '@/contexts/data-context';
 import { format } from 'date-fns';
 import { useSettings } from '@/contexts/settings-context';
 import { useMemo, useState, Fragment } from 'react';

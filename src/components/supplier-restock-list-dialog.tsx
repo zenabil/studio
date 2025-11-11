@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,7 +13,7 @@ import {
 import { Button } from './ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import type { Supplier, Product, SupplierInvoiceItem } from '@/lib/data';
+import type { Supplier, Product, SupplierInvoiceItem } from '@/contexts/data-context';
 import { format } from 'date-fns';
 import { Printer, Package, FilePlus } from 'lucide-react';
 import Image from 'next/image';

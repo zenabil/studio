@@ -1,8 +1,9 @@
+
 'use client';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { useLanguage } from '@/contexts/language-context';
 import { useMemo } from 'react';
-import type { SaleRecord } from '@/lib/data';
+import type { SaleRecord } from '@/contexts/data-context';
 import { useSettings } from '@/contexts/settings-context';
 import { calculateItemTotal } from '@/lib/utils';
 
