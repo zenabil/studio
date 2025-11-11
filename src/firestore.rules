@@ -7,25 +7,18 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-
-    // Rules for user-specific data subcollections
-    match /users/{userId}/{collection}/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Rules for the global userProfiles collection
+    match /users/{userId}/{collection}/{docId} {
+      allow read, write: if isOwner(userId);
+    }
+
     match /userProfiles/{userId} {
-      // Any signed-in user can read their own profile.
-      allow get: if request.auth != null && request.auth.uid == userId;
-      
-      // Only admins can list all profiles.
-      allow list: if isSignedIn() && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true;
-      
-      // Anyone can create their own user profile (signup).
-      allow create: if request.resource.data.email == request.auth.token.email;
-      
-      // Only admins can update other profiles. Users can't update their own status/role.
-      allow update: if isSignedIn() && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.email == request.auth.token.email;
     }
   }
 }
