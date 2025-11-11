@@ -238,14 +238,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return collection(firestore, path) as CollectionReference;
     }, [firestore, dataUserId]);
     
-    const productsRef = useMemoFirebase(() => getCollectionRef('products'), [getCollectionRef]);
-    const customersRef = useMemoFirebase(() => getCollectionRef('customers'), [getCollectionRef]);
-    const salesRef = useMemoFirebase(() => getCollectionRef('sales'), [getCollectionRef]);
-    const bakeryOrdersRef = useMemoFirebase(() => getCollectionRef('bakeryOrders'), [getCollectionRef]);
-    const suppliersRef = useMemoFirebase(() => getCollectionRef('suppliers'), [getCollectionRef]);
-    const supplierInvoicesRef = useMemoFirebase(() => getCollectionRef('supplierInvoices'), [getCollectionRef]);
-    const purchaseOrdersRef = useMemoFirebase(() => getCollectionRef('purchaseOrders'), [getCollectionRef]);
-    const expensesRef = useMemoFirebase(() => getCollectionRef('expenses'), [getCollectionRef]);
+    const productsRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/products`) : null, [firestore, dataUserId]);
+    const customersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/customers`) : null, [firestore, dataUserId]);
+    const salesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/sales`) : null, [firestore, dataUserId]);
+    const bakeryOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/bakeryOrders`) : null, [firestore, dataUserId]);
+    const suppliersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/suppliers`) : null, [firestore, dataUserId]);
+    const supplierInvoicesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
+    const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
+    const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -849,6 +849,7 @@ export const useData = () => {
     
 
     
+
 
 
 

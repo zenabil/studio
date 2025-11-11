@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -47,11 +48,20 @@ export function useUser(): UseUserResult {
       createdAt: userProfileData.createdAt,
     };
   }, [userProfileData]);
+  
+  const isUserLoading = useMemo(() => {
+    if (isAuthLoading) return true;
+    if (!user) return false; // If no user, auth is settled.
+    if (isProfileLoading) return true; // If there's a user, wait for profile.
+    if (!userProfile) return true; // Still loading if profile data isn't processed yet.
+    return false;
+  }, [isAuthLoading, user, isProfileLoading, userProfile]);
+
 
   return {
     user,
     firebaseApp,
     userProfile,
-    isUserLoading: isAuthLoading || (user != null && isProfileLoading),
+    isUserLoading,
   };
 }
