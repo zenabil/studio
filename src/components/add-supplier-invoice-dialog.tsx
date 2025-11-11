@@ -108,13 +108,6 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
-    defaultValues: {
-      supplierId: supplier.id,
-      items: initialItems || [],
-      amountPaid: 0,
-      priceUpdateStrategy: 'average',
-      purchaseOrderId: purchaseOrderId || undefined,
-    },
   });
 
   const { fields, append, remove } = useFieldArray({
