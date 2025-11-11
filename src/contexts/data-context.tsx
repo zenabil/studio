@@ -824,7 +824,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
     }, [dataUserId, firestore]);
 
-    const contextValue = {
+    const contextValue: DataContextType = {
         products: products || [],
         customers: customers || [],
         salesHistory: salesHistory || [],
@@ -865,10 +865,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         approveUser,
         revokeUser,
         restoreData,
+        setUserProfiles,
+        setUserProfilesLoading,
     };
 
     return (
-      <DataContext.Provider value={{...contextValue, setUserProfiles, setUserProfilesLoading}}>
+      <DataContext.Provider value={contextValue}>
         <AdminDataProvider>
           {children}
         </AdminDataProvider>
