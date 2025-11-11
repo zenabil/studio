@@ -138,7 +138,14 @@ export const calculateDebtAlerts = (
   return allAlerts.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 };
 
-
+/**
+ * Calculates the updated state of products after receiving a supplier invoice.
+ * This is a pure function that does not modify the original product list.
+ * @param currentProducts The original list of all products.
+ * @param invoiceItems The items included in the new supplier invoice.
+ * @param priceUpdateStrategy How to handle changes in purchase price.
+ * @returns A new array of products with updated stock and potentially updated prices.
+ */
 export const calculateUpdatedProductsForInvoice = (
   currentProducts: WithId<Product>[],
   invoiceItems: SupplierInvoiceItem[],

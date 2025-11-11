@@ -148,6 +148,14 @@ export interface UserProfile {
 
 export type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
 
+type AddSupplierInvoiceData = {
+  supplierId: string;
+  items: SupplierInvoiceItem[];
+  amountPaid?: number;
+  priceUpdateStrategy: 'master' | 'average' | 'none';
+  purchaseOrderId?: string;
+};
+
 
 interface DataContextType {
     products: WithId<Product>[];
@@ -178,7 +186,7 @@ interface DataContextType {
     addSupplier: (supplierData: Omit<Supplier, 'id' | 'balance'>) => Promise<void>;
     updateSupplier: (supplierId: string, supplierData: Partial<Omit<Supplier, 'id' | 'balance'>>) => Promise<void>;
     deleteSupplier: (supplierId: string) => Promise<void>;
-    addSupplierInvoice: (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: 'master' | 'average' | 'none'; purchaseOrderId?: string; }) => Promise<void>;
+    addSupplierInvoice: (invoiceData: AddSupplierInvoiceData) => Promise<void>;
     addPurchaseOrder: (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => Promise<void>;
     updatePurchaseOrder: (poId: string, poData: Partial<Omit<PurchaseOrder, 'id' | 'createdAt'>>) => Promise<void>;
     deletePurchaseOrder: (poId: string) => Promise<void>;
@@ -639,7 +647,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         toast({ title: t.suppliers.supplierDeleted });
     }, [getCollectionRef, supplierInvoices, t, toast]);
     
-    const addSupplierInvoice = useCallback(async (invoiceData: { supplierId: string; items: SupplierInvoiceItem[]; amountPaid?: number; priceUpdateStrategy: 'master' | 'average' | 'none'; purchaseOrderId?: string; }) => {
+    const addSupplierInvoice = useCallback(async (invoiceData: AddSupplierInvoiceData) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
         await runTransaction(firestore, async (transaction) => {
@@ -822,7 +830,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         });
     }, [dataUserId, firestore]);
 
-    const contextValue = {
+    const contextValue: DataContextType = {
         products: products || [],
         customers: customers || [],
         salesHistory: salesHistory || [],
@@ -863,10 +871,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         approveUser,
         revokeUser,
         restoreData,
+        setUserProfiles,
+        setUserProfilesLoading,
     };
 
     return (
-      <DataContext.Provider value={{...contextValue, setUserProfiles, setUserProfilesLoading}}>
+      <DataContext.Provider value={contextValue}>
         <AdminDataProvider>
           {children}
         </AdminDataProvider>
