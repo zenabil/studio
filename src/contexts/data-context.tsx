@@ -566,43 +566,62 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addSupplierInvoice = useCallback(async (invoiceData: AddSupplierInvoiceData) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
-        const batch = writeBatch(firestore);
-        
-        const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
-        const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
-        const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
-        batch.set(invoiceRef, newInvoice);
-        
-        const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy);
-        
-        for (const item of invoiceData.items) {
-            const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
-            const updatedProductData = updatedProducts.find(p => p.id === item.productId);
-            if(updatedProductData) {
-                batch.update(productRef, {
-                    stock: updatedProductData.stock,
-                    purchasePrice: updatedProductData.purchasePrice,
-                });
+        try {
+            const batch = writeBatch(firestore);
+            
+            const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
+            const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
+            
+            const newInvoiceData: Omit<SupplierInvoice, 'id'> = { 
+                date: new Date().toISOString(), 
+                isPayment: false, 
+                totalAmount, 
+                ...invoiceData 
+            };
+    
+            // Sanitize the object to convert undefined to null
+            const sanitizedInvoice: { [key: string]: any } = {};
+            for (const key in newInvoiceData) {
+                if (Object.prototype.hasOwnProperty.call(newInvoiceData, key)) {
+                    const value = (newInvoiceData as any)[key];
+                    sanitizedInvoice[key] = value === undefined ? null : value;
+                }
             }
-        }
-    
-        const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
-        const supplierDoc = await getDoc(supplierRef);
-        if (supplierDoc.exists()) {
-            const supplier = supplierDoc.data();
-            const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
-            batch.update(supplierRef, { balance: newBalance });
-        }
-    
-        if (invoiceData.purchaseOrderId) {
-            const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
-            batch.update(poRef, { status: 'completed' });
-        }
-    
-        await batch.commit().catch(error => {
+
+            batch.set(invoiceRef, sanitizedInvoice);
+            
+            const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy);
+            
+            for (const item of invoiceData.items) {
+                const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
+                const updatedProductData = updatedProducts.find(p => p.id === item.productId);
+                if(updatedProductData) {
+                    batch.update(productRef, {
+                        stock: updatedProductData.stock,
+                        purchasePrice: updatedProductData.purchasePrice,
+                    });
+                }
+            }
+        
+            const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
+            const supplierDoc = await getDoc(supplierRef);
+            if (supplierDoc.exists()) {
+                const supplier = supplierDoc.data();
+                const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
+                batch.update(supplierRef, { balance: newBalance });
+            }
+        
+            if (invoiceData.purchaseOrderId) {
+                const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
+                batch.update(poRef, { status: 'completed' });
+            }
+        
+            await batch.commit();
+
+        } catch(error) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
             throw error;
-        });
+        };
     }, [firestore, dataUserId, products]);
 
     const addPurchaseOrder = useCallback(async (poData: Omit<PurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
@@ -812,3 +831,4 @@ export const useData = () => {
     
 
     
+
