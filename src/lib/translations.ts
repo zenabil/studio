@@ -462,6 +462,10 @@ export const translations = {
       deleteInstanceOnly: "Supprimer l'instance d'aujourd'hui uniquement",
       deletePattern: "Supprimer toutes les instances et arrêter la récurrence",
       patternDeleted: "Modèle de commande récurrente supprimé.",
+      oldUnpaidOrders: "Anciennes commandes non payées",
+      oldUnpaidOrdersDescription: "Ce sont des commandes des jours précédents qui n'ont pas encore été marquées comme payées.",
+      markAsPaid: "Marquer comme payé",
+      noOrdersToday: "Aucune commande pour aujourd'hui.",
     },
     expenses: {
         title: "Gestion des Dépenses",
@@ -989,6 +993,10 @@ export const translations = {
       deleteInstanceOnly: "حذف نسخة اليوم فقط",
       deletePattern: "حذف جميع النسخ وإيقاف التكرار",
       patternDeleted: "تم حذف نمط الطلب المتكرر.",
+      oldUnpaidOrders: "الطلبات القديمة غير المدفوعة",
+      oldUnpaidOrdersDescription: "هذه طلبات من الأيام السابقة لم يتم تحديدها كمدفوعة بعد.",
+      markAsPaid: "تحديد كمدفوع",
+      noOrdersToday: "لا توجد طلبات لهذا اليوم.",
     },
     expenses: {
         title: "إدارة المصروفات",
@@ -1059,3 +1067,5 @@ export const translations = {
     }
   },
 };
+
+    

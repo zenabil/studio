@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, CheckCircle, XCircle, Package, PackageCheck, Star, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, CheckCircle, XCircle, Package, PackageCheck, Star, Pencil, Wallet } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { AddBakeryOrderDialog } from '@/components/add-bakery-order-dialog';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -66,10 +66,6 @@ export default function BakeryOrdersPage() {
     isLoading, 
     setAsRecurringTemplate, 
     deleteRecurringPattern,
-    processUnpaidBakeryOrders,
-    products,
-    customers,
-    addCustomer
   } = useData();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -98,10 +94,6 @@ export default function BakeryOrdersPage() {
   useEffect(() => {
     if (!isLoading && !isInitialized) {
         const initializeDailyOrders = async () => {
-            // Process old unpaid orders first
-            await processUnpaidBakeryOrders();
-
-            // Then, create today's recurring orders
             const deletedForToday = getDeletedRecurringForToday();
             const recurringTemplates = bakeryOrders.filter(o => o.isRecurring);
             const addPromises: Promise<void>[] = [];
@@ -133,27 +125,31 @@ export default function BakeryOrdersPage() {
 
         initializeDailyOrders();
     }
-  }, [isLoading, isInitialized, bakeryOrders, addBakeryOrder, processUnpaidBakeryOrders]);
+  }, [isLoading, isInitialized, bakeryOrders, addBakeryOrder]);
 
 
-  const todaysOrders = useMemo(() => bakeryOrders.filter(o => isToday(new Date(o.date))), [bakeryOrders]);
+  const todaysOrders = useMemo(() => {
+    return bakeryOrders
+      .filter(o => isToday(new Date(o.date)))
+      .sort((a, b) => {
+        if (a.received !== b.received) return Number(a.received) - Number(b.received);
+        if (a.isRecurring !== b.isRecurring) return Number(b.isRecurring) - Number(a.isRecurring);
+        return a.name.localeCompare(b.name);
+      });
+  }, [bakeryOrders]);
+  
+  const unpaidOldOrders = useMemo(() => {
+      const today = startOfToday();
+      return bakeryOrders
+          .filter(o => !o.paid && isBefore(new Date(o.date), today))
+          .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [bakeryOrders]);
+
 
   const totalBreadRequired = useMemo(() => {
     return todaysOrders
       .filter(order => !order.received)
       .reduce((total, order) => total + order.quantity, 0);
-  }, [todaysOrders]);
-
-  const sortedOrders = useMemo(() => {
-    return [...todaysOrders].sort((a, b) => {
-        if (a.received !== b.received) {
-            return Number(a.received) - Number(b.received);
-        }
-        if (a.isRecurring !== b.isRecurring) {
-            return Number(b.isRecurring) - Number(a.isRecurring);
-        }
-        return a.name.localeCompare(b.name);
-    });
   }, [todaysOrders]);
 
   const handleOpenAddDialog = () => {
@@ -177,7 +173,7 @@ export default function BakeryOrdersPage() {
         order => order.name.toLowerCase() === orderNameLower && order.id !== orderId
     );
 
-    if (orderExists) {
+    if (orderExists && !orderId) { // Only check for new orders, allow editing name for existing.
         toast({
             variant: 'destructive',
             title: t.errors.title,
@@ -258,6 +254,11 @@ export default function BakeryOrdersPage() {
     deleteRecurringPattern(nameToDelete);
     handleCloseDeleteDialog();
   };
+  
+  const handleMarkAsPaid = (orderId: string) => {
+      updateBakeryOrder(orderId, { paid: true });
+      toast({ title: t.bakeryOrders.orderUpdated });
+  }
 
   if (isLoading) {
       return <Loading />;
@@ -283,7 +284,6 @@ export default function BakeryOrdersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t.bakeryOrders.date}</TableHead>
                   <TableHead>{t.bakeryOrders.name}</TableHead>
                   <TableHead className="text-center">{t.bakeryOrders.quantity}</TableHead>
                   <TableHead className="text-center">{t.bakeryOrders.status}</TableHead>
@@ -292,9 +292,8 @@ export default function BakeryOrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedOrders.map((order) => (
+                {todaysOrders.length > 0 ? todaysOrders.map((order) => (
                   <TableRow key={order.id} className={order.received ? 'bg-muted/50 text-muted-foreground' : ''}>
-                    <TableCell>{format(new Date(order.date), 'PP')}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                        {order.isRecurring && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
                        {order.name}
@@ -348,7 +347,11 @@ export default function BakeryOrdersPage() {
                        </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">{t.bakeryOrders.noOrdersToday}</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -359,6 +362,42 @@ export default function BakeryOrdersPage() {
             </div>
           </CardFooter>
         </Card>
+        
+        {unpaidOldOrders.length > 0 && (
+          <Card>
+            <CardHeader>
+                <CardTitle>{t.bakeryOrders.oldUnpaidOrders}</CardTitle>
+                <CardDescription>{t.bakeryOrders.oldUnpaidOrdersDescription}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t.bakeryOrders.date}</TableHead>
+                            <TableHead>{t.bakeryOrders.name}</TableHead>
+                            <TableHead className="text-center">{t.bakeryOrders.quantity}</TableHead>
+                            <TableHead className="text-right">{t.bakeryOrders.actions}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {unpaidOldOrders.map((order) => (
+                             <TableRow key={order.id} className="bg-destructive/10">
+                                <TableCell>{format(new Date(order.date), 'PP')}</TableCell>
+                                <TableCell className="font-medium">{order.name}</TableCell>
+                                <TableCell className="text-center">{order.quantity}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button size="sm" onClick={() => handleMarkAsPaid(order.id)}>
+                                        <Wallet className="mr-2 h-4 w-4"/>
+                                        {t.bakeryOrders.markAsPaid}
+                                    </Button>
+                                </TableCell>
+                             </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
       <AddBakeryOrderDialog
         isOpen={isDialogOpen}
@@ -383,3 +422,5 @@ export default function BakeryOrdersPage() {
     </>
   );
 }
+
+    
