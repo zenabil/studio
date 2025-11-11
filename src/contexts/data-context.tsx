@@ -570,7 +570,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             const batch = writeBatch(firestore);
             
             const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
-            const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
+            const invoiceCollectionRef = collection(firestore, `users/${dataUserId}/supplierInvoices`);
+            const invoiceRef = doc(invoiceCollectionRef);
             
             const newInvoiceData: Omit<SupplierInvoice, 'id'> = { 
                 date: new Date().toISOString(), 
@@ -678,7 +679,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             const batch = writeBatch(firestore);
 
             // 1. Create a payment record in supplierInvoices
-            const paymentRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
+            const invoiceCollectionRef = collection(firestore, `users/${dataUserId}/supplierInvoices`);
+            const paymentRef = doc(invoiceCollectionRef);
             const paymentRecord: Omit<SupplierInvoice, 'id'> = { 
                 supplierId, 
                 date: new Date().toISOString(), 
@@ -847,5 +849,6 @@ export const useData = () => {
     
 
     
+
 
 
