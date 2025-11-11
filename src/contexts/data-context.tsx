@@ -566,38 +566,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const addSupplierInvoice = useCallback(async (invoiceData: AddSupplierInvoiceData) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
-        await runTransaction(firestore, async (transaction) => {
-            const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
-            const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
-            const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
-            transaction.set(invoiceRef, newInvoice);
-            
-            const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy);
-            
-            for (const item of invoiceData.items) {
-                const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
-                const updatedProductData = updatedProducts.find(p => p.id === item.productId);
-                if(updatedProductData) {
-                    transaction.update(productRef, {
-                        stock: updatedProductData.stock,
-                        purchasePrice: updatedProductData.purchasePrice,
-                    });
-                }
+        const batch = writeBatch(firestore);
+        
+        const totalAmount = invoiceData.items.reduce((acc, item) => acc + (item.quantity * item.purchasePrice), 0);
+        const invoiceRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
+        const newInvoice: Omit<SupplierInvoice, 'id'> = { date: new Date().toISOString(), isPayment: false, totalAmount, ...invoiceData };
+        batch.set(invoiceRef, newInvoice);
+        
+        const updatedProducts = calculateUpdatedProductsForInvoice((products || []), invoiceData.items, invoiceData.priceUpdateStrategy);
+        
+        for (const item of invoiceData.items) {
+            const productRef = doc(firestore, `users/${dataUserId}/products/${item.productId}`);
+            const updatedProductData = updatedProducts.find(p => p.id === item.productId);
+            if(updatedProductData) {
+                batch.update(productRef, {
+                    stock: updatedProductData.stock,
+                    purchasePrice: updatedProductData.purchasePrice,
+                });
             }
-
-            const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
-            const supplierDoc = await transaction.get(supplierRef);
-            if (supplierDoc.exists()) {
-                const supplier = supplierDoc.data();
-                const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
-                transaction.update(supplierRef, { balance: newBalance });
-            }
-
-            if (invoiceData.purchaseOrderId) {
-                const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
-                transaction.update(poRef, { status: 'completed' });
-            }
-        }).catch(error => {
+        }
+    
+        const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${invoiceData.supplierId}`);
+        const supplierDoc = await getDoc(supplierRef);
+        if (supplierDoc.exists()) {
+            const supplier = supplierDoc.data();
+            const newBalance = (supplier.balance || 0) + (totalAmount - (invoiceData.amountPaid || 0));
+            batch.update(supplierRef, { balance: newBalance });
+        }
+    
+        if (invoiceData.purchaseOrderId) {
+            const poRef = doc(firestore, `users/${dataUserId}/purchaseOrders/${invoiceData.purchaseOrderId}`);
+            batch.update(poRef, { status: 'completed' });
+        }
+    
+        await batch.commit().catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
             throw error;
         });
