@@ -4,17 +4,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isSignedIn() {
-      return request.auth != null;
+    // Default deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
     }
     
+    // Allow users to read and write to their own subcollections
     match /users/{userId}/{collection}/{docId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Allow any authenticated user to read all user profiles (for admin contact info)
+    // and create their own profile upon signup.
     match /userProfiles/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.email == request.auth.token.email;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Admins can update status, but we are removing admin logic for now to simplify
+      // allow update: if isOwner(userId) || (get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true)
     }
   }
 }

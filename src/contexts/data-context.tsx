@@ -674,20 +674,36 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const makePaymentToSupplier = useCallback(async (supplierId: string, amount: number) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
         
-        await runTransaction(firestore, async (transaction) => {
+        try {
+            const batch = writeBatch(firestore);
+
+            // 1. Create a payment record in supplierInvoices
             const paymentRef = doc(collection(firestore, `users/${dataUserId}/supplierInvoices`));
-            const paymentRecord: Omit<SupplierInvoice, 'id'> = { supplierId, date: new Date().toISOString(), items: [], totalAmount: amount, isPayment: true, amountPaid: amount };
-            transaction.set(paymentRef, paymentRecord);
+            const paymentRecord: Omit<SupplierInvoice, 'id'> = { 
+                supplierId, 
+                date: new Date().toISOString(), 
+                items: [], 
+                totalAmount: amount, 
+                isPayment: true, 
+                amountPaid: amount 
+            };
+            batch.set(paymentRef, paymentRecord);
             
+            // 2. Update the supplier's balance
             const supplierRef = doc(firestore, `users/${dataUserId}/suppliers/${supplierId}`);
-            const supplierDoc = await transaction.get(supplierRef);
+            const supplierDoc = await getDoc(supplierRef); // We need to get the current balance first
             if(supplierDoc.exists()) {
-                transaction.update(supplierRef, { balance: supplierDoc.data().balance - amount });
+                const currentBalance = supplierDoc.data().balance || 0;
+                batch.update(supplierRef, { balance: currentBalance - amount });
             }
-        }).catch(error => {
+
+            // 3. Commit the batch
+            await batch.commit();
+
+        } catch (error) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { supplierPayment: { supplierId, amount } } }));
             throw error;
-        });
+        }
     }, [firestore, dataUserId]);
 
     const addExpense = useCallback(async (expenseData: Omit<Expense, 'id'>) => {
@@ -831,4 +847,5 @@ export const useData = () => {
     
 
     
+
 
