@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { CartItem, Customer, SaleRecord, Product, SupplierInvoiceItem } from "./data";
+import type { CartItem, Customer, SaleRecord, Product, SupplierInvoiceItem } from "./contexts/data-context";
 import { addDays, differenceInCalendarDays, isBefore, addMonths, set } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
@@ -39,7 +39,7 @@ export interface DebtAlert {
   customerName: string;
   balance: number;
   dueDate: Date;
-  phone: string;
+  phone: string | undefined;
   isOverdue: boolean;
 }
 
@@ -127,7 +127,7 @@ export const calculateDebtAlerts = (
                   customerName: customer.name,
                   balance: customer.balance,
                   dueDate: alertDueDate,
-                  phone: customer.phone,
+                  phone: customer.phone || '',
                   isOverdue: daysUntilDue < 0,
               });
           }
@@ -143,7 +143,7 @@ export const calculateDebtAlerts = (
  * This is a pure function that does not modify the original product list.
  * @param currentProducts The original list of all products.
  * @param invoiceItems The items included in the new supplier invoice.
- * @param priceUpdateStrategy How to handle changes in purchase price.
+ * @param priceUpdateStrategy How to handle changes in purchase price. ('master': overwrite, 'average': calculate weighted average, 'none': do nothing).
  * @returns A new array of products with updated stock and potentially updated prices.
  */
 export const calculateUpdatedProductsForInvoice = (
