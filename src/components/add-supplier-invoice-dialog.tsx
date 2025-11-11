@@ -45,15 +45,6 @@ import { useSettings } from '@/contexts/settings-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AddProductDialog } from '@/components/add-product-dialog';
 
-interface AddSupplierInvoiceDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (values: z.infer<typeof formSchema>) => void;
-  supplier: Supplier;
-  initialItems?: SupplierInvoiceItem[];
-  purchaseOrderId?: string;
-}
-
 const invoiceItemSchema = z.object({
   productId: z.string().min(1, "Please select a product."),
   productName: z.string(),
@@ -71,6 +62,17 @@ const formSchema = z.object({
   priceUpdateStrategy: z.enum(['master', 'average', 'none']).default('average'),
   purchaseOrderId: z.string().optional(),
 });
+
+type FormSchemaType = z.infer<typeof formSchema>;
+
+interface AddSupplierInvoiceDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (values: FormSchemaType) => void;
+  supplier: Supplier;
+  initialItems?: SupplierInvoiceItem[];
+  purchaseOrderId?: string;
+}
 
 export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, initialItems, purchaseOrderId }: AddSupplierInvoiceDialogProps) {
   const { t } = useLanguage();
@@ -103,7 +105,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
   }, [products, supplier.productCategory]);
 
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
     defaultValues: {
@@ -173,7 +175,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     }
   }, [isOpen, supplier, form, initialItems, purchaseOrderId]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: FormSchemaType) {
     setIsSaving(true);
     // onSave is not async, so we don't need a try/finally here.
     // The parent component handles the async logic and closes the dialog.
