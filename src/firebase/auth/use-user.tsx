@@ -32,7 +32,7 @@ export function useUser(): UseUserResult {
 
   const userProfileDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, `users/${user.uid}/profile/data`);
+    return doc(firestore, `userProfiles/${user.uid}`);
   }, [firestore, user?.uid]);
 
   const { data: userProfileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileDocRef);

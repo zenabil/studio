@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -21,7 +22,7 @@ export const createPendingUser = functions.https.onCall(async (data, context) =>
       if (existingUser) {
         // If the user exists and their profile is just pending, we don't need to do anything.
         // If they exist and are approved/revoked, we should prevent creating a new account.
-         const profileRef = db.collection('users').doc(existingUser.uid).collection('profile').doc('data');
+         const profileRef = db.collection('userProfiles').doc(existingUser.uid);
          const profileSnap = await profileRef.get();
          if (profileSnap.exists()) {
              throw new functions.https.HttpsError('already-exists', 'This email address is already in use.');
@@ -46,7 +47,7 @@ export const createPendingUser = functions.https.onCall(async (data, context) =>
         subscriptionEndsAt: null
       };
 
-      await db.collection('users').doc(userRecord.uid).collection('profile').doc('data').set(profileData);
+      await db.collection('userProfiles').doc(userRecord.uid).set(profileData);
       
       return { status: 'success', uid: userRecord.uid };
   
@@ -65,7 +66,7 @@ export const approveUser = onCall(async (request) => {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
   
-    const adminRef = db.collection('users').doc(request.auth.uid).collection('profile').doc('data');
+    const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
   
     if (!adminSnap.exists || !adminSnap.data()?.isAdmin) {
@@ -77,7 +78,7 @@ export const approveUser = onCall(async (request) => {
       throw new HttpsError("invalid-argument", "The function must be called with a 'userId' argument.");
     }
 
-    const userProfileRef = db.collection('users').doc(userIdToApprove).collection('profile').doc('data');
+    const userProfileRef = db.collection('userProfiles').doc(userIdToApprove);
     await userProfileRef.update({ status: "approved" });
   
     return { status: "success", message: `User ${userIdToApprove} approved.` };
@@ -88,7 +89,7 @@ export const revokeUser = onCall(async (request) => {
         throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
   
-    const adminRef = db.collection('users').doc(request.auth.uid).collection('profile').doc('data');
+    const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
   
     if (!adminSnap.exists || !adminSnap.data()?.isAdmin) {
@@ -100,7 +101,7 @@ export const revokeUser = onCall(async (request) => {
         throw new HttpsError("invalid-argument", "The function must be called with a 'userId' argument.");
     }
   
-    const userProfileRef = db.collection('users').doc(userIdToRevoke).collection('profile').doc('data');
+    const userProfileRef = db.collection('userProfiles').doc(userIdToRevoke);
     await userProfileRef.update({ status: "revoked" });
   
     return { status: "success", message: `User ${userIdToRevoke} access revoked.` };
@@ -124,7 +125,7 @@ export const updateUserProfile = onCall(async (request) => {
     const { userId: dataUserId, ...dataToSave } = profileData;
   
     const firestore = getFirestore();
-    const userProfileRef = firestore.collection("users").doc(userId).collection("profile").doc("data");
+    const userProfileRef = firestore.collection("userProfiles").doc(userId);
   
     try {
       await userProfileRef.update(dataToSave);

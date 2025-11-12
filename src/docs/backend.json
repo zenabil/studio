@@ -288,7 +288,7 @@
       {
         "path": "/userProfiles/{userId}",
         "schema": "UserProfile",
-        "description": "Stores profile information for each user."
+        "description": "Top-level collection storing profile information for each user."
       }
     ]
   },

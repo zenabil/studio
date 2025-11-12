@@ -1,4 +1,5 @@
 
+'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -207,7 +208,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, userProfile, isUserLoading } = useUser();
+    const { user, userProfile: authUserProfile, isUserLoading } = useUser();
     const firestore = useFirestore();
 
     const dataUserId = user?.uid;
@@ -220,12 +221,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoicesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
     const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
+    const allUserProfilesRef = useMemoFirebase(() => (firestore && authUserProfile?.isAdmin) ? collection(firestore, 'userProfiles') : null, [firestore, authUserProfile?.isAdmin]);
     
-    // Admins can see all profiles, which are now nested under each user. This is complex and generally not done on the client.
-    // For this app's purpose, we'll simplify and assume an admin might fetch these one by one if needed, or use a Cloud Function.
-    // The main `userProfiles` state will now primarily hold the current user's profile and any others explicitly fetched.
-    const [userProfiles, setUserProfiles] = useState<WithId<UserProfile>[]>([]);
-
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
     const { data: salesHistory, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
@@ -234,21 +231,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
-    
-    useEffect(() => {
-      if (userProfile) {
-          setUserProfiles(currentProfiles => {
-              const profileExists = currentProfiles.some(p => p.id === userProfile.id);
-              if (!profileExists) {
-                  return [...currentProfiles, userProfile];
-              }
-              return currentProfiles.map(p => p.id === userProfile.id ? userProfile : p);
-          });
-      }
-    }, [userProfile]);
+    const { data: allUserProfilesData, isLoading: allUserProfilesLoading } = useCollection<UserProfile>(allUserProfilesRef);
 
+    const userProfiles = useMemo(() => {
+        const profiles: WithId<UserProfile>[] = allUserProfilesData || [];
+        // Ensure the current user's profile is always in the list if they are an admin
+        if (authUserProfile && authUserProfile.isAdmin && !profiles.some(p => p.id === authUserProfile.id)) {
+            profiles.push(authUserProfile);
+        } else if (authUserProfile && !authUserProfile.isAdmin) {
+            return [authUserProfile];
+        }
+        return profiles;
+    }, [allUserProfilesData, authUserProfile]);
 
-    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading;
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (authUserProfile?.isAdmin && allUserProfilesLoading);
     
     const addProduct = useCallback(async (productData: ProductFormData) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
@@ -751,17 +747,21 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
-        if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
-        const docRef = doc(firestore, 'users', dataUserId, 'profile', 'data');
-        return updateDoc(docRef, profileData).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: profileData }));
+        const functions = getFunctions();
+        const updateUser = httpsCallable(functions, 'updateUserProfile');
+        try {
+            // Pass the userId in the data payload for the function to use
+            await updateUser({ userId, ...profileData });
+        } catch (error) {
+            console.error("Cloud function error:", error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `userProfiles/${userId}`, operation: 'update', requestResourceData: profileData }));
             throw error;
-        });
-    }, [firestore, dataUserId]);
+        }
+    }, []);
     
     const updateUserSubscription = useCallback(async (userId: string, subscriptionEndsAt: string | null) => {
         if (!firestore) throw new Error("User not authenticated or data path not available.");
-        const userProfileRef = doc(firestore, 'users', userId, 'profile', 'data');
+        const userProfileRef = doc(firestore, 'userProfiles', userId);
         
         await updateDoc(userProfileRef, { subscriptionEndsAt }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userProfileRef.path, operation: 'update', requestResourceData: { subscriptionEndsAt } }));
