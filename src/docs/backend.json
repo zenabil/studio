@@ -241,7 +241,7 @@
             "description": "The date when the user's subscription or access expires."
         }
       },
-      "required": ["email", "name", "createdAt", "status", "isAdmin"]
+      "required": ["email", "createdAt", "status", "isAdmin"]
     }
   },
   "firestore": {
