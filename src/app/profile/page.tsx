@@ -111,7 +111,10 @@ export default function ProfilePage() {
                             <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
                             <AvatarFallback>{userInitial}</AvatarFallback>
                         </Avatar>
-                        <CardTitle>{user?.displayName || user?.email}</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            {user?.displayName || user?.email}
+                            {userProfile?.status === 'approved' && <ShieldCheck className="h-6 w-6 text-blue-500" />}
+                        </CardTitle>
                         <CardDescription>{user?.email}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
