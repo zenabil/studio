@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ShieldCheck, ShieldOff, LoaderCircle, Lock, CalendarIcon, Search } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -338,3 +338,5 @@ export default function UsersPage() {
     </div>
   );
 }
+
+    
