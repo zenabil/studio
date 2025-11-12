@@ -82,6 +82,7 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
   
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [addProductTargetIndex, setAddProductTargetIndex] = useState<number | null>(null);
+  const [totalAmount, setTotalAmount] = useState(0);
 
   const categorizedProducts = useMemo(() => {
     const grouped: { [category: string]: Product[] } = {};
@@ -116,16 +117,20 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
   });
 
   const watchedItems = form.watch('items');
-  const totalAmount = useMemo(() => {
+  
+  useEffect(() => {
     if (!watchedItems) {
-      return 0;
+      setTotalAmount(0);
+      return;
     }
-    return watchedItems.reduce((acc, item) => {
+    const newTotal = watchedItems.reduce((acc, item) => {
         const quantity = Number(item.quantity) || 0;
         const price = Number(item.purchasePrice) || 0;
         return acc + (quantity * price);
     }, 0);
+    setTotalAmount(newTotal);
   }, [watchedItems]);
+
 
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
@@ -457,4 +462,3 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     </>
   );
 }
-
