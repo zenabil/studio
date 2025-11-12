@@ -25,7 +25,7 @@ import {
     getDoc,
     runTransaction,
 } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
 import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
