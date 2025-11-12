@@ -746,12 +746,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
-        const docRef = doc(firestore, 'userProfiles', userId);
-        return updateDoc(docRef, profileData).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: profileData }));
+        const functions = getFunctions();
+        const updateUser = httpsCallable(functions, 'updateUserProfile');
+        try {
+            await updateUser({ userId, ...profileData });
+        } catch (error) {
+            console.error("Cloud function error:", error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `userProfiles/${userId}`, operation: 'update', requestResourceData: profileData }));
             throw error;
-        });
-    }, [firestore]);
+        }
+    }, []);
     
     const updateUserSubscription = useCallback(async (userId: string, subscriptionEndsAt: string | null) => {
         if (!firestore) throw new Error("User not authenticated or data path not available.");
