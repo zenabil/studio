@@ -63,7 +63,6 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       boxPrice: z.coerce.number().min(0).optional().nullable(),
       barcodes: z.string(),
       imageUrl: z.string().optional().nullable(),
-      imageFile: z.instanceof(File).optional().nullable(),
     }).superRefine((data, ctx) => {
         // Barcode check
         const barcodes = data.barcodes.split(',').map(b => b.trim()).filter(Boolean);
@@ -122,7 +121,6 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
       boxPrice: null,
       barcodes: '',
       imageUrl: null,
-      imageFile: null,
     },
   });
   
@@ -142,7 +140,6 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           boxPrice: productToEdit.boxPrice || null,
           barcodes: (productToEdit.barcodes || []).join(', '),
           imageUrl: productToEdit.imageUrl || null,
-          imageFile: null,
         });
         setImagePreview(productToEdit.imageUrl || null);
       } else {
@@ -157,7 +154,6 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
           boxPrice: null,
           barcodes: initialBarcode || '',
           imageUrl: null,
-          imageFile: null,
         });
         setImagePreview(null);
       }
@@ -169,20 +165,11 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     try {
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
       
-      let finalImageUrl = values.imageUrl;
-      if (values.imageFile) {
-        // If there's a new file, the data-context will handle the upload.
-        // We don't need to do anything here except pass the file.
-      } else if (imagePreview) {
-        // If there is a preview but no new file, it means we are keeping the old image.
-        finalImageUrl = imagePreview;
-      }
-
       const dataToSave: ProductFormData = {
         ...values,
         quantityPerBox: values.quantityPerBox === undefined ? null : values.quantityPerBox,
         boxPrice: values.boxPrice === undefined ? null : values.boxPrice,
-        imageUrl: finalImageUrl,
+        imageUrl: imagePreview,
         barcodes: barcodesArray
       };
 
@@ -222,8 +209,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     reader.onload = (e) => {
         const dataUrl = e.target?.result as string;
         setImagePreview(dataUrl);
-        form.setValue('imageFile', file, { shouldDirty: true });
-        form.setValue('imageUrl', dataUrl, { shouldDirty: true }); // Also update imageUrl for preview consistency
+        form.setValue('imageUrl', dataUrl, { shouldDirty: true });
     };
     reader.onerror = () => {
          toast({
@@ -291,7 +277,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
                         type="file"
                         ref={imageInputRef}
                         onChange={handleImageFileChange}
-                        accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                        accept="image/png, image/jpeg, image/gif"
                         className="hidden"
                      />
                   </div>
@@ -427,3 +413,5 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     </>
   );
 }
+
+    

@@ -25,7 +25,6 @@ import {
     getDoc,
     runTransaction,
 } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-context';
 import { calculateUpdatedProductsForInvoice, WithId } from '@/lib/utils';
@@ -245,33 +244,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (authUserProfile?.isAdmin && profilesLoading);
     
-    const uploadImage = useCallback(async (file: File): Promise<string> => {
-        if (!dataUserId || !firebaseApp) throw new Error("User not authenticated or Firebase app not available.");
-        
-        const storage = getStorage(firebaseApp);
-        const filePath = `users/${dataUserId}/product_images/${Date.now()}-${file.name}`;
-        const imageRef = storageRef(storage, filePath);
-        
-        await uploadBytes(imageRef, file);
-        const downloadURL = await getDownloadURL(imageRef);
-        
-        return downloadURL;
-    }, [dataUserId, firebaseApp]);
-
     const addProduct = useCallback(async (productData: ProductFormData) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
         const { imageFile, ...restOfProductData } = productData;
-        let finalImageUrl = productData.imageUrl || null;
-
-        if (imageFile) {
-            finalImageUrl = await uploadImage(imageFile);
-        }
 
         const newProductData = {
             ...restOfProductData,
-            imageUrl: finalImageUrl,
+            imageUrl: productData.imageUrl || null, // The imageUrl is now a Data URL from the form
             createdAt: serverTimestamp(),
         };
         
@@ -291,22 +272,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             });
         
         return { ...sanitizedData, id: docRef.id } as WithId<Product>;
-    }, [firestore, dataUserId, uploadImage]);
+    }, [firestore, dataUserId]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<ProductFormData>) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
         if (!collectionRef) return;
         
         const { imageFile, ...restOfProductData } = productData;
-        let finalImageUrl = productData.imageUrl;
-
-        if (imageFile) {
-            finalImageUrl = await uploadImage(imageFile);
-        }
 
         const dataToUpdate = {
             ...restOfProductData,
-            imageUrl: finalImageUrl,
+            imageUrl: productData.imageUrl, // The imageUrl is now a Data URL from the form
         };
 
         const sanitizedData: any = { ...dataToUpdate };
@@ -323,7 +299,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         await updateDoc(docRef, sanitizedData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: sanitizedData }));
         });
-    }, [firestore, dataUserId, uploadImage]);
+    }, [firestore, dataUserId]);
 
     const deleteProduct = useCallback(async (productId: string) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
@@ -849,5 +825,7 @@ export const useData = () => {
     }
     return context;
 };
+
+    
 
     
