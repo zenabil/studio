@@ -24,7 +24,7 @@ import { UserProfile } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, ShieldOff, LoaderCircle, Lock } from 'lucide-react';
+import { ShieldCheck, ShieldOff, LoaderCircle, Lock, CalendarIcon } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSettings } from '@/contexts/settings-context';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 
 function AdminPasswordPrompt({ onCorrectPassword }: { onCorrectPassword: () => void }) {
@@ -83,10 +87,53 @@ function AdminPasswordPrompt({ onCorrectPassword }: { onCorrectPassword: () => v
   );
 }
 
+function UserSubscriptionCell({ profile }: { profile: UserProfile }) {
+    const { t } = useLanguage();
+    const { toast } = useToast();
+    const { updateUserSubscription } = useData();
+    const [date, setDate] = useState<Date | undefined>(
+        profile.subscriptionEndsAt ? new Date(profile.subscriptionEndsAt) : undefined
+    );
+
+    const handleUpdate = async () => {
+        const newDate = date ? date.toISOString() : null;
+        await updateUserSubscription(profile.id, newDate);
+        toast({ title: t.users.subscriptionUpdated });
+    };
+
+    return (
+        <div className="flex items-center gap-2 justify-end">
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant={"outline"}
+                        className={cn(
+                            "w-[200px] justify-start text-left font-normal",
+                            !date && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : <span>{t.users.noExpiration}</span>}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        initialFocus
+                    />
+                </PopoverContent>
+            </Popover>
+            <Button size="sm" onClick={handleUpdate}>{t.users.update}</Button>
+        </div>
+    );
+}
+
 export default function UsersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { userProfiles, approveUser, revokeUser, isLoading } = useData();
+  const { userProfiles, approveUser, revokeUser, isLoading, updateUserSubscription } = useData();
   const { user } = useUser();
   const { isAuthorized, setIsAuthorized } = useAdminAuth();
   const { settings, setSettings } = useSettings();
@@ -179,6 +226,7 @@ export default function UsersPage() {
               <TableRow>
                 <TableHead>{t.users.email}</TableHead>
                 <TableHead>{t.users.status}</TableHead>
+                <TableHead>{t.users.subscriptionEnds}</TableHead>
                 <TableHead className="text-right">{t.users.actions}</TableHead>
               </TableRow>
             </TableHeader>
@@ -191,6 +239,13 @@ export default function UsersPage() {
                       <Badge variant={profile.status === 'approved' ? 'success' : 'destructive'}>
                         {t.users[profile.status]}
                       </Badge>
+                    </TableCell>
+                     <TableCell>
+                        {profile.id === user?.uid ? (
+                           profile.subscriptionEndsAt ? format(new Date(profile.subscriptionEndsAt), 'PP') : t.users.noExpiration
+                        ) : (
+                          <UserSubscriptionCell profile={profile} />
+                        )}
                     </TableCell>
                     <TableCell className="text-right">
                       {profile.status === 'pending' ? (
@@ -220,7 +275,7 @@ export default function UsersPage() {
                 ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                         {t.users.noUsers}
                     </TableCell>
                 </TableRow>

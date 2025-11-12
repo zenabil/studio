@@ -15,8 +15,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { LoaderCircle, ShieldCheck } from 'lucide-react';
+import { LoaderCircle, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { differenceInDays, format } from 'date-fns';
 
 export default function ProfilePage() {
   const { t } = useLanguage();
@@ -68,6 +69,37 @@ export default function ProfilePage() {
 
   const userInitial = user?.email?.charAt(0).toUpperCase() || '?';
 
+  const SubscriptionStatus = () => {
+    if (!userProfile?.subscriptionEndsAt) {
+      return (
+        <div className="flex items-center gap-3">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{t.profile.noSubscription}</p>
+        </div>
+      );
+    }
+
+    const endDate = new Date(userProfile.subscriptionEndsAt);
+    const today = new Date();
+    const daysRemaining = differenceInDays(endDate, today);
+
+    if (daysRemaining < 0) {
+      return (
+        <Badge variant="destructive" className="gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          {t.profile.expired}
+        </Badge>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{t.profile.subscriptionExpiresOn.replace('{date}', format(endDate, 'PP'))}</p>
+        <p className="text-sm text-muted-foreground">{t.profile.daysRemaining.replace('{days}', String(daysRemaining))}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">{t.nav.profile}</h1>
@@ -82,7 +114,7 @@ export default function ProfilePage() {
                         <CardTitle>{user?.displayName || user?.email}</CardTitle>
                         <CardDescription>{user?.email}</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex flex-col items-center gap-4">
                         <div className="flex justify-center">
                              {userProfile?.status === 'approved' && (
                                 <Badge variant="success" className="gap-2">
@@ -95,6 +127,10 @@ export default function ProfilePage() {
                                     {t.users.pending}
                                 </Badge>
                              )}
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-semibold">{t.profile.subscriptionStatus}</p>
+                            <SubscriptionStatus />
                         </div>
                     </CardContent>
                 </Card>

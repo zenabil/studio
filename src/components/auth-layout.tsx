@@ -7,7 +7,7 @@ import { useEffect, type ReactNode, useMemo } from 'react';
 import Loading from '@/app/loading';
 import { useData } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Mail, Phone } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -89,6 +89,25 @@ export function AuthLayout({ children }: { children: ReactNode }) {
                         <Button onClick={() => router.push('/login')} className="w-full mt-4">{t.auth.loginLink}</Button>
                     </CardFooter>
                   )}
+              </Card>
+          </div>
+      );
+  }
+  
+  if (user && userProfile?.subscriptionEndsAt && new Date(userProfile.subscriptionEndsAt) < new Date()) {
+      return (
+          <div className="flex min-h-screen w-full items-center justify-center p-4 bg-muted/40">
+              <Card className="max-w-md text-center">
+                  <CardHeader>
+                      <CardTitle>{t.auth.subscriptionExpiredTitle}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <CardDescription>{t.auth.subscriptionExpiredDescription}</CardDescription>
+                      <p className="text-sm text-muted-foreground mt-4">{t.auth.subscriptionExpiredContact}</p>
+                  </CardContent>
+                  <CardFooter>
+                      <Button onClick={() => router.push('/login')} className="w-full">{t.auth.loginLink}</Button>
+                  </CardFooter>
               </Card>
           </div>
       );
