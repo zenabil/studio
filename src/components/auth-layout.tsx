@@ -72,24 +72,26 @@ export function AuthLayout({ children }: { children: ReactNode }) {
                     <p>{t.auth.pendingApprovalDescription}</p>
                     <p className="text-sm text-muted-foreground">{t.auth.pendingApprovalContact}</p>
                   </CardContent>
-                  {adminContact && (adminContact.email || adminContact.phone) && (
-                    <CardFooter className="flex-col items-start gap-4 pt-4 border-t">
-                       <h3 className="text-sm font-semibold text-foreground w-full text-center">{t.auth.adminContact}</h3>
-                        {adminContact.email && (
-                            <a href={`mailto:${adminContact.email}`} className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors">
-                                <Mail className="h-4 w-4" />
-                                <span>{adminContact.email}</span>
-                            </a>
-                        )}
-                        {adminContact.phone && (
-                            <a href={`tel:${adminContact.phone}`} className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors">
-                                <Phone className="h-4 w-4" />
-                                <span>{adminContact.phone}</span>
-                            </a>
-                        )}
-                        <Button onClick={() => router.push('/login')} className="w-full mt-4">{t.auth.loginLink}</Button>
-                    </CardFooter>
-                  )}
+                  <CardFooter className="flex-col items-start gap-4 pt-4 border-t">
+                      {adminContact && (adminContact.email || adminContact.phone) && (
+                        <>
+                           <h3 className="text-sm font-semibold text-foreground w-full text-center">{t.auth.adminContact}</h3>
+                            {adminContact.email && (
+                                <a href={`mailto:${adminContact.email}`} className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors">
+                                    <Mail className="h-4 w-4" />
+                                    <span>{adminContact.email}</span>
+                                </a>
+                            )}
+                            {adminContact.phone && (
+                                <a href={`tel:${adminContact.phone}`} className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors">
+                                    <Phone className="h-4 w-4" />
+                                    <span>{adminContact.phone}</span>
+                                </a>
+                            )}
+                        </>
+                      )}
+                      <Button onClick={() => router.push('/login')} className="w-full mt-4">{t.auth.loginLink}</Button>
+                  </CardFooter>
               </Card>
           </div>
       );
