@@ -149,15 +149,17 @@ export function SidebarNav() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 w-full text-left p-2 rounded-lg hover:bg-sidebar-accent outline-none focus-visible:ring-2 ring-sidebar-ring">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
-                        <AvatarFallback>{userInitial}</AvatarFallback>
-                    </Avatar>
-                    <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden">
-                        <p className="text-sm font-medium truncate">{user?.displayName || user?.email}</p>
-                    </div>
-                </button>
+                <Button variant="ghost" className="w-full justify-start items-center p-2 h-auto text-left rounded-lg hover:bg-sidebar-accent outline-none focus-visible:ring-2 ring-sidebar-ring">
+                    <Link href="/profile" className="flex items-center gap-2 w-full">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
+                            <AvatarFallback>{userInitial}</AvatarFallback>
+                        </Avatar>
+                        <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden">
+                            <p className="text-sm font-medium truncate">{user?.displayName || user?.email}</p>
+                        </div>
+                    </Link>
+                </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-56">
                 <DropdownMenuLabel>{t.nav.myAccount}</DropdownMenuLabel>
