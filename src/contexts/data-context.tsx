@@ -55,7 +55,7 @@ export type Customer = {
   phone?: string;
   spent: number;
   balance: number;
-  settlementDay?: number;
+  settlementDay?: number | null;
 };
 
 export interface BakeryOrder {
@@ -312,7 +312,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         const newCustomerData: Omit<Customer, 'id'> = {
             ...customerData,
-            settlementDay: customerData.settlementDay === undefined ? null : customerData.settlementDay,
             spent: 0,
             balance: 0,
         };
@@ -812,5 +811,6 @@ export const useData = () => {
     
 
     
+
 
 

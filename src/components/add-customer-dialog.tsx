@@ -49,8 +49,9 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, cus
         .min(1, { message: t.customers.settlementDayInvalid })
         .max(31, { message: t.customers.settlementDayInvalid })
         .optional()
+        .nullable()
         .or(z.literal(''))
-        .transform((val) => (val === '' ? undefined : val)),
+        .transform((val) => (val === '' ? null : val)),
     })
     .superRefine((data, ctx) => {
       if (data.email) {
@@ -74,7 +75,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, cus
       name: '',
       email: '',
       phone: '',
-      settlementDay: undefined,
+      settlementDay: null,
     },
   });
 
@@ -86,14 +87,14 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, cus
           name: customerToEdit.name,
           email: customerToEdit.email,
           phone: customerToEdit.phone,
-          settlementDay: customerToEdit.settlementDay || undefined,
+          settlementDay: customerToEdit.settlementDay || null,
         });
       } else {
         form.reset({
           name: '',
           email: '',
           phone: '',
-          settlementDay: undefined,
+          settlementDay: null,
         });
       }
     }
@@ -167,7 +168,7 @@ export function AddCustomerDialog({ isOpen, onClose, onSave, customerToEdit, cus
                 <FormItem>
                   <FormLabel>{t.customers.settlementDay}</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" max="31" placeholder={t.customers.settlementDayPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} disabled={isSaving} />
+                    <Input type="number" min="1" max="31" placeholder={t.customers.settlementDayPlaceholder} {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? null : e.target.valueAsNumber)} disabled={isSaving} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
