@@ -147,35 +147,32 @@ export function SidebarNav() {
   const UserMenu = () => {
     const userInitial = user?.email?.charAt(0).toUpperCase() || '?';
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start items-center p-2 h-auto text-left rounded-lg hover:bg-sidebar-accent outline-none focus-visible:ring-2 ring-sidebar-ring">
-                    <Link href="/profile" className="flex items-center gap-2 w-full">
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
-                            <AvatarFallback>{userInitial}</AvatarFallback>
-                        </Avatar>
-                        <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden">
-                            <p className="text-sm font-medium truncate">{user?.displayName || user?.email}</p>
-                        </div>
-                    </Link>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" className="w-56">
-                <DropdownMenuLabel>{t.nav.myAccount}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>{t.nav.profile}</span>
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t.auth.signOut}</span>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-col gap-2">
+            <Button
+                variant={pathname === '/profile' ? 'accent' : 'ghost'}
+                className="w-full justify-start items-center p-2 h-auto text-left rounded-lg"
+                asChild
+            >
+                <Link href="/profile">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
+                        <AvatarFallback>{userInitial}</AvatarFallback>
+                    </Avatar>
+                    <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden ml-2 rtl:mr-2 rtl:ml-0">
+                        <p className="text-sm font-medium truncate">{user?.displayName || user?.email}</p>
+                    </div>
+                </Link>
+            </Button>
+            <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10"
+                onClick={handleSignOut}
+            >
+                <LogOut className="h-4 w-4"/>
+                <span className="group-data-[collapsible=icon]:hidden ml-2 rtl:mr-2 rtl:ml-0">{t.auth.signOut}</span>
+            </Button>
+        </div>
     )
   }
 
