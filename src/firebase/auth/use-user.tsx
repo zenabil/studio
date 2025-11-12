@@ -51,9 +51,9 @@ export function useUser(): UseUserResult {
     return {
       ...userProfileData,
       id: userProfileData.id,
-      name: userProfileData.name,
+      name: userProfileData.name || '',
       email: userProfileData.email,
-      phone: userProfileData.phone,
+      phone: userProfileData.phone || '',
       status: userProfileData.status || 'pending',
       isAdmin: !!userProfileData.isAdmin,
       createdAt: userProfileData.createdAt,
