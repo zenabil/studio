@@ -140,7 +140,9 @@ export interface SupplierInvoice {
 
 export interface UserProfile {
   id: string;
+  name: string;
   email: string;
+  phone?: string;
   status: 'approved' | 'pending' | 'revoked';
   isAdmin: boolean;
   createdAt: string;
@@ -197,6 +199,7 @@ interface DataContextType {
     addPendingUser: (email: string, password: string) => Promise<void>;
     approveUser: (userId: string) => Promise<void>;
     revokeUser: (userId: string) => Promise<void>;
+    updateUserProfile: (userId: string, profileData: Partial<{ name: string; phone: string }>) => Promise<void>;
     updateUserSubscription: (userId: string, subscriptionEndsAt: string | null) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
 }
@@ -725,6 +728,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const revoke = httpsCallable(functions, 'revokeUser');
         await revoke({ userId });
     }, []);
+
+    const updateUserProfile = useCallback(async (userId: string, profileData: Partial<{ name: string; phone: string }>) => {
+        const docRef = doc(firestore, 'userProfiles', userId);
+        return updateDoc(docRef, profileData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: profileData }));
+            throw error;
+        });
+    }, [firestore]);
     
     const updateUserSubscription = useCallback(async (userId: string, subscriptionEndsAt: string | null) => {
         if (!firestore) throw new Error("User not authenticated or data path not available.");
@@ -804,6 +815,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addPendingUser,
         approveUser,
         revokeUser,
+        updateUserProfile,
         updateUserSubscription,
         restoreData,
     };

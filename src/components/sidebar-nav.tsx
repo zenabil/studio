@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -50,14 +51,6 @@ import { calculateDebtAlerts } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
 import { useAuth, useUser } from '@/firebase';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 
@@ -70,7 +63,7 @@ export function SidebarNav() {
   const [isMounted, setIsMounted] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const auth = useAuth();
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
 
 
   useEffect(() => {
@@ -145,7 +138,7 @@ export function SidebarNav() {
   );
 
   const UserMenu = () => {
-    const userInitial = user?.email?.charAt(0).toUpperCase() || '?';
+    const userInitial = userProfile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?';
     return (
         <div className="flex flex-col gap-2">
             <Button
@@ -155,11 +148,11 @@ export function SidebarNav() {
             >
                 <Link href="/profile">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
+                        <AvatarImage src={user?.photoURL || ''} alt={userProfile?.name || user?.email || ''} />
                         <AvatarFallback>{userInitial}</AvatarFallback>
                     </Avatar>
                     <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden ml-2 rtl:mr-2 rtl:ml-0">
-                        <p className="text-sm font-medium truncate">{user?.displayName || user?.email}</p>
+                        <p className="text-sm font-medium truncate">{userProfile?.name || user?.email}</p>
                     </div>
                 </Link>
             </Button>

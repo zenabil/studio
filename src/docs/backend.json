@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "Product": {
@@ -227,6 +228,7 @@
       "type": "object",
       "description": "Represents a user's profile information.",
       "properties": {
+        "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
         "password": { "type": "string", "description": "Hashed or temporary password, for creation flow." },
@@ -239,7 +241,7 @@
             "description": "The date when the user's subscription or access expires."
         }
       },
-      "required": ["email", "createdAt", "status", "isAdmin"]
+      "required": ["name", "email", "createdAt", "status", "isAdmin"]
     }
   },
   "firestore": {

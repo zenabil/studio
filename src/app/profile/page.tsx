@@ -1,6 +1,7 @@
 
+
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser, useAuth } from '@/firebase';
 import { useData } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
@@ -15,16 +16,24 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { LoaderCircle, ShieldCheck, Clock, AlertTriangle, Mail, Phone } from 'lucide-react';
+import { LoaderCircle, ShieldCheck, Clock, AlertTriangle, Mail, Phone, Save } from 'lucide-react';
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { differenceInDays, format } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
   const { t } = useLanguage();
   const { user, userProfile, userProfiles } = useUser();
+  const { updateUserProfile, isLoading: isDataLoading } = useData();
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const auth = useAuth();
+  
+  const profileFormSchema = z.object({
+    name: z.string().min(2, { message: t.customers.nameMinLength }),
+    phone: z.string().optional(),
+  });
 
   const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, { message: t.settings.currentPasswordRequired }),
@@ -35,10 +44,24 @@ export default function ProfilePage() {
     path: ['confirmPassword']
   });
 
-  const form = useForm<z.infer<typeof passwordFormSchema>>({
+  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
+    resolver: zodResolver(profileFormSchema),
+    mode: 'onChange'
+  });
+
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     mode: 'onChange'
   });
+  
+  useEffect(() => {
+    if (userProfile) {
+      profileForm.reset({
+        name: userProfile.name || '',
+        phone: userProfile.phone || '',
+      });
+    }
+  }, [userProfile, profileForm]);
 
   const adminContact = useMemo(() => {
     if (!userProfiles || userProfiles.length === 0) {
@@ -48,16 +71,16 @@ export default function ProfilePage() {
     if (!adminProfile) return null;
 
     return {
-      name: adminProfile.email.split('@')[0], 
+      name: adminProfile.name || adminProfile.email.split('@')[0], 
       email: adminProfile.email,
-      phone: (adminProfile as any)?.phone || null,
+      phone: adminProfile.phone || null,
     };
   }, [userProfiles]);
 
 
-  const onSubmit = async (data: z.infer<typeof passwordFormSchema>) => {
+  const onPasswordSubmit = async (data: z.infer<typeof passwordFormSchema>) => {
     if (!user) return;
-    setIsSaving(true);
+    setIsSavingPassword(true);
     
     try {
         const credential = EmailAuthProvider.credential(user.email!, data.currentPassword);
@@ -65,11 +88,11 @@ export default function ProfilePage() {
         await updatePassword(user, data.newPassword);
 
         toast({ title: t.settings.passwordChangedSuccess });
-        form.reset({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        passwordForm.reset({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error: any) {
         console.error("Password change failed:", error);
         if (error.code === 'auth/wrong-password') {
-            form.setError('currentPassword', { type: 'manual', message: t.settings.currentPasswordIncorrect });
+            passwordForm.setError('currentPassword', { type: 'manual', message: t.settings.currentPasswordIncorrect });
         } else {
             toast({
                 variant: 'destructive',
@@ -78,11 +101,28 @@ export default function ProfilePage() {
             });
         }
     } finally {
-        setIsSaving(false);
+        setIsSavingPassword(false);
     }
   };
 
-  const userInitial = user?.email?.charAt(0).toUpperCase() || '?';
+  const onProfileSubmit = async (data: z.infer<typeof profileFormSchema>) => {
+    if (!user) return;
+    setIsSavingProfile(true);
+    try {
+      await updateUserProfile(user.uid, data);
+      toast({ title: t.profile.profileUpdated });
+    } catch (error) {
+       toast({
+          variant: 'destructive',
+          title: t.errors.title,
+          description: t.errors.unknownError,
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const userInitial = userProfile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?';
 
   const SubscriptionStatus = () => {
     if (!userProfile?.subscriptionEndsAt) {
@@ -115,6 +155,8 @@ export default function ProfilePage() {
     );
   };
 
+  const isSaving = isSavingPassword || isSavingProfile || isDataLoading;
+
   return (
     <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">{t.nav.profile}</h1>
@@ -123,11 +165,11 @@ export default function ProfilePage() {
                 <Card className="flex flex-col h-full">
                     <CardHeader className="items-center text-center">
                         <Avatar className="h-24 w-24 mb-4">
-                            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
+                            <AvatarImage src={user?.photoURL || ''} alt={userProfile?.name || user?.email || ''} />
                             <AvatarFallback>{userInitial}</AvatarFallback>
                         </Avatar>
                         <CardTitle className="flex items-center gap-2">
-                            {user?.displayName || user?.email}
+                            {userProfile?.name || user?.email}
                             {userProfile?.status === 'approved' && <ShieldCheck className="h-6 w-6 text-blue-500" />}
                         </CardTitle>
                         <CardDescription>{user?.email}</CardDescription>
@@ -169,9 +211,54 @@ export default function ProfilePage() {
                     )}
                 </Card>
             </div>
-            <div className="md:col-span-2">
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="md:col-span-2 space-y-8">
+                 <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>{t.profile.yourProfile}</CardTitle>
+                                <CardDescription>{t.profile.profileDescription}</CardDescription>
+                            </CardHeader>
+                             <CardContent className="space-y-4">
+                               <FormField
+                                    control={profileForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t.profile.name}</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} disabled={isSaving} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={profileForm.control}
+                                    name="phone"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t.profile.phone}</FormLabel>
+                                            <FormControl>
+                                                <Input type="tel" {...field} disabled={isSaving} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </CardContent>
+                            <CardFooter>
+                               <Button type="submit" disabled={isSaving || !profileForm.formState.isDirty}>
+                                    {isSavingProfile && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isSavingProfile ? t.settings.saving : t.settings.save}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </form>
+                 </Form>
+
+                <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}>
                         <Card>
                             <CardHeader>
                                 <CardTitle>{t.settings.changePassword}</CardTitle>
@@ -179,7 +266,7 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <FormField
-                                    control={form.control}
+                                    control={passwordForm.control}
                                     name="currentPassword"
                                     render={({ field }) => (
                                         <FormItem>
@@ -192,7 +279,7 @@ export default function ProfilePage() {
                                     )}
                                 />
                                 <FormField
-                                    control={form.control}
+                                    control={passwordForm.control}
                                     name="newPassword"
                                     render={({ field }) => (
                                         <FormItem>
@@ -205,7 +292,7 @@ export default function ProfilePage() {
                                     )}
                                 />
                                 <FormField
-                                    control={form.control}
+                                    control={passwordForm.control}
                                     name="confirmPassword"
                                     render={({ field }) => (
                                         <FormItem>
@@ -219,9 +306,9 @@ export default function ProfilePage() {
                                 />
                             </CardContent>
                             <CardFooter>
-                                <Button type="submit" disabled={isSaving || !form.formState.isValid}>
-                                    {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                    {isSaving ? t.settings.saving : t.settings.changePassword}
+                                <Button type="submit" disabled={isSaving || !passwordForm.formState.isValid}>
+                                    {isSavingPassword && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isSavingPassword ? t.settings.saving : t.settings.changePassword}
                                 </Button>
                             </CardFooter>
                         </Card>

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -50,7 +51,9 @@ export function useUser(): UseUserResult {
     return {
       ...userProfileData,
       id: userProfileData.id,
+      name: userProfileData.name,
       email: userProfileData.email,
+      phone: userProfileData.phone,
       status: userProfileData.status || 'pending',
       isAdmin: !!userProfileData.isAdmin,
       createdAt: userProfileData.createdAt,
