@@ -225,9 +225,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
     const userProfilesRef = useMemoFirebase(() => {
-        if (!firestore || !authUserProfile?.isAdmin) return null;
+        if (!firestore || !authUserProfile || !authUserProfile.isAdmin) return null;
         return collection(firestore, 'userProfiles');
-    }, [firestore, authUserProfile?.isAdmin]);
+    }, [firestore, authUserProfile]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -847,6 +847,7 @@ export const useData = () => {
     
 
     
+
 
 
 
