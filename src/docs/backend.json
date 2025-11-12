@@ -231,7 +231,6 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
-        "password": { "type": "string", "description": "Hashed or temporary password, for creation flow." },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["approved", "pending", "revoked"], "description": "The approval status of the user account." },
         "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." },
@@ -241,7 +240,7 @@
             "description": "The date when the user's subscription or access expires."
         }
       },
-      "required": ["name", "email", "createdAt", "status", "isAdmin"]
+      "required": ["email", "name", "createdAt", "status", "isAdmin"]
     }
   },
   "firestore": {
@@ -297,3 +296,6 @@
     "providers": ["emailPassword"]
   }
 }
+
+
+  

@@ -196,7 +196,7 @@ interface DataContextType {
     addExpense: (expenseData: Omit<Expense, 'id'>) => Promise<void>;
     updateExpense: (expenseId: string, expenseData: Partial<Omit<Expense, 'id'>>) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
-    addPendingUser: (email: string, password: string) => Promise<void>;
+    addPendingUser: (email: string, password: string, name: string) => Promise<void>;
     approveUser: (userId: string) => Promise<void>;
     revokeUser: (userId: string) => Promise<void>;
     updateUserProfile: (userId: string, profileData: Partial<{ name: string; phone: string }>) => Promise<void>;
@@ -709,11 +709,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         toast({ title: t.expenses.expenseDeleted });
     }, [firestore, dataUserId, t, toast]);
     
-    const addPendingUser = useCallback(async (email: string, password: string) => {
+    const addPendingUser = useCallback(async (email: string, password: string, name: string) => {
         if (!firestore) throw new Error("Firestore not initialized");
         const functions = getFunctions();
         const createPendingUser = httpsCallable(functions, 'createPendingUser');
-        await createPendingUser({ email, password });
+        await createPendingUser({ email, password, name });
     }, [firestore]);
 
 

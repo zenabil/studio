@@ -35,6 +35,7 @@ export default function SignupPage() {
 
   const formSchema = z
     .object({
+      name: z.string().min(2, { message: t.customers.nameMinLength }),
       email: z.string().email({ message: t.auth.emailInvalid }),
       password: z.string().min(6, { message: t.auth.weakPassword }),
       confirmPassword: z.string(),
@@ -56,7 +57,7 @@ export default function SignupPage() {
     setIsLoading(true);
     setFormError(null);
     try {
-      await addPendingUser(data.email, data.password);
+      await addPendingUser(data.email, data.password, data.name);
       setIsSuccess(true);
     } catch (error) {
       if (error instanceof FirebaseError) {
@@ -112,6 +113,19 @@ export default function SignupPage() {
                 <AlertDescription>{formError}</AlertDescription>
               </Alert>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="name">{t.profile.name}</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder={t.customers.namePlaceholder}
+                {...register('name')}
+                disabled={isLoading}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">{t.auth.email}</Label>
               <Input
