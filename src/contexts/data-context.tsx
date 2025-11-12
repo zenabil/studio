@@ -149,7 +149,7 @@ export interface UserProfile {
   subscriptionEndsAt?: string | null;
 }
 
-export type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
+export type ProductFormData = Omit<Product, 'id'>;
 
 export type AddSupplierInvoiceData = {
   supplierId: string;
@@ -248,11 +248,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
-        const { imageFile, ...restOfProductData } = productData;
-
         const newProductData = {
-            ...restOfProductData,
-            imageUrl: productData.imageUrl || null, // The imageUrl is now a Data URL from the form
+            ...productData,
             createdAt: serverTimestamp(),
         };
         
@@ -262,8 +259,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 sanitizedData[key] = null;
             }
         });
-        // remove the temporary imageFile property before saving
-        delete sanitizedData.imageFile;
 
         const docRef = await addDoc(collectionRef, sanitizedData)
             .catch(error => {
@@ -278,11 +273,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
         if (!collectionRef) return;
         
-        const { imageFile, ...restOfProductData } = productData;
-
         const dataToUpdate = {
-            ...restOfProductData,
-            imageUrl: productData.imageUrl, // The imageUrl is now a Data URL from the form
+            ...productData,
         };
 
         const sanitizedData: any = { ...dataToUpdate };
@@ -291,9 +283,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 sanitizedData[key] = null;
             }
         });
-         // remove the temporary imageFile property before saving
-        delete sanitizedData.imageFile;
-
 
         const docRef = doc(collectionRef, productId);
         await updateDoc(docRef, sanitizedData).catch(error => {
@@ -352,16 +341,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteCustomer = useCallback(async (customerId: string) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/customers`);
         if (!collectionRef) return;
-        if ((salesHistory || []).some(sale => sale.customerId === customerId)) {
-            toast({ variant: 'destructive', title: t.errors.title, description: t.customers.deleteErrorInUse });
-            return;
-        }
+        
         const docRef = doc(collectionRef, customerId);
         await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
         });
         toast({ title: t.customers.customerDeleted });
-    }, [firestore, dataUserId, salesHistory, t, toast]);
+    }, [firestore, dataUserId, t, toast]);
     
     const addSaleRecord = useCallback(async (cart: CartItem[], customerId: string | null, totals: SaleRecord['totals']) => {
         if (!firestore || !dataUserId) throw new Error("User not authenticated or data path not available.");
