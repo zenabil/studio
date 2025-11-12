@@ -3,14 +3,6 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /userProfiles/{userId} {
-      // Allow any signed-in user to read any profile (e.g., to get admin contact info).
-      // This is safe as profiles should only contain non-sensitive information.
-      allow read: if request.auth != null;
-      // Disallow direct writes from the client. Updates must go through the Cloud Function.
-      allow write: if false;
-    }
-
     // This single rule governs all user-specific data.
     // A user can read and write any document within their own /users/{userId} folder.
     match /users/{userId}/{document=**} {
