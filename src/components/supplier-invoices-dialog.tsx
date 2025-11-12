@@ -16,7 +16,9 @@ import type { Supplier, SupplierInvoice } from '@/contexts/data-context';
 import { useData } from '@/contexts/data-context';
 import { format } from 'date-fns';
 import { useSettings } from '@/contexts/settings-context';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { ConfirmDialog } from './confirm-dialog';
 
 interface SupplierInvoicesDialogProps {
   isOpen: boolean;
@@ -27,7 +29,8 @@ interface SupplierInvoicesDialogProps {
 export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierInvoicesDialogProps) {
   const { t } = useLanguage();
   const { settings } = useSettings();
-  const { supplierInvoices: allInvoices } = useData();
+  const { supplierInvoices: allInvoices, deleteSupplierInvoice } = useData();
+  const [invoiceToDelete, setInvoiceToDelete] = useState<SupplierInvoice | null>(null);
 
   const { transactions: transactionHistory, startingBalance } = useMemo(() => {
     if (!supplier) {
@@ -68,6 +71,7 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
       runningBalance += (debit - credit);
 
       return {
+        ...tx, // pass full invoice object
         id: tx.id,
         date: tx.date,
         description,
@@ -80,9 +84,17 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
     return { transactions: statement, startingBalance: startBalance };
   }, [supplier, allInvoices, t]);
 
+  const handleDelete = () => {
+    if (invoiceToDelete) {
+      deleteSupplierInvoice(invoiceToDelete.id);
+      setInvoiceToDelete(null);
+    }
+  };
+
   if (!supplier) return null;
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
@@ -99,11 +111,12 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
                   <TableHead className="text-right">{t.suppliers.debit}</TableHead>
                   <TableHead className="text-right">{t.suppliers.credit}</TableHead>
                   <TableHead className="text-right">{t.suppliers.balance}</TableHead>
+                  <TableHead className="text-right">{t.suppliers.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell colSpan={4} className="font-medium">{t.customers.startingBalance}</TableCell>
+                  <TableCell colSpan={5} className="font-medium">{t.customers.startingBalance}</TableCell>
                   <TableCell className="text-right font-medium">{settings.currency}{startingBalance.toFixed(2)}</TableCell>
                 </TableRow>
                 {transactionHistory.map((tx) => (
@@ -117,12 +130,17 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
                       {tx.credit > 0 ? `${settings.currency}${tx.credit.toFixed(2)}` : '-'}
                     </TableCell>
                     <TableCell className="text-right font-semibold">{settings.currency}{tx.balance.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => setInvoiceToDelete(tx)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
               <TableFooter>
                 <TableRow className="text-lg">
-                    <TableCell colSpan={4} className="text-right font-bold">{t.customers.totalDue}</TableCell>
+                    <TableCell colSpan={5} className="text-right font-bold">{t.customers.totalDue}</TableCell>
                     <TableCell className="text-right font-bold">{settings.currency}{(supplier.balance || 0).toFixed(2)}</TableCell>
                 </TableRow>
               </TableFooter>
@@ -140,5 +158,13 @@ export function SupplierInvoicesDialog({ isOpen, onClose, supplier }: SupplierIn
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog
+        isOpen={!!invoiceToDelete}
+        onClose={() => setInvoiceToDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete Invoice"
+        description="Are you sure you want to delete this invoice? This action will reverse stock and balance changes and cannot be undone."
+     />
+    </>
   );
 }
