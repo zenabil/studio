@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -17,6 +18,7 @@ service cloud.firestore {
       allow create: if request.auth.uid == userId;
       
       // A user can only update their own profile.
+      // This rule allows updates and adding new fields to their own profile.
       allow update: if request.auth.uid == userId;
     }
 
