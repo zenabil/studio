@@ -209,7 +209,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, userProfile: authUserProfile, isUserLoading, firebaseApp } = useUser();
+    const { user, userProfile: authUserProfile, isUserLoading } = useUser();
     const firestore = useFirestore();
 
     const dataUserId = user?.uid;
@@ -312,6 +312,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
         const newCustomerData: Omit<Customer, 'id'> = {
             ...customerData,
+            settlementDay: customerData.settlementDay === undefined ? null : customerData.settlementDay,
             spent: 0,
             balance: 0,
         };
@@ -811,4 +812,5 @@ export const useData = () => {
     
 
     
+
 
