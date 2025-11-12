@@ -15,7 +15,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
       
       // A user can create, update, or delete their own profile.
-      allow write: if request.auth.uid == userId;
+      allow create, update, delete: if request.auth.uid == userId;
     }
 
     // Rule for all user-specific subcollections (products, customers, etc.)
