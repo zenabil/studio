@@ -16,7 +16,7 @@ import { getBackupData } from '@/lib/data-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 import Image from 'next/image';
 import { Upload, Package } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
