@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import type { Customer } from '@/lib/data';
+import type { Customer } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useSettings } from '@/contexts/settings-context';
 import { Badge } from './ui/badge';
@@ -141,5 +141,3 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
   }
 );
 CustomerCombobox.displayName = 'CustomerCombobox';
-
-    

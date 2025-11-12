@@ -52,7 +52,7 @@ import { useToast } from '@/hooks/use-toast';
 import { InvoiceDialog } from '@/components/invoice-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { CustomerCombobox } from '@/components/customer-combobox';
+import { CustomerSearch } from '@/components/customer-search';
 import { useSettings } from '@/contexts/settings-context';
 import { AddProductDialog } from './add-product-dialog';
 import { AddCustomerDialog } from './add-customer-dialog';
@@ -99,7 +99,7 @@ export function PosView() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
-  const customerComboboxRef = useRef<HTMLButtonElement>(null);
+  const customerSearchRef = useRef<{ focus: () => void }>(null);
   const discountInputRef = useRef<HTMLInputElement>(null);
   const amountPaidInputRef = useRef<HTMLInputElement | null>(null);
   const quantityInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -580,7 +580,7 @@ export function PosView() {
 
       if (event.key === 'F1') { event.preventDefault(); searchInputRef.current?.select(); }
       if (event.key === 'F2') { event.preventDefault(); barcodeInputRef.current?.select(); }
-      if (event.key === 'F4') { event.preventDefault(); customerComboboxRef.current?.focus(); }
+      if (event.key === 'F4') { event.preventDefault(); customerSearchRef.current?.focus(); }
       if (event.key === 'F6') { event.preventDefault(); resetSale(); }
       if (event.key === 'F7') {
         event.preventDefault();
@@ -938,8 +938,8 @@ export function PosView() {
                 </div>
               <Separator/>
               <div className='z-10 relative'>
-                <CustomerCombobox
-                  ref={customerComboboxRef}
+                <CustomerSearch
+                  ref={customerSearchRef}
                   customers={customers}
                   selectedCustomerId={activeSession.selectedCustomerId}
                   onSelectCustomer={(customerId) =>
