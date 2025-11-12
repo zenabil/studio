@@ -7,15 +7,29 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-
-    match /users/{userId}/{collection}/{docId} {
-      allow read, write: if request.auth.uid == userId;
+    
+    // This function checks if the requesting user is the owner of the data.
+    // It's used for collections that are partitioned by user ID.
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Rules for all data collections partitioned under a specific user's document.
+    // e.g., /users/{userId}/products/{productId}
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Rules specifically for the top-level userProfiles collection.
     match /userProfiles/{userId} {
+      // Any signed-in user can read any user's profile.
       allow read: if isSignedIn();
-      allow create: if request.auth.uid == userId;
-      allow update: if request.auth.uid == userId;
+      
+      // A user can only create their own profile document.
+      allow create: if isOwner(userId);
+      
+      // A user can only update their own profile document.
+      allow update: if isOwner(userId);
     }
   }
 }
