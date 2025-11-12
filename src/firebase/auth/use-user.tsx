@@ -32,8 +32,7 @@ export function useUser(): UseUserResult {
 
   const userProfileDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    // The profile is now in a subcollection, with a fixed document ID 'data'
-    return doc(firestore, `users/${user.uid}/profile/data`);
+    return doc(firestore, `userProfiles/${user.uid}`);
   }, [firestore, user?.uid]);
 
   const { data: userProfileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
@@ -43,7 +42,7 @@ export function useUser(): UseUserResult {
     
     return {
       ...userProfileData,
-      id: user.uid, // The document ID is 'data', but the user's ID is what we need.
+      id: user.uid,
       name: userProfileData.name || '',
       email: userProfileData.email,
       phone: userProfileData.phone || '',

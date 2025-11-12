@@ -4,14 +4,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is signed in.
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     // This single rule now governs all user-specific data, including their profile.
     // A user can read and write any document within their own /users/{userId} folder.
     match /users/{userId}/{document=**} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    match /userProfiles/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
   }

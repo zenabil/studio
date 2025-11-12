@@ -246,11 +246,6 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/profile/{profileDoc}",
-        "schema": "UserProfile",
-        "description": "Stores profile information for each user."
-      },
-      {
         "path": "/users/{userId}/products/{productId}",
         "schema": "Product",
         "description": "Products collection, partitioned by user ID."
@@ -289,6 +284,11 @@
         "path": "/users/{userId}/expenses/{expenseId}",
         "schema": "Expense",
         "description": "Expenses, partitioned by user ID."
+      },
+      {
+        "path": "/userProfiles/{userId}",
+        "schema": "UserProfile",
+        "description": "Stores profile information for each user."
       }
     ]
   },
