@@ -19,6 +19,8 @@ export const translations = {
       expenses: "Dépenses",
       zakat: "Zakat",
       userManagement: "Utilisateurs",
+      profile: "Profil",
+      myAccount: "Mon Compte",
     },
     auth: {
       loginTitle: "Connexion",
@@ -48,6 +50,7 @@ export const translations = {
       pendingApprovalContact: "Veuillez contacter l'administrateur de votre système pour activer votre compte.",
       adminContact: "Informations de contact de l'administrateur",
       rememberMe: "Se souvenir de moi",
+      changePasswordDescription: "Changez le mot de passe de votre compte ici. Après la modification, vous serez déconnecté.",
     },
     users: {
         title: "Gestion des utilisateurs",
@@ -550,6 +553,8 @@ export const translations = {
       expenses: "المصروفات",
       zakat: "الزكاة",
       userManagement: "إدارة المستخدمين",
+      profile: "الملف الشخصي",
+      myAccount: "حسابي",
     },
     auth: {
       loginTitle: "تسجيل الدخول",
@@ -579,6 +584,7 @@ export const translations = {
       pendingApprovalContact: "يرجى الاتصال بمسؤول النظام لتفعيل حسابك.",
       adminContact: "معلومات الاتصال بالمسؤول",
       rememberMe: "تذكرني",
+      changePasswordDescription: "غيّر كلمة مرور حسابك هنا. بعد التغيير، سيتم تسجيل خروجك.",
     },
     users: {
         title: "إدارة المستخدمين",
@@ -1067,5 +1073,3 @@ export const translations = {
     }
   },
 };
-
-    

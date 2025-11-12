@@ -35,6 +35,7 @@ import {
   LogOut,
   FileText,
   Users,
+  User,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageSwitcher } from './language-switcher';
@@ -48,7 +49,17 @@ import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -59,6 +70,8 @@ export function SidebarNav() {
   const [isMounted, setIsMounted] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const auth = useAuth();
+  const { user } = useUser();
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -131,6 +144,39 @@ export function SidebarNav() {
     </div>
   );
 
+  const UserMenu = () => {
+    const userInitial = user?.email?.charAt(0).toUpperCase() || '?';
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 w-full text-left p-2 rounded-lg hover:bg-sidebar-accent outline-none focus-visible:ring-2 ring-sidebar-ring">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || user?.email || ''} />
+                        <AvatarFallback>{userInitial}</AvatarFallback>
+                    </Avatar>
+                    <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden">
+                        <p className="text-sm font-medium truncate">{user?.displayName || user?.email}</p>
+                    </div>
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-56">
+                <DropdownMenuLabel>{t.nav.myAccount}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>{t.nav.profile}</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t.auth.signOut}</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+  }
+
   if (!isMounted) {
     return (
       <div className="w-16 hidden md:block">
@@ -201,14 +247,7 @@ export function SidebarNav() {
                         <Separator className="my-2" />
                         <LanguageSwitcher />
                         <Separator className="my-2" />
-                        <SidebarMenu>
-                           <SidebarMenuItem>
-                            <SidebarMenuButton onClick={handleSignOut}>
-                              <LogOut className="h-5 w-5" />
-                              <span>{t.auth.signOut}</span>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        </SidebarMenu>
+                        <UserMenu />
                     </SidebarFooter>
                 </div>
             </SheetContent>
@@ -262,14 +301,7 @@ export function SidebarNav() {
             <LanguageSwitcher />
         </div>
         <Separator className="my-2" />
-         <SidebarMenu>
-           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} tooltip={t.auth.signOut}>
-              <LogOut className="h-5 w-5" />
-              <span className="group-data-[collapsible=icon]:hidden">{t.auth.signOut}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <UserMenu />
       </SidebarFooter>
     </Sidebar>
     </>
