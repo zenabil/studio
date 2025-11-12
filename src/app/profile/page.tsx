@@ -25,8 +25,8 @@ import Image from 'next/image';
 
 export default function ProfilePage() {
   const { t } = useLanguage();
-  const { user, userProfile, userProfiles } = useUser();
-  const { updateUserProfile, isLoading: isDataLoading } = useData();
+  const { user, userProfile } = useUser();
+  const { updateUserProfile, isLoading: isDataLoading, userProfiles } = useData();
   const { toast } = useToast();
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);

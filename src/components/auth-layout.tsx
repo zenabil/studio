@@ -15,7 +15,8 @@ import { Button } from './ui/button';
 const publicPaths = ['/login', '/signup'];
 
 export function AuthLayout({ children }: { children: ReactNode }) {
-  const { user, isUserLoading, userProfile, userProfiles } = useUser();
+  const { user, isUserLoading, userProfile } = useUser();
+  const { userProfiles } = useData();
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();

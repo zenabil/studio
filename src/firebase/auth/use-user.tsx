@@ -3,8 +3,8 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, collection } from 'firebase/firestore';
-import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase, useCollection } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase } from '@/firebase';
 import type { UserProfile } from '@/contexts/data-context';
 import { WithId } from '@/lib/utils';
 
@@ -12,7 +12,6 @@ export interface UseUserResult {
   user: User | null;
   firebaseApp: any;
   userProfile: WithId<UserProfile> | null;
-  userProfiles: WithId<UserProfile>[];
   isUserLoading: boolean;
 }
 
@@ -55,34 +54,19 @@ export function useUser(): UseUserResult {
     };
   }, [userProfileData]);
 
-  // Only fetch all user profiles if the current user is an admin.
-  const allUsersCollectionRef = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.isAdmin) return null;
-    return collection(firestore, `userProfiles`);
-  }, [firestore, userProfile?.isAdmin]);
-  
-  const { data: allUserProfilesData, isLoading: areAllProfilesLoading } = useCollection<UserProfile>(allUsersCollectionRef);
-  
   const isUserLoading = useMemo(() => {
     if (isAuthLoading) return true;
     if (user) {
-        // If the user is an admin, we also wait for all profiles to load.
-        if (userProfile?.isAdmin) {
-            return isProfileLoading || areAllProfilesLoading;
-        }
-        // If the user is not an admin, we only wait for their own profile.
         return isProfileLoading;
     }
     return false;
-  }, [isAuthLoading, user, isProfileLoading, areAllProfilesLoading, userProfile?.isAdmin]);
+  }, [isAuthLoading, user, isProfileLoading]);
 
 
   return {
     user,
     firebaseApp,
     userProfile,
-    userProfiles: allUserProfilesData || [],
     isUserLoading,
   };
 }
-

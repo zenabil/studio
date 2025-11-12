@@ -170,7 +170,6 @@ interface DataContextType {
     purchaseOrders: WithId<PurchaseOrder>[];
     expenses: WithId<Expense>[];
     userProfiles: WithId<UserProfile>[];
-    userProfile: UserProfile | null;
     isLoading: boolean;
     addProduct: (productData: ProductFormData) => Promise<Product>;
     updateProduct: (productId: string, productData: Partial<ProductFormData>) => Promise<void>;
@@ -210,7 +209,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, userProfile: authUserProfile, isUserLoading } = useUser();
+    const { user, userProfile, isUserLoading } = useUser();
     const firestore = useFirestore();
 
     const dataUserId = user?.uid;
@@ -225,9 +224,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
     const userProfilesRef = useMemoFirebase(() => {
-        if (!firestore || !authUserProfile || !authUserProfile.isAdmin) return null;
+      if (firestore && userProfile && userProfile.isAdmin) {
         return collection(firestore, 'userProfiles');
-    }, [firestore, authUserProfile]);
+      }
+      return null;
+    }, [firestore, userProfile]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -237,9 +238,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
-    const { data: userProfiles, isLoading: profilesLoading } = useCollection<UserProfile>(userProfilesRef);
+    const { data: allUserProfiles, isLoading: profilesLoading } = useCollection<UserProfile>(userProfilesRef);
+    
+    const userProfiles = useMemo(() => {
+        if (userProfile?.isAdmin) {
+            return allUserProfiles || [];
+        }
+        if (userProfile) {
+            return [userProfile];
+        }
+        return [];
+    }, [userProfile, allUserProfiles]);
 
-    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (authUserProfile?.isAdmin && profilesLoading);
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (userProfile?.isAdmin && profilesLoading);
     
     const addProduct = useCallback(async (productData: ProductFormData) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
@@ -372,7 +383,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
         }).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { cart, customerId, totals } }));
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${dataUserId}`, operation: 'write', requestResourceData: { cart, customerId, totals } }));
             throw error;
         });
     }, [firestore, dataUserId]);
@@ -398,7 +409,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 transaction.update(customerRef, { balance: newBalance });
             }
         }).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { payment: { customerId, amount } } }));
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${dataUserId}`, operation: 'write', requestResourceData: { payment: { customerId, amount } } }));
             throw error;
         });
     }, [firestore, dataUserId]);
@@ -498,7 +509,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const deleteSupplier = useCallback(async (supplierId: string) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/suppliers`);
         if (!collectionRef) return;
-
+        
         const docRef = doc(collectionRef, supplierId);
         await deleteDoc(docRef).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
@@ -779,7 +790,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         await batch.commit().catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { restoreData: true } }));
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${dataUserId}`, operation: 'write', requestResourceData: { restoreData: true } }));
             throw error;
         });
     }, [dataUserId, firestore]);
@@ -793,8 +804,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         supplierInvoices: supplierInvoices || [],
         purchaseOrders: purchaseOrders || [],
         expenses: expenses || [],
-        userProfiles: userProfiles || [],
-        userProfile: authUserProfile,
+        userProfiles,
         isLoading,
         addProduct,
         updateProduct,
@@ -843,13 +853,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    
-
-    
-
-
-
-
-
-
