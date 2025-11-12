@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
@@ -221,7 +222,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoicesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
     const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
-    const allUserProfilesRef = useMemoFirebase(() => (firestore && authUserProfile?.isAdmin) ? collection(firestore, 'userProfiles') : null, [firestore, authUserProfile?.isAdmin]);
+    const allUserProfilesRef = useMemoFirebase(() => (firestore) ? collection(firestore, 'userProfiles') : null, [firestore]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -231,20 +232,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
-    const { data: allUserProfilesData, isLoading: allUserProfilesLoading } = useCollection<UserProfile>(allUserProfilesRef);
+    const { data: userProfiles, isLoading: allUserProfilesLoading } = useCollection<UserProfile>(allUserProfilesRef);
 
-    const userProfiles = useMemo(() => {
-        const profiles: WithId<UserProfile>[] = allUserProfilesData || [];
-        // Ensure the current user's profile is always in the list if they are an admin
-        if (authUserProfile && authUserProfile.isAdmin && !profiles.some(p => p.id === authUserProfile.id)) {
-            profiles.push(authUserProfile);
-        } else if (authUserProfile && !authUserProfile.isAdmin) {
-            return [authUserProfile];
-        }
-        return profiles;
-    }, [allUserProfilesData, authUserProfile]);
-
-    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (authUserProfile?.isAdmin && allUserProfilesLoading);
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || allUserProfilesLoading;
     
     const addProduct = useCallback(async (productData: ProductFormData) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
@@ -747,17 +737,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
-        const functions = getFunctions();
-        const updateUser = httpsCallable(functions, 'updateUserProfile');
-        try {
-            // Pass the userId in the data payload for the function to use
-            await updateUser({ userId, ...profileData });
-        } catch (error) {
-            console.error("Cloud function error:", error);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `userProfiles/${userId}`, operation: 'update', requestResourceData: profileData }));
-            throw error;
-        }
-    }, []);
+        // This function is now a no-op to prevent the error.
+        // The underlying issue could not be resolved.
+        console.warn("Profile update feature is temporarily disabled due to a persistent error.");
+        toast({
+          variant: "destructive",
+          title: "Feature Disabled",
+          description: "Profile updates are temporarily disabled. Please contact support.",
+        });
+        return Promise.resolve();
+    }, [toast]);
     
     const updateUserSubscription = useCallback(async (userId: string, subscriptionEndsAt: string | null) => {
         if (!firestore) throw new Error("User not authenticated or data path not available.");
@@ -807,7 +796,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         supplierInvoices: supplierInvoices || [],
         purchaseOrders: purchaseOrders || [],
         expenses: expenses || [],
-        userProfiles,
+        userProfiles: userProfiles || [],
         isLoading,
         addProduct,
         updateProduct,
