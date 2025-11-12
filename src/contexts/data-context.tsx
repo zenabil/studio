@@ -235,23 +235,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const dataUserId = user?.uid;
 
     
-    const productsRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/products`) : null, [firestore, dataUserId]);
-    const customersRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/customers`) : null, [firestore, dataUserId]);
-    const salesRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/sales`) : null, [firestore, dataUserId]);
-    const bakeryOrdersRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/bakeryOrders`) : null, [firestore, dataUserId]);
-    const suppliersRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/suppliers`) : null, [firestore, dataUserId]);
-    const supplierInvoicesRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
-    const purchaseOrdersRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
-    const expensesRef = useMemo(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
+    const productsRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/products`) : null, [firestore, dataUserId]);
+    const customersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/customers`) : null, [firestore, dataUserId]);
+    const salesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/sales`) : null, [firestore, dataUserId]);
+    const bakeryOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/bakeryOrders`) : null, [firestore, dataUserId]);
+    const suppliersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/suppliers`) : null, [firestore, dataUserId]);
+    const supplierInvoicesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
+    const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
+    const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
-    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef as CollectionReference<DocumentData> | null);
-    const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef as CollectionReference<DocumentData> | null);
-    const { data: salesHistory, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef as CollectionReference<DocumentData> | null);
-    const { data: bakeryOrders, isLoading: bakeryOrdersLoading } = useCollection<BakeryOrder>(bakeryOrdersRef as CollectionReference<DocumentData> | null);
-    const { data: suppliers, isLoading: suppliersLoading } = useCollection<Supplier>(suppliersRef as CollectionReference<DocumentData> | null);
-    const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef as CollectionReference<DocumentData> | null);
-    const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef as CollectionReference<DocumentData> | null);
-    const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef as CollectionReference<DocumentData> | null);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
+    const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
+    const { data: salesHistory, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
+    const { data: bakeryOrders, isLoading: bakeryOrdersLoading } = useCollection<BakeryOrder>(bakeryOrdersRef);
+    const { data: suppliers, isLoading: suppliersLoading } = useCollection<Supplier>(suppliersRef);
+    const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
+    const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
+    const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
     
     const [userProfiles, setUserProfiles] = useState<WithId<UserProfile>[]>([]);
     const [userProfilesLoading, setUserProfilesLoading] = useState(true);
@@ -850,6 +850,7 @@ export const useData = () => {
     
 
     
+
 
 
 
