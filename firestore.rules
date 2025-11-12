@@ -9,18 +9,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Rule for the userProfiles collection
-    match /userProfiles/{userId} {
-      // Any authenticated user can read any profile (e.g., to get admin contact info).
-      allow read: if isSignedIn();
-      
-      // A user can create, update, or delete their own profile.
-      allow create, update, delete: if request.auth.uid == userId;
-    }
-
-    // Rule for all user-specific subcollections (products, customers, etc.)
+    // This single rule now governs all user-specific data, including their profile.
+    // A user can read and write any document within their own /users/{userId} folder.
     match /users/{userId}/{document=**} {
-      // A user can perform any action (read, write) only on documents within their own folder.
       allow read, write: if request.auth.uid == userId;
     }
   }

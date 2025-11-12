@@ -32,17 +32,18 @@ export function useUser(): UseUserResult {
 
   const userProfileDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, `userProfiles/${user.uid}`);
+    // The profile is now in a subcollection, with a fixed document ID 'data'
+    return doc(firestore, `users/${user.uid}/profile/data`);
   }, [firestore, user?.uid]);
 
   const { data: userProfileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
 
   const userProfile = useMemo(() => {
-    if (!userProfileData) return null;
+    if (!userProfileData || !user) return null;
     
     return {
       ...userProfileData,
-      id: userProfileData.id,
+      id: user.uid, // The document ID is 'data', but the user's ID is what we need.
       name: userProfileData.name || '',
       email: userProfileData.email,
       phone: userProfileData.phone || '',
@@ -52,13 +53,15 @@ export function useUser(): UseUserResult {
       createdAt: userProfileData.createdAt,
       subscriptionEndsAt: userProfileData.subscriptionEndsAt,
     };
-  }, [userProfileData]);
+  }, [userProfileData, user]);
 
   const isUserLoading = useMemo(() => {
     if (isAuthLoading) return true;
     if (user) {
+        // We only care about the profile loading state if a user is logged in.
         return isProfileLoading;
     }
+    // If no user, we are not loading user-specific data.
     return false;
   }, [isAuthLoading, user, isProfileLoading]);
 

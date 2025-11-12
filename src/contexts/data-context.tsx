@@ -209,7 +209,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, userProfile, isUserLoading } = useUser();
+    const { user, userProfile: authUserProfile, isUserLoading } = useUser();
     const firestore = useFirestore();
 
     const dataUserId = user?.uid;
@@ -223,12 +223,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
-    const userProfilesRef = useMemoFirebase(() => {
-      if (firestore && userProfile && userProfile.isAdmin) {
-        return collection(firestore, 'userProfiles');
-      }
-      return null;
-    }, [firestore, userProfile]);
+    // This collection is ONLY for admins to view all users.
+    const allUserProfilesRef = useMemoFirebase(() => {
+        if (firestore && authUserProfile?.isAdmin) {
+            return collection(firestore, 'userProfiles');
+        }
+        return null;
+    }, [firestore, authUserProfile?.isAdmin]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -238,19 +239,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
-    const { data: allUserProfiles, isLoading: profilesLoading } = useCollection<UserProfile>(userProfilesRef);
+    const { data: allUserProfilesData, isLoading: profilesLoading } = useCollection<UserProfile>(allUserProfilesRef);
     
     const userProfiles = useMemo(() => {
-        if (userProfile?.isAdmin) {
-            return allUserProfiles || [];
+        const profiles: WithId<UserProfile>[] = [];
+        if (authUserProfile?.isAdmin && allUserProfilesData) {
+            profiles.push(...allUserProfilesData);
+        } else if (authUserProfile && !profiles.some(p => p.id === authUserProfile.id)) {
+            // Ensure the current user's profile is always in the list if not already there
+            profiles.push(authUserProfile);
         }
-        if (userProfile) {
-            return [userProfile];
-        }
-        return [];
-    }, [userProfile, allUserProfiles]);
+        return profiles;
+    }, [authUserProfile, allUserProfilesData]);
 
-    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (userProfile?.isAdmin && profilesLoading);
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (authUserProfile?.isAdmin && profilesLoading);
     
     const addProduct = useCallback(async (productData: ProductFormData) => {
         const collectionRef = collection(firestore, `users/${dataUserId}/products`);
@@ -749,7 +751,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
-        const docRef = doc(firestore, 'userProfiles', userId);
+        const docRef = doc(firestore, 'users', userId, 'profile', 'data');
         return updateDoc(docRef, profileData).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: profileData }));
             throw error;
@@ -758,7 +760,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     const updateUserSubscription = useCallback(async (userId: string, subscriptionEndsAt: string | null) => {
         if (!firestore) throw new Error("User not authenticated or data path not available.");
-        const userProfileRef = doc(firestore, 'userProfiles', userId);
+        const userProfileRef = doc(firestore, 'users', userId, 'profile', 'data');
         
         await updateDoc(userProfileRef, { subscriptionEndsAt }).catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userProfileRef.path, operation: 'update', requestResourceData: { subscriptionEndsAt } }));

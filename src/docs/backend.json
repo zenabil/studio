@@ -231,7 +231,6 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
-        "photoURL": { "type": "string", "description": "URL of the user's profile picture." },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["approved", "pending", "revoked"], "description": "The approval status of the user account." },
         "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." },
@@ -246,6 +245,11 @@
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/users/{userId}/profile/{profileDoc}",
+        "schema": "UserProfile",
+        "description": "Stores profile information for each user."
+      },
       {
         "path": "/users/{userId}/products/{productId}",
         "schema": "Product",
@@ -285,11 +289,6 @@
         "path": "/users/{userId}/expenses/{expenseId}",
         "schema": "Expense",
         "description": "Expenses, partitioned by user ID."
-      },
-      {
-        "path": "/userProfiles/{userId}",
-        "schema": "UserProfile",
-        "description": "Stores profile information for each user."
       }
     ]
   },
