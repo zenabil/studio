@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "Product": {
@@ -227,8 +228,9 @@
       "type": "object",
       "description": "Represents a user's profile information.",
       "properties": {
+        "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "password": { "type": "string", "description": "Hashed or temporary password, for creation flow." },
+        "phone": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["approved", "pending", "revoked"], "description": "The approval status of the user account." },
         "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." },
@@ -294,3 +296,6 @@
     "providers": ["emailPassword"]
   }
 }
+
+
+  
