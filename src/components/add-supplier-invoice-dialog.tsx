@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -14,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/language-context';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Supplier, SupplierInvoiceItem, Product, AddSupplierInvoiceData } from '@/contexts/data-context';
@@ -82,7 +81,6 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
   
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [addProductTargetIndex, setAddProductTargetIndex] = useState<number | null>(null);
-  const [totalAmount, setTotalAmount] = useState(0);
 
   const categorizedProducts = useMemo(() => {
     const grouped: { [category: string]: Product[] } = {};
@@ -116,19 +114,21 @@ export function AddSupplierInvoiceDialog({ isOpen, onClose, onSave, supplier, in
     name: 'items',
   });
 
-  const watchedItems = form.watch('items');
-  
-  useEffect(() => {
+  const watchedItems = useWatch({
+    control: form.control,
+    name: 'items',
+  });
+
+  const totalAmount = useMemo(() => {
     if (!watchedItems) {
-      setTotalAmount(0);
-      return;
+      return 0;
     }
     const newTotal = watchedItems.reduce((acc, item) => {
         const quantity = Number(item.quantity) || 0;
         const price = Number(item.purchasePrice) || 0;
         return acc + (quantity * price);
     }, 0);
-    setTotalAmount(newTotal);
+    return newTotal;
   }, [watchedItems]);
 
 
