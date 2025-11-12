@@ -95,7 +95,7 @@ export function SidebarNav() {
   const totalAlertCount = lowStockCount + debtAlertCount;
   
   const navItems = useMemo(() => {
-    return [
+    const allItems = [
       { href: '/', label: t.nav.reports, icon: BarChartBig },
       { href: '/pos', label: t.nav.pos, icon: CircleDollarSign },
       { href: '/products', label: t.nav.products, icon: Package },
@@ -106,10 +106,12 @@ export function SidebarNav() {
       { href: '/expenses', label: t.nav.expenses, icon: Receipt },
       { href: '/alerts', label: t.nav.alerts, icon: TriangleAlert, alertCount: totalAlertCount },
       { href: '/zakat', label: t.nav.zakat, icon: HandCoins },
-      { href: '/users', label: t.nav.userManagement, icon: Users },
+      { href: '/users', label: t.nav.userManagement, icon: Users, adminOnly: true },
       { href: '/settings', label: t.nav.settings, icon: Settings },
     ];
-  }, [t, totalAlertCount]);
+    
+    return allItems.filter(item => !item.adminOnly || userProfile?.isAdmin);
+  }, [t, totalAlertCount, userProfile?.isAdmin]);
 
   const AppLogo = () => (
     <div className="bg-primary/10 p-2 rounded-lg group">
