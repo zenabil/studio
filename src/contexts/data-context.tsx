@@ -199,31 +199,9 @@ interface DataContextType {
     revokeUser: (userId: string) => Promise<void>;
     updateUserSubscription: (userId: string, subscriptionEndsAt: string | null) => Promise<void>;
     restoreData: (data: any) => Promise<void>;
-    setUserProfiles: (profiles: WithId<UserProfile>[]) => void;
-    setUserProfilesLoading: (loading: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
-
-// This component fetches global data (like user profiles) if the user is an admin.
-const AdminDataProvider = ({ children }: { children: React.ReactNode }) => {
-  const { userProfile, setUserProfiles, setUserProfilesLoading } = useContext(DataContext)!;
-  const firestore = useFirestore();
-
-  const userProfilesRef = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.isAdmin) return null;
-    return collection(firestore, 'userProfiles');
-  }, [firestore, userProfile?.isAdmin]);
-
-  const { data: userProfilesData, isLoading: profilesLoading } = useCollection<UserProfile>(userProfilesRef);
-  
-  useEffect(() => {
-    setUserProfiles(userProfilesData || []);
-    setUserProfilesLoading(profilesLoading);
-  }, [userProfilesData, profilesLoading, setUserProfiles, setUserProfilesLoading]);
-
-  return <>{children}</>;
-};
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
@@ -234,7 +212,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const dataUserId = user?.uid;
 
-    
     const productsRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/products`) : null, [firestore, dataUserId]);
     const customersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/customers`) : null, [firestore, dataUserId]);
     const salesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/sales`) : null, [firestore, dataUserId]);
@@ -244,6 +221,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
+    const userProfilesRef = useMemoFirebase(() => {
+        if (!firestore || !authUserProfile?.isAdmin) return null;
+        return collection(firestore, 'userProfiles');
+    }, [firestore, authUserProfile?.isAdmin]);
+    
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
     const { data: salesHistory, isLoading: salesLoading } = useCollection<SaleRecord>(salesRef);
@@ -252,11 +234,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { data: supplierInvoices, isLoading: supplierInvoicesLoading } = useCollection<SupplierInvoice>(supplierInvoicesRef);
     const { data: purchaseOrders, isLoading: purchaseOrdersLoading } = useCollection<PurchaseOrder>(purchaseOrdersRef);
     const { data: expenses, isLoading: expensesLoading } = useCollection<Expense>(expensesRef);
-    
-    const [userProfiles, setUserProfiles] = useState<WithId<UserProfile>[]>([]);
-    const [userProfilesLoading, setUserProfilesLoading] = useState(true);
+    const { data: userProfiles, isLoading: profilesLoading } = useCollection<UserProfile>(userProfilesRef);
 
-    const isLoadingAllData = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || userProfilesLoading;
+    const isLoading = isUserLoading || productsLoading || customersLoading || salesLoading || bakeryOrdersLoading || suppliersLoading || supplierInvoicesLoading || purchaseOrdersLoading || expensesLoading || (authUserProfile?.isAdmin && profilesLoading);
     
     const uploadImage = useCallback(async (file: File): Promise<string> => {
         if (!dataUserId || !firebaseApp) throw new Error("User not authenticated or Firebase app not available.");
@@ -794,9 +774,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         supplierInvoices: supplierInvoices || [],
         purchaseOrders: purchaseOrders || [],
         expenses: expenses || [],
-        userProfiles: userProfiles,
+        userProfiles: userProfiles || [],
         userProfile: authUserProfile,
-        isLoading: isLoadingAllData,
+        isLoading,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -826,15 +806,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         revokeUser,
         updateUserSubscription,
         restoreData,
-        setUserProfiles,
-        setUserProfilesLoading,
     };
 
     return (
       <DataContext.Provider value={contextValue}>
-        <AdminDataProvider>
-          {children}
-        </AdminDataProvider>
+        {children}
       </DataContext.Provider>
     );
 };
@@ -846,13 +822,3 @@ export const useData = () => {
     }
     return context;
 };
-
-    
-
-    
-
-
-
-
-
-
