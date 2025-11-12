@@ -225,8 +225,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
     const userProfilesRef = useMemoFirebase(() => {
-        if (!firestore || !authUserProfile?.isAdmin) return null;
-        return collection(firestore, 'userProfiles');
+        if (!firestore) return null;
+        // Fetch all profiles only if the user is an admin
+        if (authUserProfile?.isAdmin) {
+          return collection(firestore, 'userProfiles');
+        }
+        return null;
     }, [firestore, authUserProfile?.isAdmin]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
@@ -259,31 +263,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (!collectionRef) throw new Error("User not authenticated or data path not available.");
 
         const { imageFile, ...restOfProductData } = productData;
-        let imageUrl = productData.imageUrl || null;
+        let finalImageUrl = productData.imageUrl || null;
 
         if (imageFile) {
-            imageUrl = await uploadImage(imageFile);
+            finalImageUrl = await uploadImage(imageFile);
         }
 
-        const sanitizedData: any = { ...restOfProductData, imageUrl };
+        const newProductData = {
+            ...restOfProductData,
+            imageUrl: finalImageUrl,
+            createdAt: serverTimestamp(),
+        };
+        
+        const sanitizedData: any = { ...newProductData };
         Object.keys(sanitizedData).forEach(key => {
             if (sanitizedData[key] === undefined) {
                 sanitizedData[key] = null;
             }
         });
+        // remove the temporary imageFile property before saving
+        delete sanitizedData.imageFile;
 
-        const newProductData = {
-            ...sanitizedData,
-            createdAt: serverTimestamp(),
-        };
-
-        const docRef = await addDoc(collectionRef, newProductData)
+        const docRef = await addDoc(collectionRef, sanitizedData)
             .catch(error => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: newProductData }));
+                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: sanitizedData }));
                 throw error;
             });
         
-        return { ...newProductData, id: docRef.id } as WithId<Product>;
+        return { ...sanitizedData, id: docRef.id } as WithId<Product>;
     }, [firestore, dataUserId, uploadImage]);
 
     const updateProduct = useCallback(async (productId: string, productData: Partial<ProductFormData>) => {
@@ -291,18 +298,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         if (!collectionRef) return;
         
         const { imageFile, ...restOfProductData } = productData;
-        let imageUrl = productData.imageUrl;
+        let finalImageUrl = productData.imageUrl;
 
         if (imageFile) {
-            imageUrl = await uploadImage(imageFile);
+            finalImageUrl = await uploadImage(imageFile);
         }
 
-        const sanitizedData: any = { ...restOfProductData, imageUrl };
+        const dataToUpdate = {
+            ...restOfProductData,
+            imageUrl: finalImageUrl,
+        };
+
+        const sanitizedData: any = { ...dataToUpdate };
         Object.keys(sanitizedData).forEach(key => {
             if (sanitizedData[key] === undefined) {
                 sanitizedData[key] = null;
             }
         });
+         // remove the temporary imageFile property before saving
+        delete sanitizedData.imageFile;
+
 
         const docRef = doc(collectionRef, productId);
         await updateDoc(docRef, sanitizedData).catch(error => {
@@ -834,3 +849,5 @@ export const useData = () => {
     }
     return context;
 };
+
+    
