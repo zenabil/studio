@@ -306,7 +306,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ...customerData,
             spent: 0,
             balance: 0,
-            settlementDay: customerData.settlementDay || null,
+            settlementDay: customerData.settlementDay === undefined ? null : customerData.settlementDay,
         };
 
         const docRef = await addDoc(collectionRef, newCustomerData).catch(error => {
@@ -847,6 +847,7 @@ export const useData = () => {
     
 
     
+
 
 
 
