@@ -37,13 +37,6 @@ export function useUser(): UseUserResult {
   }, [firestore, user?.uid]);
 
   const { data: userProfileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
-  
-  const allUsersCollectionRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, `userProfiles`);
-  }, [firestore]);
-  
-  const { data: allUserProfilesData, isLoading: areAllProfilesLoading } = useCollection<UserProfile>(allUsersCollectionRef);
 
   const userProfile = useMemo(() => {
     if (!userProfileData) return null;
@@ -61,12 +54,27 @@ export function useUser(): UseUserResult {
       subscriptionEndsAt: userProfileData.subscriptionEndsAt,
     };
   }, [userProfileData]);
+
+  // Only fetch all user profiles if the current user is an admin.
+  const allUsersCollectionRef = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.isAdmin) return null;
+    return collection(firestore, `userProfiles`);
+  }, [firestore, userProfile?.isAdmin]);
+  
+  const { data: allUserProfilesData, isLoading: areAllProfilesLoading } = useCollection<UserProfile>(allUsersCollectionRef);
   
   const isUserLoading = useMemo(() => {
     if (isAuthLoading) return true;
-    if (user) return isProfileLoading || areAllProfilesLoading;
+    if (user) {
+        // If the user is an admin, we also wait for all profiles to load.
+        if (userProfile?.isAdmin) {
+            return isProfileLoading || areAllProfilesLoading;
+        }
+        // If the user is not an admin, we only wait for their own profile.
+        return isProfileLoading;
+    }
     return false;
-  }, [isAuthLoading, user, isProfileLoading, areAllProfilesLoading]);
+  }, [isAuthLoading, user, isProfileLoading, areAllProfilesLoading, userProfile?.isAdmin]);
 
 
   return {
@@ -77,3 +85,4 @@ export function useUser(): UseUserResult {
     isUserLoading,
   };
 }
+

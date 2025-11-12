@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/components/app-providers';
-import { AppLayout } from '@/app/app-layout';
+import { AppLayout } from '@/components/app-layout';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Poppins } from 'next/font/google';
 import { cn } from '@/lib/utils';
