@@ -41,16 +41,23 @@ export function useUser(): UseUserResult {
     if (!userProfileData) return null;
     
     return {
+      ...userProfileData,
       id: userProfileData.id,
       email: userProfileData.email,
       status: userProfileData.status || 'pending',
       isAdmin: !!userProfileData.isAdmin,
       createdAt: userProfileData.createdAt,
+      subscriptionEndsAt: userProfileData.subscriptionEndsAt,
     };
   }, [userProfileData]);
   
   const isUserLoading = useMemo(() => {
-    return isAuthLoading || (!!user && isProfileLoading);
+    // If auth is loading, we are definitely loading.
+    if (isAuthLoading) return true;
+    // If there is a user, we must wait for their profile to finish loading.
+    if (user) return isProfileLoading;
+    // If there is no user and auth is not loading, we are done.
+    return false;
   }, [isAuthLoading, user, isProfileLoading]);
 
 
@@ -61,4 +68,3 @@ export function useUser(): UseUserResult {
     isUserLoading,
   };
 }
-

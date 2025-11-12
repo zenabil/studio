@@ -231,7 +231,12 @@
         "password": { "type": "string", "description": "Hashed or temporary password, for creation flow." },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["approved", "pending", "revoked"], "description": "The approval status of the user account." },
-        "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." }
+        "isAdmin": { "type": "boolean", "description": "Whether the user has administrative privileges." },
+        "subscriptionEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date when the user's subscription or access expires."
+        }
       },
       "required": ["email", "createdAt", "status", "isAdmin"]
     }
