@@ -168,13 +168,24 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
     setIsSaving(true);
     try {
       const barcodesArray = values.barcodes.split(',').map(b => b.trim()).filter(Boolean);
+      
+      let finalImageUrl = values.imageUrl;
+      if (values.imageFile) {
+        // If there's a new file, the data-context will handle the upload.
+        // We don't need to do anything here except pass the file.
+      } else if (imagePreview) {
+        // If there is a preview but no new file, it means we are keeping the old image.
+        finalImageUrl = imagePreview;
+      }
+
       const dataToSave: ProductFormData = {
         ...values,
         quantityPerBox: values.quantityPerBox === undefined ? null : values.quantityPerBox,
         boxPrice: values.boxPrice === undefined ? null : values.boxPrice,
-        imageUrl: values.imageUrl === undefined ? null : values.imageUrl,
+        imageUrl: finalImageUrl,
         barcodes: barcodesArray
       };
+
       await onSave(dataToSave, productToEdit?.id);
       form.reset();
       onClose();
@@ -212,6 +223,7 @@ export function AddProductDialog({ isOpen, onClose, onSave, productToEdit, initi
         const dataUrl = e.target?.result as string;
         setImagePreview(dataUrl);
         form.setValue('imageFile', file, { shouldDirty: true });
+        form.setValue('imageUrl', dataUrl, { shouldDirty: true }); // Also update imageUrl for preview consistency
     };
     reader.onerror = () => {
          toast({
