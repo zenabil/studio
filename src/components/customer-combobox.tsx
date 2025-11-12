@@ -119,6 +119,7 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                     key={customer.id}
                     value={customer.name}
                     onSelect={() => handleSelect(customer.id)}
+                    onClick={() => handleSelect(customer.id)}
                   >
                     <Check
                       className={cn(
