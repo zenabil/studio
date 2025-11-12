@@ -50,12 +50,8 @@ export function useUser(): UseUserResult {
   }, [userProfileData]);
   
   const isUserLoading = useMemo(() => {
-    if (isAuthLoading) return true;
-    if (!user) return false; // If no user, auth is settled.
-    if (isProfileLoading) return true; // If there's a user, wait for profile.
-    if (!userProfile) return true; // Still loading if profile data isn't processed yet.
-    return false;
-  }, [isAuthLoading, user, isProfileLoading, userProfile]);
+    return isAuthLoading || (!!user && isProfileLoading);
+  }, [isAuthLoading, user, isProfileLoading]);
 
 
   return {
@@ -65,3 +61,4 @@ export function useUser(): UseUserResult {
     isUserLoading,
   };
 }
+
