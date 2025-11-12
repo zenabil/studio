@@ -1,10 +1,9 @@
 
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
-import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
+import { useAuth, useFirestore, useDoc, useMemoFirebase, useFirebase, useCollection } from '@/firebase';
 import type { UserProfile } from '@/contexts/data-context';
 import { WithId } from '@/lib/utils';
 
@@ -12,6 +11,7 @@ export interface UseUserResult {
   user: User | null;
   firebaseApp: any;
   userProfile: WithId<UserProfile> | null;
+  userProfiles: WithId<UserProfile>[];
   isUserLoading: boolean;
 }
 
@@ -36,6 +36,13 @@ export function useUser(): UseUserResult {
   }, [firestore, user?.uid]);
 
   const { data: userProfileData, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileDocRef);
+  
+  const allUsersCollectionRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, `userProfiles`);
+  }, [firestore]);
+  
+  const { data: allUserProfilesData, isLoading: areAllProfilesLoading } = useCollection<UserProfile>(allUsersCollectionRef);
 
   const userProfile = useMemo(() => {
     if (!userProfileData) return null;
@@ -52,19 +59,17 @@ export function useUser(): UseUserResult {
   }, [userProfileData]);
   
   const isUserLoading = useMemo(() => {
-    // If auth is loading, we are definitely loading.
     if (isAuthLoading) return true;
-    // If there is a user, we must wait for their profile to finish loading.
-    if (user) return isProfileLoading;
-    // If there is no user and auth is not loading, we are done.
+    if (user) return isProfileLoading || areAllProfilesLoading;
     return false;
-  }, [isAuthLoading, user, isProfileLoading]);
+  }, [isAuthLoading, user, isProfileLoading, areAllProfilesLoading]);
 
 
   return {
     user,
     firebaseApp,
     userProfile,
+    userProfiles: allUserProfilesData || [],
     isUserLoading,
   };
 }

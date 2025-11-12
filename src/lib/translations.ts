@@ -48,7 +48,7 @@ export const translations = {
       pendingApprovalTitle: "Compte en attente d'approbation",
       pendingApprovalDescription: "Votre compte a été créé avec succès et attend l'approbation de l'administrateur.",
       pendingApprovalContact: "Veuillez contacter l'administrateur de votre système pour activer votre compte.",
-      adminContact: "Informations de contact de l'administrateur",
+      adminContact: "Contact Administrateur",
       rememberMe: "Se souvenir de moi",
       changePasswordDescription: "Changez le mot de passe de votre compte ici. Après la modification, vous serez déconnecté.",
       subscriptionExpiredTitle: "Abonnement Expiré",
@@ -73,6 +73,7 @@ export const translations = {
         update: "Mettre à jour",
         subscriptionUpdated: "Date d'expiration mise à jour.",
         setSubscription: "Définir la date d'expiration",
+        searchPlaceholder: "Rechercher par e-mail ou téléphone...",
     },
     profile: {
         subscriptionStatus: "Statut de l'abonnement",
@@ -622,6 +623,7 @@ export const translations = {
         update: "تحديث",
         subscriptionUpdated: "تم تحديث تاريخ انتهاء الصلاحية.",
         setSubscription: "تحديد تاريخ انتهاء الصلاحية",
+        searchPlaceholder: "ابحث بالبريد الإلكتروني أو الهاتف...",
     },
     profile: {
         subscriptionStatus: "حالة الاشتراك",

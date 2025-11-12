@@ -24,7 +24,7 @@ import { UserProfile } from '@/contexts/data-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, ShieldOff, LoaderCircle, Lock, CalendarIcon } from 'lucide-react';
+import { ShieldCheck, ShieldOff, LoaderCircle, Lock, CalendarIcon, Search } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useAdminAuth } from '@/contexts/admin-auth-context';
 import { Input } from '@/components/ui/input';
@@ -137,6 +137,7 @@ export default function UsersPage() {
   const { user } = useUser();
   const { isAuthorized, setIsAuthorized } = useAdminAuth();
   const { settings, setSettings } = useSettings();
+  const [searchTerm, setSearchTerm] = useState('');
 
 
   const passwordFormSchema = z.object({
@@ -170,14 +171,26 @@ export default function UsersPage() {
       });
   };
 
-  const sortedUsers = useMemo(() => {
+  const sortedAndFilteredUsers = useMemo(() => {
     if (!userProfiles) return [];
-    return [...userProfiles].sort((a, b) => {
+    
+    let filtered = [...userProfiles];
+
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(profile => 
+        profile.email.toLowerCase().includes(lowerCaseSearchTerm) ||
+        (profile as any).phone?.toLowerCase().includes(lowerCaseSearchTerm) ||
+        (profile as any).name?.toLowerCase().includes(lowerCaseSearchTerm)
+      );
+    }
+    
+    return filtered.sort((a, b) => {
         if (a.id === user?.uid) return -1;
         if (b.id === user?.uid) return 1;
         return (a.createdAt && b.createdAt) ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : a.email.localeCompare(b.email);
     });
-  }, [userProfiles, user?.uid]);
+  }, [userProfiles, user?.uid, searchTerm]);
 
   const handleApprove = async (profile: UserProfile) => {
     try {
@@ -213,10 +226,19 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div>
             <h1 className="text-3xl font-bold font-headline">{t.users.title}</h1>
             <p className="text-muted-foreground">{t.users.description}</p>
+        </div>
+        <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground rtl:left-auto rtl:right-3" />
+            <Input 
+                placeholder={t.users.searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 rtl:pr-10"
+            />
         </div>
       </div>
        <Card>
@@ -231,8 +253,8 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedUsers.length > 0 ? (
-                sortedUsers.map((profile) => (
+              {sortedAndFilteredUsers.length > 0 ? (
+                sortedAndFilteredUsers.map((profile) => (
                   <TableRow key={profile.id}>
                     <TableCell className="font-medium">{profile.email} {profile.id === user?.uid && `(${t.auth.you})`}</TableCell>
                     <TableCell>
@@ -241,8 +263,8 @@ export default function UsersPage() {
                       </Badge>
                     </TableCell>
                      <TableCell>
-                        {profile.id === user?.uid ? (
-                           profile.subscriptionEndsAt ? format(new Date(profile.subscriptionEndsAt), 'PP') : t.users.noExpiration
+                        {profile.isAdmin ? (
+                           <span>-</span>
                         ) : (
                           <UserSubscriptionCell profile={profile} />
                         )}
