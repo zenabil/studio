@@ -100,61 +100,63 @@ export default function ProfilePage() {
                 </Card>
             </div>
             <div className="md:col-span-2">
-                <form onSubmit={form.handleSubmit(onSubmit)}>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>{t.settings.changePassword}</CardTitle>
-                            <CardDescription>{t.auth.changePasswordDescription}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="currentPassword"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t.settings.currentPassword}</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" {...field} disabled={isSaving} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="newPassword"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t.settings.newPassword}</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" {...field} disabled={isSaving} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="confirmPassword"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t.auth.confirmPassword}</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" {...field} disabled={isSaving} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                        <CardFooter>
-                            <Button type="submit" disabled={isSaving || !form.formState.isValid}>
-                                {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                {isSaving ? t.settings.saving : t.settings.changePassword}
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </form>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)}>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t.settings.changePassword}</CardTitle>
+                                <CardDescription>{t.auth.changePasswordDescription}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="currentPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t.settings.currentPassword}</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" {...field} disabled={isSaving} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="newPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t.settings.newPassword}</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" {...field} disabled={isSaving} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="confirmPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t.auth.confirmPassword}</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" {...field} disabled={isSaving} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </CardContent>
+                            <CardFooter>
+                                <Button type="submit" disabled={isSaving || !form.formState.isValid}>
+                                    {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isSaving ? t.settings.saving : t.settings.changePassword}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </form>
+                </Form>
             </div>
         </div>
     </div>
