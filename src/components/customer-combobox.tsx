@@ -42,8 +42,11 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
 
     const handleSelect = (customerId: string | null) => {
       onSelectCustomer(customerId);
-      setOpen(false);
-      setSearchValue('');
+      // Use requestAnimationFrame to ensure the selection is processed before the popover closes.
+      requestAnimationFrame(() => {
+        setOpen(false);
+        setSearchValue('');
+      });
     };
 
     const ComboboxTrigger = () => (
@@ -119,7 +122,6 @@ export const CustomerCombobox = React.forwardRef<HTMLButtonElement, CustomerComb
                     key={customer.id}
                     value={customer.name}
                     onSelect={() => handleSelect(customer.id)}
-                    onClick={() => handleSelect(customer.id)}
                   >
                     <Check
                       className={cn(
