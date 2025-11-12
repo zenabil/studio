@@ -224,12 +224,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
     
     const userProfilesRef = useMemoFirebase(() => {
-        if (!firestore) return null;
-        // Fetch all profiles only if the user is an admin
-        if (authUserProfile?.isAdmin) {
-          return collection(firestore, 'userProfiles');
-        }
-        return null;
+        if (!firestore || !authUserProfile?.isAdmin) return null;
+        return collection(firestore, 'userProfiles');
     }, [firestore, authUserProfile?.isAdmin]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
@@ -576,7 +572,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             await batch.commit();
 
         } catch(error) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/users/${dataUserId}`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${dataUserId}/supplierInvoices`, operation: 'write', requestResourceData: { invoice: invoiceData } }));
             throw error;
         };
     }, [firestore, dataUserId, products]);
@@ -815,3 +811,4 @@ export const useData = () => {
     
 
     
+
