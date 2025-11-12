@@ -108,6 +108,7 @@ export interface UserProfile {
   status: 'approved' | 'pending' | 'revoked';
   isAdmin: boolean;
   createdAt: string;
+  subscriptionEndsAt?: string | null;
 }
 
 export type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null };
