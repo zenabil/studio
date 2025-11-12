@@ -105,6 +105,7 @@ export interface SupplierInvoice {
 export interface UserProfile {
   id: string;
   email: string;
+  phone?: string;
   status: 'approved' | 'pending' | 'revoked';
   isAdmin: boolean;
   createdAt: string;

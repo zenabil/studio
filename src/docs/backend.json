@@ -228,6 +228,7 @@
       "description": "Represents a user's profile information.",
       "properties": {
         "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
         "password": { "type": "string", "description": "Hashed or temporary password, for creation flow." },
         "createdAt": { "type": "string", "format": "date-time" },
         "status": { "type": "string", "enum": ["approved", "pending", "revoked"], "description": "The approval status of the user account." },
