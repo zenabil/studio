@@ -222,7 +222,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoicesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
     const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
-    const allUserProfilesRef = useMemoFirebase(() => (firestore && dataUserId) ? collection(firestore, 'userProfiles') : null, [firestore, dataUserId]);
+    const allUserProfilesRef = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'userProfiles') : null, [firestore, user]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -737,14 +737,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }, []);
     
     const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
-        console.warn("Profile update feature is temporarily disabled due to a persistent error.");
-        toast({
-          variant: "destructive",
-          title: "Feature Disabled",
-          description: "Profile updates are temporarily disabled. Please contact support.",
-        });
-        return Promise.resolve();
-    }, [toast]);
+        const functions = getFunctions();
+        const updateUser = httpsCallable(functions, 'updateUserProfile');
+        try {
+            await updateUser({ userId, ...profileData });
+        } catch (error) {
+            console.error("Cloud function error:", error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `userProfiles/${userId}`, operation: 'update', requestResourceData: profileData }));
+            throw error;
+        }
+    }, []);
     
     const updateUserSubscription = useCallback(async (userId: string, subscriptionEndsAt: string | null) => {
         if (!firestore) throw new Error("User not authenticated or data path not available.");

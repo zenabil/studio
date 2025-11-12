@@ -106,3 +106,36 @@ export const revokeUser = onCall(async (request) => {
   
     return { status: "success", message: `User ${userIdToRevoke} access revoked.` };
 });
+
+
+export const updateUserProfile = onCall(async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+    }
+
+    const { userId, name, phone, photoURL } = request.data;
+    
+    // A user can only update their own profile.
+    if (request.auth.uid !== userId) {
+         throw new HttpsError("permission-denied", "You can only update your own profile.");
+    }
+
+    const userProfileRef = db.collection('userProfiles').doc(userId);
+    
+    const dataToUpdate: { [key: string]: any } = {};
+    if (name !== undefined) dataToUpdate.name = name;
+    if (phone !== undefined) dataToUpdate.phone = phone;
+    if (photoURL !== undefined) dataToUpdate.photoURL = photoURL;
+    
+    if (Object.keys(dataToUpdate).length === 0) {
+        return { status: "no-op", message: "No data provided to update." };
+    }
+
+    try {
+      await userProfileRef.update(dataToUpdate);
+      return { status: "success", message: `User profile for ${userId} updated.` };
+    } catch (error) {
+       console.error("Error updating user profile:", error);
+       throw new HttpsError("internal", "An error occurred while updating the profile.");
+    }
+});
