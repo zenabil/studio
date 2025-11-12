@@ -2,7 +2,8 @@
 
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useUser, useAuth } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
+import { useAuth } from '@/firebase';
 import { useData } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';

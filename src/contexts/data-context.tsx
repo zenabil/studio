@@ -4,11 +4,11 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import {
-    useUser,
     useFirestore,
     useCollection,
     useMemoFirebase,
 } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 import {
     collection,
     doc,
@@ -210,9 +210,8 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
     const { toast } = useToast();
     const { t } = useLanguage();
-    const { user, userProfile: authUserProfile, isUserLoading } = useUser();
+    const { user, userProfile: authUserProfile, isUserLoading, firebaseApp } = useUser();
     const firestore = useFirestore();
-    const { firebaseApp } = useUser();
 
     const dataUserId = user?.uid;
 

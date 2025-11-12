@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode, useMemo } from 'react';
 import Loading from '@/app/loading';
@@ -15,8 +15,7 @@ import { Button } from './ui/button';
 const publicPaths = ['/login', '/signup'];
 
 export function AuthLayout({ children }: { children: ReactNode }) {
-  const { user, isUserLoading } = useUser();
-  const { userProfile, userProfiles, isLoading: isProfileLoading } = useData();
+  const { user, isUserLoading, userProfile, userProfiles } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
@@ -36,7 +35,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
     };
   }, [userProfiles]);
 
-  const isLoading = isUserLoading || (user && isProfileLoading);
+  const isLoading = isUserLoading;
   
   useEffect(() => {
     if (isLoading) {

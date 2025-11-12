@@ -50,7 +50,8 @@ import { Separator } from './ui/separator';
 import { calculateDebtAlerts } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 
