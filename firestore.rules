@@ -14,12 +14,8 @@ service cloud.firestore {
       // Any authenticated user can read any profile (e.g., to get admin contact info).
       allow read: if isSignedIn();
       
-      // A user can only create their own profile.
-      allow create: if request.auth.uid == userId;
-      
-      // A user can only update their own profile.
-      // This rule allows updates and adding new fields to their own profile.
-      allow update: if request.auth.uid == userId;
+      // A user can create, update, or delete their own profile.
+      allow write: if request.auth.uid == userId;
     }
 
     // Rule for all user-specific subcollections (products, customers, etc.)
