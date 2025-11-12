@@ -107,6 +107,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
+  photoURL?: string | null;
   status: 'approved' | 'pending' | 'revoked';
   isAdmin: boolean;
   createdAt: string;

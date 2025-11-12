@@ -54,6 +54,7 @@ export function useUser(): UseUserResult {
       name: userProfileData.name || '',
       email: userProfileData.email,
       phone: userProfileData.phone || '',
+      photoURL: userProfileData.photoURL || null,
       status: userProfileData.status || 'pending',
       isAdmin: !!userProfileData.isAdmin,
       createdAt: userProfileData.createdAt,

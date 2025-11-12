@@ -148,7 +148,7 @@ export function SidebarNav() {
             >
                 <Link href="/profile">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={user?.photoURL || ''} alt={userProfile?.name || user?.email || ''} />
+                        <AvatarImage src={userProfile?.photoURL || ''} alt={userProfile?.name || user?.email || ''} />
                         <AvatarFallback>{userInitial}</AvatarFallback>
                     </Avatar>
                     <div className="group-data-[collapsible=icon]:hidden flex-grow overflow-hidden ml-2 rtl:mr-2 rtl:ml-0">

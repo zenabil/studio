@@ -1,7 +1,7 @@
 
 
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useUser, useAuth } from '@/firebase';
 import { useData } from '@/contexts/data-context';
 import { useLanguage } from '@/contexts/language-context';
@@ -16,10 +16,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { LoaderCircle, ShieldCheck, Clock, AlertTriangle, Mail, Phone, Save } from 'lucide-react';
+import { LoaderCircle, ShieldCheck, Clock, AlertTriangle, Mail, Phone, Upload } from 'lucide-react';
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { differenceInDays, format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import Image from 'next/image';
 
 export default function ProfilePage() {
   const { t } = useLanguage();
@@ -29,10 +30,13 @@ export default function ProfilePage() {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const auth = useAuth();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const profileFormSchema = z.object({
     name: z.string().min(2, { message: t.customers.nameMinLength }),
     phone: z.string().optional(),
+    photoURL: z.string().optional().nullable(),
   });
 
   const passwordFormSchema = z.object({
@@ -59,7 +63,9 @@ export default function ProfilePage() {
       profileForm.reset({
         name: userProfile.name || '',
         phone: userProfile.phone || '',
+        photoURL: userProfile.photoURL || '',
       });
+      setAvatarPreview(userProfile.photoURL || null);
     }
   }, [userProfile, profileForm]);
 
@@ -111,6 +117,7 @@ export default function ProfilePage() {
     try {
       await updateUserProfile(user.uid, data);
       toast({ title: t.profile.profileUpdated });
+      profileForm.reset(profileForm.getValues()); // Reset to the new saved values
     } catch (error) {
        toast({
           variant: 'destructive',
@@ -120,6 +127,35 @@ export default function ProfilePage() {
     } finally {
       setIsSavingProfile(false);
     }
+  };
+
+  const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) { // 1MB size limit
+        toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.fileTooLarge,
+        });
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setAvatarPreview(dataUrl);
+        profileForm.setValue('photoURL', dataUrl, { shouldDirty: true });
+    };
+    reader.onerror = () => {
+         toast({
+            variant: 'destructive',
+            title: t.errors.title,
+            description: t.errors.fileReadError,
+        });
+    }
+    reader.readAsDataURL(file);
   };
 
   const userInitial = userProfile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?';
@@ -164,10 +200,22 @@ export default function ProfilePage() {
             <div className="md:col-span-1">
                 <Card className="flex flex-col h-full">
                     <CardHeader className="items-center text-center">
-                        <Avatar className="h-24 w-24 mb-4">
-                            <AvatarImage src={user?.photoURL || ''} alt={userProfile?.name || user?.email || ''} />
-                            <AvatarFallback>{userInitial}</AvatarFallback>
-                        </Avatar>
+                        <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                            <Avatar className="h-24 w-24 mb-4">
+                                <AvatarImage src={avatarPreview || ''} alt={userProfile?.name || user?.email || ''} />
+                                <AvatarFallback>{userInitial}</AvatarFallback>
+                            </Avatar>
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                <Upload className="h-8 w-8 text-white" />
+                            </div>
+                        </div>
+                        <input
+                          type="file"
+                          ref={avatarInputRef}
+                          onChange={handleAvatarFileChange}
+                          accept="image/png, image/jpeg, image/gif"
+                          className="hidden"
+                        />
                         <CardTitle className="flex items-center gap-2">
                             {userProfile?.name || user?.email}
                             {userProfile?.status === 'approved' && <ShieldCheck className="h-6 w-6 text-blue-500" />}
@@ -240,7 +288,7 @@ export default function ProfilePage() {
                                         <FormItem>
                                             <FormLabel>{t.profile.phone}</FormLabel>
                                             <FormControl>
-                                                <Input type="tel" {...field} disabled={isSaving} />
+                                                <Input type="tel" {...field} value={field.value || ''} disabled={isSaving} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
