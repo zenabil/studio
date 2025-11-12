@@ -9,19 +9,24 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Helper function to check if the requesting user is the owner of the document.
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
     // Rule for the userProfiles collection
     match /userProfiles/{userId} {
       // Any authenticated user can read any profile (e.g., to get admin contact info).
       allow read: if isSignedIn();
       
       // A user can create, update, or delete their own profile.
-      allow create, update, delete: if request.auth.uid == userId;
+      allow create, update, delete: if isOwner(userId);
     }
 
     // Rule for all user-specific subcollections (products, customers, etc.)
     match /users/{userId}/{document=**} {
       // A user can perform any action (read, write) only on documents within their own folder.
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
   }
 }
