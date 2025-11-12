@@ -16,13 +16,13 @@ const publicPaths = ['/login', '/signup'];
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   const { user, isUserLoading, userProfile } = useUser();
-  const { userProfiles } = useData();
+  const { userProfiles, isLoading: isDataLoading } = useData();
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
 
   const adminContact = useMemo(() => {
-    if (!userProfiles || userProfiles.length === 0) {
+    if (!userProfiles || userProfiles.length === 0 || isDataLoading) {
       return null;
     }
     // Find a user who is an admin
@@ -34,7 +34,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       email: adminProfile.email,
       phone: (adminProfile as any)?.phone || null,
     };
-  }, [userProfiles]);
+  }, [userProfiles, isDataLoading]);
 
   const isLoading = isUserLoading;
   
