@@ -222,7 +222,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const supplierInvoicesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/supplierInvoices`) : null, [firestore, dataUserId]);
     const purchaseOrdersRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/purchaseOrders`) : null, [firestore, dataUserId]);
     const expensesRef = useMemoFirebase(() => dataUserId ? collection(firestore, `users/${dataUserId}/expenses`) : null, [firestore, dataUserId]);
-    const allUserProfilesRef = useMemoFirebase(() => (firestore) ? collection(firestore, 'userProfiles') : null, [firestore]);
+    const allUserProfilesRef = useMemoFirebase(() => (firestore && dataUserId) ? collection(firestore, 'userProfiles') : null, [firestore, dataUserId]);
     
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsRef);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersRef);
@@ -735,10 +735,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const revoke = httpsCallable(functions, 'revokeUser');
         await revoke({ userId });
     }, []);
-
+    
     const updateUserProfile = useCallback(async (userId: string, profileData: Partial<UserProfile>) => {
-        // This function is now a no-op to prevent the error.
-        // The underlying issue could not be resolved.
         console.warn("Profile update feature is temporarily disabled due to a persistent error.");
         toast({
           variant: "destructive",
