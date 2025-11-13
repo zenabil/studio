@@ -1,46 +1,40 @@
 
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { getAuth } from "firebase-admin/auth";
-import * as functions from "firebase-functions";
 
 initializeApp();
 
 const db = getFirestore();
 
-export const createPendingUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
-    const { email, password, name } = data;
+export const createPendingUser = onCall(async (request: CallableRequest) => {
+    const { email, password, name } = request.data;
   
     if (!email || !password || !name) {
-      throw new functions.https.HttpsError('invalid-argument', 'The function must be called with "email", "password", and "name" arguments.');
+      throw new HttpsError('invalid-argument', 'The function must be called with "email", "password", and "name" arguments.');
     }
   
     try {
-      // Check if a user with that email already exists
       const existingUser = await getAuth().getUserByEmail(email).catch(() => null);
       if (existingUser) {
-        // If the user exists and their profile is just pending, we don't need to do anything.
-        // If they exist and are approved/revoked, we should prevent creating a new account.
          const profileRef = db.collection('userProfiles').doc(existingUser.uid);
          const profileSnap = await profileRef.get();
          if (profileSnap.exists()) {
-             throw new functions.https.HttpsError('already-exists', 'This email address is already in use.');
+             throw new HttpsError('already-exists', 'This email address is already in use.');
          }
       }
   
-      // Create the user in Firebase Auth
       const userRecord = await getAuth().createUser({
         email: email,
         password: password,
         displayName: name,
       });
   
-      // Create the user profile document in Firestore with 'pending' status
       const profileData = {
         name: name,
         email: email,
-        phone: '', // Initialize phone as empty
+        phone: '', 
         createdAt: new Date().toISOString(),
         status: 'pending',
         isAdmin: false,
@@ -53,15 +47,15 @@ export const createPendingUser = functions.https.onCall(async (data: any, contex
   
     } catch (error: any) {
         if (error.code === 'auth/email-already-exists') {
-            throw new functions.https.HttpsError('already-exists', 'This email address is already in use.');
+            throw new HttpsError('already-exists', 'This email address is already in use.');
         }
       console.error('Error creating pending user:', error);
-      throw new functions.https.HttpsError('internal', 'An error occurred while creating the user.');
+      throw new HttpsError('internal', 'An error occurred while creating the user.');
     }
 });
   
 
-export const approveUser = onCall(async (request: any) => {
+export const approveUser = onCall(async (request: CallableRequest) => {
     if (!request.auth || !request.auth.token.email) {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
@@ -84,7 +78,7 @@ export const approveUser = onCall(async (request: any) => {
     return { status: "success", message: `User ${userIdToApprove} approved.` };
 });
 
-export const revokeUser = onCall(async (request: any) => {
+export const revokeUser = onCall(async (request: CallableRequest) => {
     if (!request.auth || !request.auth.token.email) {
         throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
@@ -108,14 +102,13 @@ export const revokeUser = onCall(async (request: any) => {
 });
 
 
-export const updateUserProfile = onCall(async (request: any) => {
+export const updateUserProfile = onCall(async (request: CallableRequest) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
 
     const { userId, name, phone, photoURL } = request.data;
     
-    // A user can only update their own profile.
     if (request.auth.uid !== userId) {
          throw new HttpsError("permission-denied", "You can only update your own profile.");
     }
