@@ -20,7 +20,7 @@ export const createPendingUser = onCall(async (request: CallableRequest) => {
       if (existingUser) {
          const profileRef = db.collection('userProfiles').doc(existingUser.uid);
          const profileSnap = await profileRef.get();
-         if (profileSnap.exists()) {
+         if (profileSnap.exists) {
              throw new HttpsError('already-exists', 'This email address is already in use.');
          }
       }
@@ -63,7 +63,7 @@ export const approveUser = onCall(async (request: CallableRequest) => {
     const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
   
-    if (!adminSnap.exists() || !adminSnap.data()?.isAdmin) {
+    if (!adminSnap.exists || !adminSnap.data()?.isAdmin) {
       throw new HttpsError("permission-denied", "Only admins can approve users.");
     }
   
@@ -86,7 +86,7 @@ export const revokeUser = onCall(async (request: CallableRequest) => {
     const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
   
-    if (!adminSnap.exists() || !adminSnap.data()?.isAdmin) {
+    if (!adminSnap.exists || !adminSnap.data()?.isAdmin) {
         throw new HttpsError("permission-denied", "Only admins can revoke user access.");
     }
   
