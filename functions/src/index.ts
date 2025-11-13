@@ -9,7 +9,7 @@ initializeApp();
 
 const db = getFirestore();
 
-export const createPendingUser = functions.https.onCall(async (data, context) => {
+export const createPendingUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     const { email, password, name } = data;
   
     if (!email || !password || !name) {
@@ -61,7 +61,7 @@ export const createPendingUser = functions.https.onCall(async (data, context) =>
 });
   
 
-export const approveUser = onCall(async (request) => {
+export const approveUser = onCall(async (request: any) => {
     if (!request.auth || !request.auth.token.email) {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
@@ -84,7 +84,7 @@ export const approveUser = onCall(async (request) => {
     return { status: "success", message: `User ${userIdToApprove} approved.` };
 });
 
-export const revokeUser = onCall(async (request) => {
+export const revokeUser = onCall(async (request: any) => {
     if (!request.auth || !request.auth.token.email) {
         throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
@@ -108,7 +108,7 @@ export const revokeUser = onCall(async (request) => {
 });
 
 
-export const updateUserProfile = onCall(async (request) => {
+export const updateUserProfile = onCall(async (request: any) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
