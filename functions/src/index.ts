@@ -63,7 +63,7 @@ export const approveUser = onCall(async (request: CallableRequest) => {
     const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
   
-    if (!adminSnap.exists || !adminSnap.data()?.isAdmin) {
+    if (!adminSnap.exists() || !adminSnap.data()?.isAdmin) {
       throw new HttpsError("permission-denied", "Only admins can approve users.");
     }
   
@@ -86,7 +86,7 @@ export const revokeUser = onCall(async (request: CallableRequest) => {
     const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
   
-    if (!adminSnap.exists || !adminSnap.data()?.isAdmin) {
+    if (!adminSnap.exists() || !adminSnap.data()?.isAdmin) {
         throw new HttpsError("permission-denied", "Only admins can revoke user access.");
     }
   
@@ -132,3 +132,5 @@ export const updateUserProfile = onCall(async (request: CallableRequest) => {
        throw new HttpsError("internal", "An error occurred while updating the profile.");
     }
 });
+
+    

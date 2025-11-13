@@ -5,37 +5,31 @@ const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const auth_1 = require("firebase-admin/auth");
-const functions = require("firebase-functions");
 (0, app_1.initializeApp)();
 const db = (0, firestore_1.getFirestore)();
-exports.createPendingUser = functions.https.onCall(async (data, context) => {
-    const { email, password, name } = data;
+exports.createPendingUser = (0, https_1.onCall)(async (request) => {
+    const { email, password, name } = request.data;
     if (!email || !password || !name) {
-        throw new functions.https.HttpsError('invalid-argument', 'The function must be called with "email", "password", and "name" arguments.');
+        throw new https_1.HttpsError('invalid-argument', 'The function must be called with "email", "password", and "name" arguments.');
     }
     try {
-        // Check if a user with that email already exists
         const existingUser = await (0, auth_1.getAuth)().getUserByEmail(email).catch(() => null);
         if (existingUser) {
-            // If the user exists and their profile is just pending, we don't need to do anything.
-            // If they exist and are approved/revoked, we should prevent creating a new account.
             const profileRef = db.collection('userProfiles').doc(existingUser.uid);
             const profileSnap = await profileRef.get();
             if (profileSnap.exists()) {
-                throw new functions.https.HttpsError('already-exists', 'This email address is already in use.');
+                throw new https_1.HttpsError('already-exists', 'This email address is already in use.');
             }
         }
-        // Create the user in Firebase Auth
         const userRecord = await (0, auth_1.getAuth)().createUser({
             email: email,
             password: password,
             displayName: name,
         });
-        // Create the user profile document in Firestore with 'pending' status
         const profileData = {
             name: name,
             email: email,
-            phone: '', // Initialize phone as empty
+            phone: '',
             createdAt: new Date().toISOString(),
             status: 'pending',
             isAdmin: false,
@@ -46,10 +40,10 @@ exports.createPendingUser = functions.https.onCall(async (data, context) => {
     }
     catch (error) {
         if (error.code === 'auth/email-already-exists') {
-            throw new functions.https.HttpsError('already-exists', 'This email address is already in use.');
+            throw new https_1.HttpsError('already-exists', 'This email address is already in use.');
         }
         console.error('Error creating pending user:', error);
-        throw new functions.https.HttpsError('internal', 'An error occurred while creating the user.');
+        throw new https_1.HttpsError('internal', 'An error occurred while creating the user.');
     }
 });
 exports.approveUser = (0, https_1.onCall)(async (request) => {
@@ -93,7 +87,6 @@ exports.updateUserProfile = (0, https_1.onCall)(async (request) => {
         throw new https_1.HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
     const { userId, name, phone, photoURL } = request.data;
-    // A user can only update their own profile.
     if (request.auth.uid !== userId) {
         throw new https_1.HttpsError("permission-denied", "You can only update your own profile.");
     }
