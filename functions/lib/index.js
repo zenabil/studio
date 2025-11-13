@@ -17,7 +17,7 @@ exports.createPendingUser = (0, https_1.onCall)(async (request) => {
         if (existingUser) {
             const profileRef = db.collection('userProfiles').doc(existingUser.uid);
             const profileSnap = await profileRef.get();
-            if (profileSnap.exists()) {
+            if (profileSnap.exists) {
                 throw new https_1.HttpsError('already-exists', 'This email address is already in use.');
             }
         }
@@ -53,7 +53,7 @@ exports.approveUser = (0, https_1.onCall)(async (request) => {
     }
     const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
-    if (!adminSnap.exists() || !((_a = adminSnap.data()) === null || _a === void 0 ? void 0 : _a.isAdmin)) {
+    if (!adminSnap.exists || !((_a = adminSnap.data()) === null || _a === void 0 ? void 0 : _a.isAdmin)) {
         throw new https_1.HttpsError("permission-denied", "Only admins can approve users.");
     }
     const userIdToApprove = request.data.userId;
@@ -71,7 +71,7 @@ exports.revokeUser = (0, https_1.onCall)(async (request) => {
     }
     const adminRef = db.collection('userProfiles').doc(request.auth.uid);
     const adminSnap = await adminRef.get();
-    if (!adminSnap.exists() || !((_a = adminSnap.data()) === null || _a === void 0 ? void 0 : _a.isAdmin)) {
+    if (!adminSnap.exists || !((_a = adminSnap.data()) === null || _a === void 0 ? void 0 : _a.isAdmin)) {
         throw new https_1.HttpsError("permission-denied", "Only admins can revoke user access.");
     }
     const userIdToRevoke = request.data.userId;

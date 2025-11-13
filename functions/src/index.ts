@@ -132,5 +132,3 @@ export const updateUserProfile = onCall(async (request: CallableRequest) => {
        throw new HttpsError("internal", "An error occurred while updating the profile.");
     }
 });
-
-    
