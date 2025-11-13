@@ -8,7 +8,13 @@ initializeApp();
 
 const db = getFirestore();
 
-export const createPendingUser = onCall(async (request: CallableRequest) => {
+interface CreatePendingUserData {
+    email: string;
+    password: string;
+    name: string;
+}
+
+export const createPendingUser = onCall(async (request: CallableRequest<CreatePendingUserData>) => {
     const { email, password, name } = request.data;
   
     if (!email || !password || !name) {
@@ -54,8 +60,11 @@ export const createPendingUser = onCall(async (request: CallableRequest) => {
     }
 });
   
+interface UserStatusData {
+    userId: string;
+}
 
-export const approveUser = onCall(async (request: CallableRequest) => {
+export const approveUser = onCall(async (request: CallableRequest<UserStatusData>) => {
     if (!request.auth || !request.auth.token.email) {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
@@ -78,7 +87,7 @@ export const approveUser = onCall(async (request: CallableRequest) => {
     return { status: "success", message: `User ${userIdToApprove} approved.` };
 });
 
-export const revokeUser = onCall(async (request: CallableRequest) => {
+export const revokeUser = onCall(async (request: CallableRequest<UserStatusData>) => {
     if (!request.auth || !request.auth.token.email) {
         throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }
@@ -101,8 +110,14 @@ export const revokeUser = onCall(async (request: CallableRequest) => {
     return { status: "success", message: `User ${userIdToRevoke} access revoked.` };
 });
 
+interface UpdateUserProfileData {
+    userId: string;
+    name?: string;
+    phone?: string;
+    photoURL?: string;
+}
 
-export const updateUserProfile = onCall(async (request: CallableRequest) => {
+export const updateUserProfile = onCall(async (request: CallableRequest<UpdateUserProfileData>) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
     }

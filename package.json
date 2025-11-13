@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm install --prefix functions && npm run build --prefix functions && next dev -p 9002",
+    "dev": "npm run build --prefix functions && next dev -p 9002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
